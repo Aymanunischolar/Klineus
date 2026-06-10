@@ -16,7 +16,7 @@ const fallbackCopy = {
     secondaryCta: "Produkt ansehen",
     trustOne: "Knie- und Hüft-TEP",
     trustTwo: "Arztprüfung vorgesehen",
-    trustThree: "KI-Entwurf mit Freigabe",
+
     workflowEyebrow: "Ablauf",
     workflowTitle: "Vom Fragebogen zum ärztlich geprüften Entwurf.",
     steps: [
