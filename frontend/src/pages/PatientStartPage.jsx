@@ -1,184 +1,97 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
-import { api } from "../services/api.js";
 
-
-const copy = {
-  de: {
-    eyebrow: "Patientenfragebogen",
-    title: "Welchen Fragebogen möchten Sie beantworten?",
-    lead:
-      "Bitte wählen Sie aus, ob es heute um Knie- oder Hüftbeschwerden geht. Danach startet der passende strukturierte Fragebogen.",
-    loading: "Fragebögen werden geladen ...",
-    errorTitle: "Fragebögen konnten nicht geladen werden",
-    retry: "Erneut versuchen",
-    start: "Fragebogen starten",
-    noteTitle: "Wichtiger Hinweis",
-    noteText:
-      "Dies ist keine Diagnose. Ihre Ärztin oder Ihr Arzt prüft alle Angaben und trifft die medizinische Entscheidung.",
-    home: "Zur Startseite",
-  },
-  en: {
-    eyebrow: "Patient questionnaire",
-    title: "Which questionnaire would you like to answer?",
-    lead:
-      "Please choose whether today's questions are about knee or hip symptoms. The matching structured questionnaire will start afterwards.",
-    loading: "Loading questionnaires ...",
-    errorTitle: "Questionnaires could not be loaded",
-    retry: "Try again",
-    start: "Start questionnaire",
-    noteTitle: "Important note",
-    noteText:
-      "This is not a diagnosis. Your doctor will review all information and make the medical decision.",
-    home: "Go to homepage",
-  },
-};
-
-
-function getText(value, language = "de", fallback = "") {
-  if (!value) {
-    return fallback;
-  }
-
-  if (typeof value === "string") {
-    return value;
-  }
-
-  return value[language] || value.de || value.en || fallback;
+function localText(language, de, en) {
+  return language === "en" ? en : de;
 }
-
-
-function QuestionnaireChoiceCard({ questionnaire, language, startLabel }) {
-  const title = getText(
-    questionnaire.labels,
-    language,
-    questionnaire.indication
-  );
-
-  const description = getText(
-    questionnaire.description,
-    language,
-    ""
-  );
-
-  const imageAlt = getText(
-    questionnaire.image_alt,
-    language,
-    title
-  );
-
-  const target = `/patient/questionnaire/${questionnaire.slug || questionnaire.indication}`;
-
-  return (
-    <Link className="patient-info-card" to={target}>
-      {questionnaire.image_path ? (
-        <div className="joint-choice-image">
-          <img
-            src={api.assetUrl(questionnaire.image_path)}
-            alt={imageAlt}
-            loading="lazy"
-          />
-        </div>
-      ) : (
-        <div className="joint-choice-image joint-choice-fallback">
-          {title.slice(0, 1)}
-        </div>
-      )}
-
-      <h2>{title}</h2>
-
-      {description ? <p>{description}</p> : null}
-
-      <strong className="text-link">{startLabel} →</strong>
-    </Link>
-  );
-}
-
 
 export default function PatientStartPage() {
   const { language } = useLanguage();
-  const text = copy[language] || copy.de;
-
-  const [questionnaires, setQuestionnaires] = useState([]);
-  const [status, setStatus] = useState("loading");
-  const [error, setError] = useState("");
-
-  async function loadQuestionnaires() {
-    try {
-      setStatus("loading");
-      setError("");
-
-      const data = await api.listQuestionnaires();
-
-      setQuestionnaires(data.questionnaires || []);
-      setStatus("success");
-    } catch (err) {
-      setError(err.message || text.errorTitle);
-      setStatus("error");
-    }
-  }
-
-  useEffect(() => {
-    loadQuestionnaires();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
-    <AppShell compact hideNav>
+    <AppShell compact>
       <section className="patient-card patient-start-card">
-        <p className="eyebrow">{text.eyebrow}</p>
+        <p className="eyebrow">
+          {localText(language, "Patientenfragebogen", "Patient questionnaire")}
+        </p>
 
-        <h1>{text.title}</h1>
+        <h1>
+          {localText(
+            language,
+            "Bereiten Sie Ihren Termin strukturiert vor.",
+            "Prepare your appointment in a structured way.",
+          )}
+        </h1>
 
-        <p className="patient-start-lead">{text.lead}</p>
+        <p className="patient-start-lead">
+          {localText(
+            language,
+            "Wählen Sie den passenden Fragebogen aus. Die Fragen erscheinen einzeln und können vor dem Absenden korrigiert werden.",
+            "Select the matching questionnaire. Questions appear one by one and can be corrected before submission.",
+          )}
+        </p>
 
-        {status === "loading" ? (
-          <div className="patient-info-card">
-            <h2>{text.loading}</h2>
-          </div>
-        ) : null}
+        <div className="patient-intro-grid">
+          <Link
+            className="patient-info-card"
+            to="/questionnaire?indication=knee_tep"
+          >
+            <div className="joint-choice-image">
+              <img alt="" src="/static/images/knee.png" />
+            </div>
 
-        {status === "error" ? (
-          <div className="patient-info-card">
-            <h2>{text.errorTitle}</h2>
-            <p>{error}</p>
+            <h2>Knie-TEP</h2>
 
-            <button
-              className="primary-button full-width"
-              type="button"
-              onClick={loadQuestionnaires}
-            >
-              {text.retry}
-            </button>
-          </div>
-        ) : null}
+            <p>
+              {localText(
+                language,
+                "Fragebogen für Beschwerden, Alltagseinschränkungen, bisherige Behandlung und Risikofaktoren rund um das Knie.",
+                "Questionnaire for symptoms, daily limitations, previous treatment and risk factors related to the knee.",
+              )}
+            </p>
 
-        {status === "success" ? (
-          <div className="patient-intro-grid">
-            {questionnaires.map((questionnaire) => (
-              <QuestionnaireChoiceCard
-                key={questionnaire.id || questionnaire.indication}
-                questionnaire={questionnaire}
-                language={language}
-                startLabel={text.start}
-              />
-            ))}
-
-            <article className="patient-info-card">
-              <span>!</span>
-              <h2>{text.noteTitle}</h2>
-              <p>{text.noteText}</p>
-            </article>
-          </div>
-        ) : null}
-
-        <div className="patient-start-actions">
-          <Link className="secondary-button full-width" to="/home">
-            {text.home}
+            <span className="text-link">
+              {localText(language, "Knie-Fragebogen starten", "Start knee questionnaire")}
+            </span>
           </Link>
+
+          <Link
+            className="patient-info-card"
+            to="/questionnaire?indication=hip_tep"
+          >
+            <div className="joint-choice-image">
+              <img alt="" src="/static/images/hip.png" />
+            </div>
+
+            <h2>Hüft-TEP</h2>
+
+            <p>
+              {localText(
+                language,
+                "Fragebogen für hüftbezogene Beschwerden, Funktion, konservative Therapie und medizinische Risikofaktoren.",
+                "Questionnaire for hip-related symptoms, function, conservative treatment and medical risk factors.",
+              )}
+            </p>
+
+            <span className="text-link">
+              {localText(language, "Hüft-Fragebogen starten", "Start hip questionnaire")}
+            </span>
+          </Link>
+        </div>
+
+        <div className="patient-start-note">
+          <strong>
+            {localText(language, "Wichtig", "Important")}
+          </strong>
+          <p>
+            {localText(
+              language,
+              "Die Auswertung ist nur für das ärztliche Dashboard bestimmt. Sie sehen am Ende lediglich eine Bestätigung, dass Ihre Eingaben übermittelt wurden.",
+              "The evaluation is only intended for the doctor dashboard. At the end, you will only see a confirmation that your answers were submitted.",
+            )}
+          </p>
         </div>
       </section>
     </AppShell>

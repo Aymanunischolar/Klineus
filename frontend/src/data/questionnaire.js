@@ -1,960 +1,1133 @@
 export const DISCLAIMER =
   "AI-generated draft. Must be reviewed and approved by a physician.";
 
-export const kneeTepBlocks = [
-  {
-    id: "A",
-    title: "Block A: Ihr Knieproblem",
-    questions: [
-      {
-        id: "A1",
-        text: "Um welches Knie geht es heute?",
-        type: "single",
-        options: ["Rechts", "Links", "Beide"],
-      },
-      {
-        id: "A2",
-        text: "Haben Sie aktuell Schmerzen in diesem Knie?",
-        type: "single",
-        options: ["Ja", "Nein"],
-      },
-      {
-        id: "A3",
-        text: "Seit wann haben Sie diese Knieschmerzen?",
-        type: "single",
-        options: [
-          "Weniger als 3 Monate",
-          "3 bis 6 Monate",
-          "6 bis 12 Monate",
-          "Länger als 1 Jahr",
-        ],
-      },
-      {
-        id: "A4",
-        text: "Wie stark sind Ihre Knieschmerzen im Durchschnitt?",
-        type: "slider",
-        min: 0,
-        max: 10,
-      },
-      {
-        id: "A5",
-        text: "Wann treten die Schmerzen vor allem auf?",
-        type: "multiple",
-        options: [
-          "Beim Gehen oder Belasten",
-          "Beim Treppensteigen",
-          "In Ruhe",
-          "Nachts",
-          "Eigentlich immer",
-        ],
-      },
-      {
-        id: "A6",
-        text: "Was beschreibt Ihre Beschwerden am besten?",
-        type: "multiple",
-        options: [
-          "Schmerz",
-          "Steifigkeit",
-          "Unsicherheit im Knie",
-          "Das Knie knickt weg",
-          "Knie lässt sich nicht richtig beugen oder strecken",
-          "Schwellung",
-          "Etwas anderes",
-        ],
-      },
-      {
-        id: "A7",
-        text: "Was ist heute der Hauptgrund für Ihren Termin?",
-        type: "single",
-        options: [
-          "Ursache klären",
-          "Behandlung besprechen",
-          "Prüfen ob eine Operation sinnvoll sein könnte",
-          "Zweitmeinung",
-          "Sonstiges",
-        ],
-      },
-    ],
-  },
-  {
-    id: "B",
-    title: "Block B: Auswirkungen im Alltag",
-    questions: [
-      {
-        id: "B1",
-        text: "Wie sehr schränken Ihre Kniebeschwerden Ihren Alltag insgesamt ein?",
-        type: "slider",
-        min: 0,
-        max: 10,
-      },
-      {
-        id: "B2",
-        text: "Seit wann schränken Ihre Kniebeschwerden Ihren Alltag deutlich ein?",
-        type: "single",
-        options: [
-          "Weniger als 3 Monate",
-          "3 bis 6 Monate",
-          "6 bis 12 Monate",
-          "Länger als 1 Jahr",
-        ],
-      },
-      {
-        id: "B3",
-        text: "Bei welchen Aktivitäten haben Sie wegen Ihres Knies Schwierigkeiten?",
-        type: "multiple",
-        options: [
-          "Gehen",
-          "Längeres Stehen",
-          "Treppensteigen",
-          "Hinsetzen oder Aufstehen",
-          "Knien",
-          "Körperpflege",
-          "Haushalt",
-          "Arbeit oder Beruf",
-          "Sport oder Hobbys",
-          "Bus, Bahn oder Auto nutzen",
-          "Soziale Aktivitäten",
-          "Keine besonderen Schwierigkeiten",
-        ],
-      },
-      {
-        id: "B4",
-        text: "Wie weit können Sie ungefähr am Stück gehen, bevor das Knie Sie deutlich einschränkt?",
-        type: "single",
-        options: [
-          "Mehr als 1 Kilometer",
-          "500 Meter bis 1 Kilometer",
-          "100 bis 500 Meter",
-          "Weniger als 100 Meter",
-          "Kaum möglich",
-        ],
-      },
-      {
-        id: "B5",
-        text: "Fühlt sich Ihr Knie manchmal instabil an oder knickt weg?",
-        type: "single",
-        options: ["Nie", "Selten", "Manchmal", "Häufig"],
-      },
-      {
-        id: "B6",
-        text: "Haben Sie das Gefühl, dass Sie Ihr Knie nicht mehr richtig beugen oder strecken können?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß nicht"],
-      },
-      {
-        id: "B7",
-        text: "Haben Sie das Gefühl, dass Ihr Bein oder Knie schief steht?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß nicht"],
-      },
-      {
-        id: "B8",
-        text: "Haben Sie das Gefühl, dass Ihr betroffenes Bein schwächer geworden ist?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß nicht"],
-      },
-      {
-        id: "B9",
-        text: "Brauchen Sie wegen Ihres Knies im Alltag Hilfe von anderen Personen?",
-        type: "single",
-        options: ["Nein", "Selten", "Regelmäßig", "Fast immer"],
-      },
-      {
-        id: "B10",
-        text: "Wie sehr leiden Sie persönlich unter Ihren Kniebeschwerden?",
-        type: "slider",
-        min: 0,
-        max: 10,
-      },
-    ],
-  },
-  {
-    id: "C",
-    title: "Block C: Bisherige Behandlung",
-    questions: [
-      {
-        id: "C1",
-        text: "Wurden Ihre Kniebeschwerden schon behandelt?",
-        type: "single",
-        options: ["Ja", "Nein"],
-      },
-      {
-        id: "C2",
-        text: "Welche Behandlungen haben Sie bisher erhalten?",
-        type: "multiple",
-        options: [
-          "Schmerzmittel",
-          "Physiotherapie oder Krankengymnastik",
-          "Übungen zu Hause",
-          "Spritzen ins Knie",
-          "Bandage oder Hilfsmittel",
-          "Einlagen oder spezielle Schuhe",
-          "Empfehlung zur Gewichtsabnahme",
-          "Sonstige Behandlung",
-          "Keine",
-        ],
-      },
-      {
-        id: "C3",
-        text: "Seit wie lange werden Ihre Kniebeschwerden schon behandelt?",
-        type: "single",
-        options: [
-          "Weniger als 3 Monate",
-          "3 bis 6 Monate",
-          "6 bis 12 Monate",
-          "Länger als 1 Jahr",
-        ],
-      },
-      {
-        id: "C4",
-        text: "Haben die bisherigen Behandlungen Ihre Beschwerden gebessert?",
-        type: "single",
-        options: ["Ja, deutlich", "Ja, etwas", "Nein, kaum oder gar nicht"],
-      },
-      {
-        id: "C5",
-        text: "Haben Sie in den letzten Monaten regelmäßig Physiotherapie oder Übungen gemacht?",
-        type: "single",
-        options: ["Ja", "Nein", "Teilweise"],
-      },
-      {
-        id: "C6",
-        text: "Wurde Ihnen von einem Arzt schon einmal gesagt, dass Sie zunächst weiter ohne Operation behandelt werden sollen?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß nicht"],
-      },
-    ],
-  },
-  {
-    id: "D",
-    title: "Block D: Vorbefunde und ärztliche Aussagen",
-    questions: [
-      {
-        id: "D1",
-        text: "Wurde von Ihrem Knie schon einmal ein Röntgenbild gemacht?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-      {
-        id: "D2",
-        text: "Wurde Ihnen gesagt, dass in Ihrem Knie ein deutlicher Gelenkverschleiß oder Arthrose vorliegt?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-      {
-        id: "D3",
-        text: "Wurde Ihnen gesagt, dass der Knorpel oder die Gelenkfläche im Knie deutlich geschädigt ist?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-      {
-        id: "D4",
-        text: "Wurde Ihnen gesagt, dass am Knochen oder an der Gelenkfläche ein Schaden vorliegt?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-      {
-        id: "D5",
-        text: "Haben Sie Arztbriefe, Röntgenbilder oder Befunde zu Ihrem Knie?",
-        type: "single",
-        options: ["Ja, ich habe Unterlagen", "Teilweise", "Nein"],
-      },
-      {
-        id: "D6",
-        text: "Wurde Ihnen bereits einmal eine Knieprothese empfohlen?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-    ],
-  },
-  {
-    id: "E",
-    title: "Block E: Gesundheit und Risiken",
-    questions: [
-      {
-        id: "E0",
-        text: "Wie alt sind Sie?",
-        type: "number",
-        piiCategory: "age",
+const label = (de, en = de) => ({ de, en });
+
+const option = (de, en = de) => ({
+  value: de,
+  labels: label(de, en),
+});
+
+const options = (items) =>
+  items.map((item) => {
+    if (Array.isArray(item)) {
+      return option(item[0], item[1]);
+    }
+
+    return option(item);
+  });
+
+const common = {
+  side: options([
+    ["Rechts", "Right"],
+    ["Links", "Left"],
+    ["Beide", "Both"],
+  ]),
+  yesNo: options([
+    ["Ja", "Yes"],
+    ["Nein", "No"],
+  ]),
+  yesNoUnknown: options([
+    ["Ja", "Yes"],
+    ["Nein", "No"],
+    ["Weiß ich nicht", "I don’t know"],
+  ]),
+  duration: options([
+    ["Weniger als 3 Monate", "Less than 3 months"],
+    ["3 bis 6 Monate", "3 to 6 months"],
+    ["6 bis 12 Monate", "6 to 12 months"],
+    ["Länger als 1 Jahr", "Longer than 1 year"],
+  ]),
+};
+
+function makeQuestionnaire({
+  id,
+  indication,
+  slug,
+  labelDe,
+  labelEn,
+  descriptionDe,
+  descriptionEn,
+  version,
+  blocks,
+}) {
+  return {
+    id,
+    indication,
+    slug,
+    labels: label(labelDe, labelEn),
+    description: label(descriptionDe, descriptionEn),
+    version,
+    blocks: blocks.map((block, blockIndex) => ({
+      ...block,
+      order: blockIndex + 1,
+      title: block.titleDe,
+      labels: label(block.titleDe, block.titleEn),
+      questions: block.questions.map((question, questionIndex) => ({
+        required: true,
         includeInAi: true,
-      },
-      {
-        id: "E1",
-        text: "Haben Sie aktuell eine Entzündung oder Infektion im Knie, die gerade behandelt wird?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-      {
-        id: "E2",
-        text: "Hatten Sie in den letzten 3 Monaten einen Herzinfarkt, Schlaganfall oder ein anderes schweres Herz-Kreislauf-Ereignis?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-      {
-        id: "E3",
-        text: "Haben Sie Diabetes oder erhöhte Blutzuckerwerte?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-      {
-        id: "E4",
-        text: "Wie groß sind Sie und wie viel wiegen Sie ungefähr?",
-        type: "number_pair",
-      },
-      {
-        id: "E5",
-        text: "Rauchen Sie aktuell?",
-        type: "single",
-        options: ["Ja", "Nein", "Ich habe aufgehört"],
-      },
-      {
-        id: "E6",
-        text: "Haben Sie in letzter Zeit eine Kortison-Spritze direkt ins Knie bekommen?",
-        type: "single",
-        options: [
-          "Nein",
-          "Ja, vor weniger als 6 Wochen",
-          "Ja, vor 6 Wochen bis 3 Monaten",
-          "Ja, vor mehr als 3 Monaten",
-          "Weiß ich nicht",
-        ],
-      },
-      {
-        id: "E7",
-        text: "Wurde bei Ihnen schon einmal eine Blutarmut bzw. Anämie festgestellt?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-      {
-        id: "E8",
-        text: "Werden Sie aktuell wegen einer psychischen Erkrankung behandelt?",
-        type: "single",
-        options: ["Ja", "Nein", "Möchte ich nicht angeben"],
-      },
-      {
-        id: "E9",
-        text: "Haben Sie eine rheumatische Erkrankung?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-      {
-        id: "E10",
-        text: "Nehmen Sie aktuell Kortison als Tabletten ein?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-      {
-        id: "E11",
-        text: "Haben Sie eine andere schwere Erkrankung, wegen der Sie regelmäßig in ärztlicher Behandlung sind?",
-        type: "single",
-        options: ["Nein", "Ja, Herz", "Ja, Lunge", "Ja, Krebs", "Ja, etwas anderes"],
-      },
-      {
-        id: "E12",
-        text: "Trinken Sie regelmäßig viel Alkohol oder haben Sie aktuell Probleme mit Alkohol oder anderen Suchtmitteln?",
-        type: "single",
-        options: ["Ja", "Nein", "Möchte ich nicht angeben"],
-      },
-      {
-        id: "E13",
-        text: "Gab es früher schon einmal eine Infektion in diesem Knie?",
-        type: "single",
-        options: ["Ja", "Nein", "Weiß ich nicht"],
-      },
-    ],
-  },
-  {
-    id: "F",
-    title: "Block F: Ziele, Erwartungen und Ergänzungen",
-    questions: [
-      {
-        id: "F1",
-        text: "Was möchten Sie durch die Behandlung Ihres Knies am meisten erreichen?",
-        type: "multiple",
-        options: [
-          "Weniger Schmerzen",
-          "Besser gehen können",
-          "Wieder besser Treppen steigen",
-          "Wieder besser schlafen",
-          "Im Alltag unabhängiger sein",
-          "Wieder arbeiten können",
-          "Wieder Sport oder Hobbys ausüben",
-          "Sonstiges",
-        ],
-      },
-      {
-        id: "F2",
-        text: "Welche Aktivität möchten Sie am liebsten wieder besser machen können?",
-        type: "text",
-      },
-      {
-        id: "F3",
-        text: "Was wäre für Sie persönlich ein gutes Ergebnis der Behandlung?",
-        type: "text",
-      },
-      {
-        id: "F4",
-        text: "Wurde mit Ihnen schon einmal über eine mögliche Knieoperation gesprochen?",
-        type: "single",
-        options: ["Ja", "Nein"],
-      },
-      {
-        id: "F5",
-        text: "Haben Sie Sorgen oder Fragen zu einer möglichen Operation?",
-        type: "single",
-        options: ["Ja", "Nein", "Vielleicht"],
-      },
-      {
-        id: "F6",
-        text: "Gibt es noch etwas, das Ihr Arzt über Ihr Knie wissen sollte?",
-        type: "text",
-      },
-    ],
-  },
-];
-
-export const kneeTepQuestions = kneeTepBlocks.flatMap((block) =>
-  block.questions.map((question) => ({
-    ...question,
-    blockId: block.id,
-    blockTitle: block.title,
-    blockLabels: blockTranslations[block.id],
-    required: question.required !== false,
-    piiCategory: question.piiCategory || "none",
-    includeInAi: question.includeInAi !== false,
-  }))
-);
-
-const blockTranslations = {
-  A: {
-    de: "Block A: Ihr Knieproblem",
-    en: "Block A: Your knee problem",
-  },
-  B: {
-    de: "Block B: Auswirkungen im Alltag",
-    en: "Block B: Impact on daily life",
-  },
-  C: {
-    de: "Block C: Bisherige Behandlung",
-    en: "Block C: Previous treatment",
-  },
-  D: {
-    de: "Block D: Vorbefunde und ärztliche Aussagen",
-    en: "Block D: Previous findings and medical statements",
-  },
-  E: {
-    de: "Block E: Gesundheit und Risiken",
-    en: "Block E: Health and risks",
-  },
-  F: {
-    de: "Block F: Ziele, Erwartungen und Ergänzungen",
-    en: "Block F: Goals, expectations and additions",
-  },
-  G: {
-    de: "Block G: Zusatzfragen",
-    en: "Block G: Additional questions",
-  },
-};
-
-const questionTranslations = {
-  A1: {
-    de: "Um welches Knie geht es heute?",
-    en: "Which knee is this about today?",
-  },
-  A2: {
-    de: "Haben Sie aktuell Schmerzen in diesem Knie?",
-    en: "Do you currently have pain in this knee?",
-  },
-  A3: {
-    de: "Seit wann haben Sie diese Knieschmerzen?",
-    en: "How long have you had this knee pain?",
-  },
-  A4: {
-    de: "Wie stark sind Ihre Knieschmerzen im Durchschnitt?",
-    en: "How strong is your knee pain on average?",
-  },
-  A5: {
-    de: "Wann treten die Schmerzen vor allem auf?",
-    en: "When does the pain mainly occur?",
-  },
-  A6: {
-    de: "Was beschreibt Ihre Beschwerden am besten?",
-    en: "What best describes your symptoms?",
-  },
-  A7: {
-    de: "Was ist heute der Hauptgrund für Ihren Termin?",
-    en: "What is the main reason for your appointment today?",
-  },
-  B1: {
-    de: "Wie sehr schränken Ihre Kniebeschwerden Ihren Alltag insgesamt ein?",
-    en: "Overall, how much do your knee symptoms limit your everyday life?",
-  },
-  B2: {
-    de: "Seit wann schränken Ihre Kniebeschwerden Ihren Alltag deutlich ein?",
-    en: "How long have your knee symptoms clearly limited your daily life?",
-  },
-  B3: {
-    de: "Bei welchen Aktivitäten haben Sie wegen Ihres Knies Schwierigkeiten?",
-    en: "Which activities are difficult because of your knee?",
-  },
-  B4: {
-    de: "Wie weit können Sie ungefähr am Stück gehen, bevor das Knie Sie deutlich einschränkt?",
-    en: "Roughly how far can you walk at once before your knee clearly limits you?",
-  },
-  B5: {
-    de: "Fühlt sich Ihr Knie manchmal instabil an oder knickt weg?",
-    en: "Does your knee sometimes feel unstable or give way?",
-  },
-  B6: {
-    de: "Haben Sie das Gefühl, dass Sie Ihr Knie nicht mehr richtig beugen oder strecken können?",
-    en: "Do you feel that you can no longer bend or straighten your knee properly?",
-  },
-  B7: {
-    de: "Haben Sie das Gefühl, dass Ihr Bein oder Knie schief steht?",
-    en: "Do you feel that your leg or knee is misaligned?",
-  },
-  B8: {
-    de: "Haben Sie das Gefühl, dass Ihr betroffenes Bein schwächer geworden ist?",
-    en: "Do you feel that the affected leg has become weaker?",
-  },
-  B9: {
-    de: "Brauchen Sie wegen Ihres Knies im Alltag Hilfe von anderen Personen?",
-    en: "Do you need help from other people in daily life because of your knee?",
-  },
-  B10: {
-    de: "Wie sehr leiden Sie persönlich unter Ihren Kniebeschwerden?",
-    en: "How much do you personally suffer from your knee symptoms?",
-  },
-  C1: {
-    de: "Wurden Ihre Kniebeschwerden schon behandelt?",
-    en: "Have your knee symptoms already been treated?",
-  },
-  C2: {
-    de: "Welche Behandlungen haben Sie bisher erhalten?",
-    en: "Which treatments have you received so far?",
-  },
-  C3: {
-    de: "Seit wie lange werden Ihre Kniebeschwerden schon behandelt?",
-    en: "How long have your knee symptoms been treated?",
-  },
-  C4: {
-    de: "Haben die bisherigen Behandlungen Ihre Beschwerden gebessert?",
-    en: "Have previous treatments improved your symptoms?",
-  },
-  C5: {
-    de: "Haben Sie in den letzten Monaten regelmäßig Physiotherapie oder Übungen gemacht?",
-    en: "Have you regularly done physiotherapy or exercises in recent months?",
-  },
-  C6: {
-    de: "Wurde Ihnen von einem Arzt schon einmal gesagt, dass Sie zunächst weiter ohne Operation behandelt werden sollen?",
-    en: "Has a doctor ever told you that you should initially continue treatment without surgery?",
-  },
-  D1: {
-    de: "Wurde von Ihrem Knie schon einmal ein Röntgenbild gemacht?",
-    en: "Has an X-ray of your knee ever been taken?",
-  },
-  D2: {
-    de: "Wurde Ihnen gesagt, dass in Ihrem Knie ein deutlicher Gelenkverschleiß oder Arthrose vorliegt?",
-    en: "Have you been told that there is significant joint wear or osteoarthritis in your knee?",
-  },
-  D3: {
-    de: "Wurde Ihnen gesagt, dass der Knorpel oder die Gelenkfläche im Knie deutlich geschädigt ist?",
-    en: "Have you been told that the cartilage or joint surface in your knee is significantly damaged?",
-  },
-  D4: {
-    de: "Wurde Ihnen gesagt, dass am Knochen oder an der Gelenkfläche ein Schaden vorliegt?",
-    en: "Have you been told that there is damage to the bone or joint surface?",
-  },
-  D5: {
-    de: "Haben Sie Arztbriefe, Röntgenbilder oder Befunde zu Ihrem Knie?",
-    en: "Do you have medical letters, X-rays or findings for your knee?",
-  },
-  D6: {
-    de: "Wurde Ihnen bereits einmal eine Knieprothese empfohlen?",
-    en: "Have you ever been recommended a knee replacement?",
-  },
-  E0: {
-    de: "Wie alt sind Sie?",
-    en: "How old are you?",
-  },
-  E1: {
-    de: "Haben Sie aktuell eine Entzündung oder Infektion im Knie, die gerade behandelt wird?",
-    en: "Do you currently have inflammation or infection in the knee that is being treated?",
-  },
-  E2: {
-    de: "Hatten Sie in den letzten 3 Monaten einen Herzinfarkt, Schlaganfall oder ein anderes schweres Herz-Kreislauf-Ereignis?",
-    en: "Have you had a heart attack, stroke or another severe cardiovascular event in the last 3 months?",
-  },
-  E3: {
-    de: "Haben Sie Diabetes oder erhöhte Blutzuckerwerte?",
-    en: "Do you have diabetes or elevated blood sugar levels?",
-  },
-  E4: {
-    de: "Wie groß sind Sie und wie viel wiegen Sie ungefähr?",
-    en: "How tall are you and approximately how much do you weigh?",
-  },
-  E5: {
-    de: "Rauchen Sie aktuell?",
-    en: "Do you currently smoke?",
-  },
-  E6: {
-    de: "Haben Sie in letzter Zeit eine Kortison-Spritze direkt ins Knie bekommen?",
-    en: "Have you recently received a cortisone injection directly into the knee?",
-  },
-  E7: {
-    de: "Wurde bei Ihnen schon einmal eine Blutarmut bzw. Anämie festgestellt?",
-    en: "Have you ever been diagnosed with anemia?",
-  },
-  E8: {
-    de: "Werden Sie aktuell wegen einer psychischen Erkrankung behandelt?",
-    en: "Are you currently being treated for a mental health condition?",
-  },
-  E9: {
-    de: "Haben Sie eine rheumatische Erkrankung?",
-    en: "Do you have a rheumatic disease?",
-  },
-  E10: {
-    de: "Nehmen Sie aktuell Kortison als Tabletten ein?",
-    en: "Are you currently taking cortisone tablets?",
-  },
-  E11: {
-    de: "Haben Sie eine andere schwere Erkrankung, wegen der Sie regelmäßig in ärztlicher Behandlung sind?",
-    en: "Do you have another serious condition for which you receive regular medical care?",
-  },
-  E12: {
-    de: "Trinken Sie regelmäßig viel Alkohol oder haben Sie aktuell Probleme mit Alkohol oder anderen Suchtmitteln?",
-    en: "Do you regularly drink a lot of alcohol or currently have problems with alcohol or other substances?",
-  },
-  E13: {
-    de: "Gab es früher schon einmal eine Infektion in diesem Knie?",
-    en: "Has there ever been an infection in this knee before?",
-  },
-  F1: {
-    de: "Was möchten Sie durch die Behandlung Ihres Knies am meisten erreichen?",
-    en: "What would you most like to achieve through treatment of your knee?",
-  },
-  F2: {
-    de: "Welche Aktivität möchten Sie am liebsten wieder besser machen können?",
-    en: "Which activity would you most like to be able to do better again?",
-  },
-  F3: {
-    de: "Was wäre für Sie persönlich ein gutes Ergebnis der Behandlung?",
-    en: "What would personally be a good treatment outcome for you?",
-  },
-  F4: {
-    de: "Wurde mit Ihnen schon einmal über eine mögliche Knieoperation gesprochen?",
-    en: "Has a possible knee operation ever been discussed with you?",
-  },
-  F5: {
-    de: "Haben Sie Sorgen oder Fragen zu einer möglichen Operation?",
-    en: "Do you have concerns or questions about a possible operation?",
-  },
-  F6: {
-    de: "Gibt es noch etwas, das Ihr Arzt über Ihr Knie wissen sollte?",
-    en: "Is there anything else your doctor should know about your knee?",
-  },
-};
-
-const optionTranslations = {
-  Rechts: { de: "Rechts", en: "Right" },
-  Links: { de: "Links", en: "Left" },
-  Beide: { de: "Beide", en: "Both" },
-  Ja: { de: "Ja", en: "Yes" },
-  Nein: { de: "Nein", en: "No" },
-  "Weniger als 3 Monate": {
-    de: "Weniger als 3 Monate",
-    en: "Less than 3 months",
-  },
-  "3 bis 6 Monate": {
-    de: "3 bis 6 Monate",
-    en: "3 to 6 months",
-  },
-  "6 bis 12 Monate": {
-    de: "6 bis 12 Monate",
-    en: "6 to 12 months",
-  },
-  "Länger als 1 Jahr": {
-    de: "Länger als 1 Jahr",
-    en: "More than 1 year",
-  },
-  "Beim Gehen oder Belasten": {
-    de: "Beim Gehen oder Belasten",
-    en: "When walking or bearing weight",
-  },
-  "Beim Treppensteigen": {
-    de: "Beim Treppensteigen",
-    en: "When climbing stairs",
-  },
-  "In Ruhe": { de: "In Ruhe", en: "At rest" },
-  Nachts: { de: "Nachts", en: "At night" },
-  "Eigentlich immer": {
-    de: "Eigentlich immer",
-    en: "Almost always",
-  },
-  Schmerz: { de: "Schmerz", en: "Pain" },
-  Steifigkeit: { de: "Steifigkeit", en: "Stiffness" },
-  "Unsicherheit im Knie": {
-    de: "Unsicherheit im Knie",
-    en: "Uncertainty in the knee",
-  },
-  "Das Knie knickt weg": {
-    de: "Das Knie knickt weg",
-    en: "The knee gives way",
-  },
-  "Knie lässt sich nicht richtig beugen oder strecken": {
-    de: "Knie lässt sich nicht richtig beugen oder strecken",
-    en: "The knee cannot be bent or straightened properly",
-  },
-  Schwellung: { de: "Schwellung", en: "Swelling" },
-  "Etwas anderes": {
-    de: "Etwas anderes",
-    en: "Something else",
-  },
-  "Ursache klären": {
-    de: "Ursache klären",
-    en: "Clarify the cause",
-  },
-  "Behandlung besprechen": {
-    de: "Behandlung besprechen",
-    en: "Discuss treatment",
-  },
-  "Prüfen ob eine Operation sinnvoll sein könnte": {
-    de: "Prüfen ob eine Operation sinnvoll sein könnte",
-    en: "Check whether an operation could make sense",
-  },
-  Zweitmeinung: { de: "Zweitmeinung", en: "Second opinion" },
-  Sonstiges: { de: "Sonstiges", en: "Other" },
-  Gehen: { de: "Gehen", en: "Walking" },
-  "Längeres Stehen": {
-    de: "Längeres Stehen",
-    en: "Standing for longer periods",
-  },
-  Treppensteigen: {
-    de: "Treppensteigen",
-    en: "Climbing stairs",
-  },
-  "Hinsetzen oder Aufstehen": {
-    de: "Hinsetzen oder Aufstehen",
-    en: "Sitting down or standing up",
-  },
-  Knien: { de: "Knien", en: "Kneeling" },
-  Körperpflege: { de: "Körperpflege", en: "Personal care" },
-  Haushalt: { de: "Haushalt", en: "Household tasks" },
-  "Arbeit oder Beruf": {
-    de: "Arbeit oder Beruf",
-    en: "Work or job",
-  },
-  "Sport oder Hobbys": {
-    de: "Sport oder Hobbys",
-    en: "Sports or hobbies",
-  },
-  "Bus, Bahn oder Auto nutzen": {
-    de: "Bus, Bahn oder Auto nutzen",
-    en: "Using bus, train or car",
-  },
-  "Soziale Aktivitäten": {
-    de: "Soziale Aktivitäten",
-    en: "Social activities",
-  },
-  "Keine besonderen Schwierigkeiten": {
-    de: "Keine besonderen Schwierigkeiten",
-    en: "No particular difficulties",
-  },
-  "Mehr als 1 Kilometer": {
-    de: "Mehr als 1 Kilometer",
-    en: "More than 1 kilometer",
-  },
-  "500 Meter bis 1 Kilometer": {
-    de: "500 Meter bis 1 Kilometer",
-    en: "500 meters to 1 kilometer",
-  },
-  "100 bis 500 Meter": {
-    de: "100 bis 500 Meter",
-    en: "100 to 500 meters",
-  },
-  "Weniger als 100 Meter": {
-    de: "Weniger als 100 Meter",
-    en: "Less than 100 meters",
-  },
-  "Kaum möglich": {
-    de: "Kaum möglich",
-    en: "Hardly possible",
-  },
-  Nie: { de: "Nie", en: "Never" },
-  Selten: { de: "Selten", en: "Rarely" },
-  Manchmal: { de: "Manchmal", en: "Sometimes" },
-  Häufig: { de: "Häufig", en: "Often" },
-  "Weiß nicht": { de: "Weiß nicht", en: "I don't know" },
-  Regelmäßig: { de: "Regelmäßig", en: "Regularly" },
-  "Fast immer": {
-    de: "Fast immer",
-    en: "Almost always",
-  },
-  Schmerzmittel: {
-    de: "Schmerzmittel",
-    en: "Pain medication",
-  },
-  "Physiotherapie oder Krankengymnastik": {
-    de: "Physiotherapie oder Krankengymnastik",
-    en: "Physiotherapy",
-  },
-  "Übungen zu Hause": {
-    de: "Übungen zu Hause",
-    en: "Exercises at home",
-  },
-  "Spritzen ins Knie": {
-    de: "Spritzen ins Knie",
-    en: "Injections into the knee",
-  },
-  "Bandage oder Hilfsmittel": {
-    de: "Bandage oder Hilfsmittel",
-    en: "Brace or assistive device",
-  },
-  "Einlagen oder spezielle Schuhe": {
-    de: "Einlagen oder spezielle Schuhe",
-    en: "Insoles or special shoes",
-  },
-  "Empfehlung zur Gewichtsabnahme": {
-    de: "Empfehlung zur Gewichtsabnahme",
-    en: "Recommendation to lose weight",
-  },
-  "Sonstige Behandlung": {
-    de: "Sonstige Behandlung",
-    en: "Other treatment",
-  },
-  Keine: { de: "Keine", en: "None" },
-  "Ja, deutlich": {
-    de: "Ja, deutlich",
-    en: "Yes, clearly",
-  },
-  "Ja, etwas": {
-    de: "Ja, etwas",
-    en: "Yes, somewhat",
-  },
-  "Nein, kaum oder gar nicht": {
-    de: "Nein, kaum oder gar nicht",
-    en: "No, hardly or not at all",
-  },
-  Teilweise: { de: "Teilweise", en: "Partly" },
-  "Weiß ich nicht": {
-    de: "Weiß ich nicht",
-    en: "I don't know",
-  },
-  "Ja, ich habe Unterlagen": {
-    de: "Ja, ich habe Unterlagen",
-    en: "Yes, I have documents",
-  },
-  "Ich habe aufgehört": {
-    de: "Ich habe aufgehört",
-    en: "I have stopped",
-  },
-  "Ja, vor weniger als 6 Wochen": {
-    de: "Ja, vor weniger als 6 Wochen",
-    en: "Yes, less than 6 weeks ago",
-  },
-  "Ja, vor 6 Wochen bis 3 Monaten": {
-    de: "Ja, vor 6 Wochen bis 3 Monaten",
-    en: "Yes, 6 weeks to 3 months ago",
-  },
-  "Ja, vor mehr als 3 Monaten": {
-    de: "Ja, vor mehr als 3 Monaten",
-    en: "Yes, more than 3 months ago",
-  },
-  "Möchte ich nicht angeben": {
-    de: "Möchte ich nicht angeben",
-    en: "I prefer not to say",
-  },
-  "Ja, Herz": { de: "Ja, Herz", en: "Yes, heart" },
-  "Ja, Lunge": { de: "Ja, Lunge", en: "Yes, lungs" },
-  "Ja, Krebs": { de: "Ja, Krebs", en: "Yes, cancer" },
-  "Ja, etwas anderes": {
-    de: "Ja, etwas anderes",
-    en: "Yes, something else",
-  },
-  "Weniger Schmerzen": {
-    de: "Weniger Schmerzen",
-    en: "Less pain",
-  },
-  "Besser gehen können": {
-    de: "Besser gehen können",
-    en: "Being able to walk better",
-  },
-  "Wieder besser Treppen steigen": {
-    de: "Wieder besser Treppen steigen",
-    en: "Climbing stairs better again",
-  },
-  "Wieder besser schlafen": {
-    de: "Wieder besser schlafen",
-    en: "Sleeping better again",
-  },
-  "Im Alltag unabhängiger sein": {
-    de: "Im Alltag unabhängiger sein",
-    en: "Being more independent in daily life",
-  },
-  "Wieder arbeiten können": {
-    de: "Wieder arbeiten können",
-    en: "Being able to work again",
-  },
-  "Wieder Sport oder Hobbys ausüben": {
-    de: "Wieder Sport oder Hobbys ausüben",
-    en: "Doing sports or hobbies again",
-  },
-  Vielleicht: { de: "Vielleicht", en: "Maybe" },
-};
-
-export function getBlockTitle(blockId, language = "de") {
-  return (
-    blockTranslations[blockId]?.[language] ||
-    blockTranslations[blockId]?.de ||
-    blockId ||
-    ""
-  );
+        piiCategory: "none",
+        min: question.type === "slider" ? 0 : question.min,
+        max: question.type === "slider" ? 10 : question.max,
+        ...question,
+        text: question.textDe,
+        labels: label(question.textDe, question.textEn),
+        blockId: block.id,
+        blockTitle: block.titleDe,
+        blockLabels: label(block.titleDe, block.titleEn),
+        order: questionIndex + 1,
+      })),
+    })),
+  };
 }
 
-export function getQuestionText(questionOrId, language = "de", fallback = "") {
-  if (!questionOrId) {
-    return fallback;
+export const kneeTepQuestionnaire = makeQuestionnaire({
+  id: "knee_tep_v2_wajjahat",
+  indication: "knee_tep",
+  slug: "knie-tep",
+  version: 2,
+  labelDe: "Knie-TEP Fragebogen",
+  labelEn: "Knee replacement questionnaire",
+  descriptionDe:
+    "Leitlinienbasierter Fragebogen zur Vorbereitung der ärztlichen Prüfung bei Knie-TEP.",
+  descriptionEn:
+    "Guideline-based questionnaire to prepare the medical review for knee replacement.",
+  blocks: [
+    {
+      id: "A",
+      titleDe: "Block A: Ihr Knieproblem",
+      titleEn: "Block A: Your knee problem",
+      questions: [
+        {
+          id: "A1",
+          textDe: "Um welches Knie geht es heute?",
+          textEn: "Which knee is this about today?",
+          type: "single",
+          options: common.side,
+        },
+        {
+          id: "A2",
+          textDe: "Haben Sie aktuell Schmerzen in diesem Knie?",
+          textEn: "Do you currently have pain in this knee?",
+          type: "single",
+          options: common.yesNo,
+        },
+        {
+          id: "A3",
+          textDe: "Seit wann haben Sie diese Knieschmerzen?",
+          textEn: "How long have you had this knee pain?",
+          type: "single",
+          options: common.duration,
+          showIf: { questionId: "A2", equals: "Ja" },
+        },
+        {
+          id: "A4",
+          textDe: "Wie stark sind Ihre Knieschmerzen im Durchschnitt?",
+          textEn: "How severe is your knee pain on average?",
+          type: "slider",
+          min: 0,
+          max: 10,
+          showIf: { questionId: "A2", equals: "Ja" },
+        },
+        {
+          id: "A5",
+          textDe: "Wann treten die Schmerzen vor allem auf?",
+          textEn: "When does the pain mainly occur?",
+          type: "multiple",
+          options: options([
+            ["Beim Gehen oder Belasten", "When walking or putting weight on it"],
+            ["Beim Treppensteigen", "When climbing stairs"],
+            ["In Ruhe", "At rest"],
+            ["Nachts", "At night"],
+            ["Eigentlich immer", "Almost all the time"],
+          ]),
+          showIf: { questionId: "A2", equals: "Ja" },
+        },
+        {
+          id: "A6",
+          textDe: "Was beschreibt Ihre Beschwerden am besten?",
+          textEn: "What best describes your symptoms?",
+          type: "multiple",
+          options: options([
+            ["Schmerz", "Pain"],
+            ["Steifigkeit", "Stiffness"],
+            ["Unsicherheit im Knie", "Instability in the knee"],
+            ["Das Knie knickt weg", "The knee gives way"],
+            [
+              "Knie lässt sich nicht richtig beugen oder strecken",
+              "The knee cannot be properly bent or straightened",
+            ],
+            ["Schwellung", "Swelling"],
+            ["Etwas anderes", "Something else"],
+          ]),
+        },
+        {
+          id: "A7",
+          textDe: "Was ist heute der Hauptgrund für Ihren Termin?",
+          textEn: "What is the main reason for your appointment today?",
+          type: "single",
+          options: options([
+            ["Ursache klären", "Clarify the cause"],
+            ["Behandlung besprechen", "Discuss treatment"],
+            [
+              "Prüfen ob eine Operation sinnvoll sein könnte",
+              "Check whether surgery could make sense",
+            ],
+            ["Zweitmeinung", "Second opinion"],
+            ["Sonstiges", "Other"],
+          ]),
+        },
+      ],
+    },
+    {
+      id: "B",
+      titleDe: "Block B: Auswirkungen im Alltag",
+      titleEn: "Block B: Effects on everyday life",
+      questions: [
+        {
+          id: "B1",
+          textDe:
+            "Wie sehr schränken Ihre Kniebeschwerden Ihren Alltag insgesamt ein?",
+          textEn:
+            "How much do your knee symptoms limit your everyday life overall?",
+          type: "slider",
+          min: 0,
+          max: 10,
+        },
+        {
+          id: "B2",
+          textDe:
+            "Wie weit können Sie ungefähr am Stück gehen, bevor das Knie Sie deutlich einschränkt?",
+          textEn:
+            "About how far can you walk at a time before the knee significantly limits you?",
+          type: "single",
+          options: options([
+            ["Mehr als 1 Kilometer", "More than 1 kilometre"],
+            ["500 Meter bis 1 Kilometer", "500 metres to 1 kilometre"],
+            ["100 bis 500 Meter", "100 to 500 metres"],
+            ["Weniger als 100 Meter", "Less than 100 metres"],
+            ["Kaum möglich", "Hardly possible"],
+          ]),
+        },
+        {
+          id: "B3",
+          textDe: "Haben Sie das Gefühl, dass Ihr Bein oder Knie schief steht?",
+          textEn: "Do you feel that your leg or knee is misaligned?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "B4",
+          textDe:
+            "Haben Sie das Gefühl, dass Ihr betroffenes Bein schwächer geworden ist?",
+          textEn: "Do you feel that your affected leg has become weaker?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "B5",
+          textDe:
+            "Brauchen Sie wegen Ihres Knies im Alltag Hilfe von anderen Personen?",
+          textEn:
+            "Do you need help from other people in everyday life because of your knee?",
+          type: "single",
+          options: options([
+            ["Nein", "No"],
+            ["Selten", "Rarely"],
+            ["Regelmäßig", "Regularly"],
+            ["Fast immer", "Almost always"],
+          ]),
+        },
+      ],
+    },
+    {
+      id: "C",
+      titleDe: "Block C: Bisherige Behandlung",
+      titleEn: "Block C: Previous treatment",
+      questions: [
+        {
+          id: "C1",
+          textDe:
+            "Wurden Ihre Kniebeschwerden schon mal nichtoperativ behandelt?",
+          textEn: "Have your knee symptoms already been treated non-operatively?",
+          type: "single",
+          options: common.yesNo,
+        },
+        {
+          id: "C2",
+          textDe: "Welche Behandlungen haben Sie bisher erhalten?",
+          textEn: "Which treatments have you received so far?",
+          type: "multiple",
+          options: options([
+            ["Schmerzmittel", "Pain medication"],
+            [
+              "Physiotherapie oder Krankengymnastik",
+              "Physiotherapy or physical therapy",
+            ],
+            ["Übungen zu Hause", "Exercises at home"],
+            ["Spritzen ins Knie", "Injections into the knee"],
+            ["Bandage oder Hilfsmittel", "Brace or aids"],
+            ["Einlagen oder spezielle Schuhe", "Insoles or special shoes"],
+            ["Empfehlung zur Gewichtsabnahme", "Recommendation to lose weight"],
+            ["Sonstige Behandlung", "Other treatment"],
+            ["Keine", "None"],
+          ]),
+          showIf: { questionId: "C1", equals: "Ja" },
+        },
+        {
+          id: "C3",
+          textDe:
+            "Seit wie lange werden Ihre Kniebeschwerden schon behandelt?",
+          textEn: "How long have your knee symptoms already been treated?",
+          type: "single",
+          options: common.duration,
+          showIf: { questionId: "C1", equals: "Ja" },
+        },
+        {
+          id: "C4",
+          textDe:
+            "Haben die bisherigen Behandlungen Ihre Beschwerden gebessert?",
+          textEn: "Have the treatments so far improved your symptoms?",
+          type: "single",
+          options: options([
+            ["Ja, deutlich", "Yes, significantly"],
+            ["Ja, etwas", "Yes, somewhat"],
+            ["Nein, kaum oder gar nicht", "No, hardly or not at all"],
+          ]),
+          showIf: { questionId: "C1", equals: "Ja" },
+        },
+        {
+          id: "C5",
+          textDe:
+            "Wurde Ihnen von einem Arzt schon einmal gesagt, dass Sie zunächst weiter ohne Operation behandelt werden sollen?",
+          textEn:
+            "Has a doctor ever told you that you should first continue treatment without surgery?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+      ],
+    },
+    {
+      id: "D",
+      titleDe: "Block D: Vorbefunde und ärztliche Aussagen",
+      titleEn: "Block D: Previous findings and medical statements",
+      questions: [
+        {
+          id: "D1",
+          textDe:
+            "Haben Sie Arztbriefe, Röntgenbilder oder Befunde zu Ihrem Knie?",
+          textEn:
+            "Do you have medical letters, X-rays or findings related to your knee?",
+          type: "single",
+          options: options([
+            ["Ja, ich habe Unterlagen", "Yes, I have documents"],
+            ["Nein", "No"],
+          ]),
+          notesByValue: {
+            "Ja, ich habe Unterlagen":
+              "Bitte bringen Sie die Bilder und Befunde zum Termin mit.",
+          },
+          notesByValueEn: {
+            "Ja, ich habe Unterlagen":
+              "Please bring the images and findings to your appointment.",
+          },
+        },
+        {
+          id: "D2",
+          textDe: "Wurde Ihnen bereits einmal eine Knieprothese empfohlen?",
+          textEn: "Has a knee replacement ever been recommended to you?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+      ],
+    },
+    {
+      id: "E",
+      titleDe: "Block E: Gesundheit und Risiken",
+      titleEn: "Block E: Health and risks",
+      questions: [
+        {
+          id: "E1",
+          textDe:
+            "Haben Sie aktuell eine Entzündung oder Infektion im Knie, die gerade behandelt wird?",
+          textEn:
+            "Do you currently have inflammation or an infection in the knee that is being treated?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "E2",
+          textDe:
+            "Gab es früher schon einmal eine Infektion in diesem Knie?",
+          textEn: "Has there ever been an infection in this knee before?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "E3",
+          textDe:
+            "Hatten Sie in den letzten 3 Monaten einen Herzinfarkt, Schlaganfall oder ein anderes schweres Herz-Kreislauf-Ereignis?",
+          textEn:
+            "Have you had a heart attack, stroke or another serious cardiovascular event in the last 3 months?",
+          type: "single",
+          options: common.yesNoUnknown,
+          notesByValue: {
+            Ja: "Bitte bringen Sie falls vorhanden Entlassungsbriefe zum Termin mit.",
+          },
+          notesByValueEn: {
+            Ja: "Please bring discharge letters to your appointment if available.",
+          },
+        },
+        {
+          id: "E4",
+          textDe: "Haben Sie Diabetes oder erhöhte Blutzuckerwerte?",
+          textEn: "Do you have diabetes or elevated blood sugar levels?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "E5",
+          textDe: "Wie groß sind Sie und wie viel wiegen Sie ungefähr?",
+          textEn: "How tall are you and approximately how much do you weigh?",
+          type: "number_pair",
+        },
+        {
+          id: "E6",
+          textDe: "Rauchen Sie aktuell?",
+          textEn: "Do you currently smoke?",
+          type: "single_with_text",
+          options: options([
+            [
+              "Ja, mit Angabe Packungen pro Tag und Rauchjahre",
+              "Yes, with number of packs per day and years of smoking",
+            ],
+            ["Nein", "No"],
+            ["Ich habe aufgehört seit…", "I stopped since…"],
+          ]),
+          detailsIf: [
+            "Ja, mit Angabe Packungen pro Tag und Rauchjahre",
+            "Ich habe aufgehört seit…",
+          ],
+          detailsLabel: "Angabe",
+          detailsLabels: label("Angabe", "Details"),
+        },
+        {
+          id: "E7",
+          textDe:
+            "Haben Sie in letzter Zeit eine Kortison-Spritze direkt ins Knie bekommen?",
+          textEn:
+            "Have you recently had a cortisone injection directly into the knee?",
+          type: "single",
+          options: options([
+            ["Nein", "No"],
+            ["Ja, vor weniger als 6 Wochen", "Yes, less than 6 weeks ago"],
+            [
+              "Ja, vor 6 Wochen bis 3 Monaten",
+              "Yes, 6 weeks to 3 months ago",
+            ],
+            ["Ja, vor mehr als 3 Monaten", "Yes, more than 3 months ago"],
+            ["Weiß ich nicht", "I don’t know"],
+          ]),
+        },
+        {
+          id: "E8",
+          textDe:
+            "Wurde bei Ihnen schon einmal eine Blutarmut bzw. Anämie festgestellt?",
+          textEn: "Have you ever been diagnosed with anaemia?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "E9",
+          textDe:
+            "Werden Sie aktuell wegen einer psychischen Erkrankung behandelt?",
+          textEn:
+            "Are you currently being treated for a mental health condition?",
+          type: "single",
+          options: options([
+            ["Ja", "Yes"],
+            ["Nein", "No"],
+            ["Möchte ich nicht angeben", "I prefer not to say"],
+          ]),
+        },
+        {
+          id: "E10",
+          textDe: "Haben Sie eine rheumatische Erkrankung?",
+          textEn: "Do you have a rheumatic disease?",
+          type: "single_with_text",
+          options: common.yesNoUnknown,
+          detailsIf: ["Ja"],
+          detailsLabel: "Welche Erkrankung?",
+          detailsLabels: label("Welche Erkrankung?", "Which disease?"),
+        },
+        {
+          id: "E11",
+          textDe: "Nehmen Sie aktuell Kortison als Tabletten ein?",
+          textEn: "Are you currently taking cortisone tablets?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "E12",
+          textDe:
+            "Haben Sie eine andere schwere Erkrankung, wegen der Sie regelmäßig in ärztlicher Behandlung sind?",
+          textEn:
+            "Do you have another serious illness for which you are regularly under medical treatment?",
+          type: "single_with_text",
+          options: options([
+            ["Nein", "No"],
+            ["Ja", "Yes"],
+          ]),
+          detailsIf: ["Ja"],
+          detailsLabel: "Welche Erkrankung?",
+          detailsLabels: label("Welche Erkrankung?", "Which illness?"),
+        },
+        {
+          id: "E13",
+          textDe:
+            "Trinken Sie regelmäßig viel Alkohol oder haben Sie aktuell Probleme mit Alkohol oder anderen Suchtmitteln?",
+          textEn:
+            "Do you regularly drink a lot of alcohol or currently have problems with alcohol or other addictive substances?",
+          type: "single",
+          options: options([
+            ["Ja", "Yes"],
+            ["Nein", "No"],
+            ["Möchte ich nicht angeben", "I prefer not to say"],
+          ]),
+        },
+      ],
+    },
+    {
+      id: "F",
+      titleDe: "Block F: Ziele, Erwartungen und Ergänzungen",
+      titleEn: "Block F: Goals, expectations and additional information",
+      questions: [
+        {
+          id: "F1",
+          textDe:
+            "Was möchten Sie durch die Behandlung Ihres Knies am meisten erreichen?",
+          textEn:
+            "What would you most like to achieve through treatment of your knee?",
+          type: "multiple",
+          options: options([
+            ["Weniger Schmerzen", "Less pain"],
+            ["Besser gehen können", "Being able to walk better"],
+            ["Wieder besser Treppen steigen", "Being able to climb stairs better again"],
+            ["Wieder besser schlafen", "Being able to sleep better again"],
+            ["Im Alltag unabhängiger sein", "Being more independent in everyday life"],
+            ["Wieder arbeiten können", "Being able to work again"],
+            ["Wieder Sport oder Hobbys ausüben", "Being able to do sports or hobbies again"],
+            ["Sonstiges", "Other"],
+          ]),
+        },
+        {
+          id: "F2",
+          textDe:
+            "Haben Sie Sorgen oder Fragen zu einer möglichen Operation?",
+          textEn: "Do you have concerns or questions about possible surgery?",
+          type: "single_with_text",
+          options: options([
+            ["Ja", "Yes"],
+            ["Nein", "No"],
+            ["Vielleicht", "Maybe"],
+          ]),
+          detailsIf: ["Ja", "Vielleicht"],
+          detailsLabel: "Freitext",
+          detailsLabels: label("Freitext", "Free text"),
+        },
+        {
+          id: "F3",
+          textDe:
+            "Gibt es noch etwas, das Ihr Arzt über Ihr Knie wissen sollte?",
+          textEn: "Is there anything else your doctor should know about your knee?",
+          type: "text",
+          required: false,
+        },
+      ],
+    },
+  ],
+});
+
+export const hipTepQuestionnaire = makeQuestionnaire({
+  id: "hip_tep_v2_wajjahat",
+  indication: "hip_tep",
+  slug: "hueft-tep",
+  version: 2,
+  labelDe: "Hüft-TEP Fragebogen",
+  labelEn: "Hip replacement questionnaire",
+  descriptionDe:
+    "Leitlinienbasierter Fragebogen zur Vorbereitung der ärztlichen Prüfung bei Hüft-TEP.",
+  descriptionEn:
+    "Guideline-based questionnaire to prepare the medical review for hip replacement.",
+  blocks: [
+    {
+      id: "A",
+      titleDe: "Block A: Ihr Hüftproblem",
+      titleEn: "Block A: Your hip problem",
+      questions: [
+        {
+          id: "A1",
+          textDe: "Um welche Hüfte geht es heute?",
+          textEn: "Which hip is this about today?",
+          type: "single",
+          options: common.side,
+        },
+        {
+          id: "A2",
+          textDe: "Haben Sie aktuell Schmerzen in dieser Hüfte?",
+          textEn: "Do you currently have pain in this hip?",
+          type: "single",
+          options: common.yesNo,
+        },
+        {
+          id: "A3",
+          textDe: "Seit wann haben Sie diese Hüftschmerzen?",
+          textEn: "How long have you had this hip pain?",
+          type: "single",
+          options: common.duration,
+          showIf: { questionId: "A2", equals: "Ja" },
+        },
+        {
+          id: "A4",
+          textDe: "Wie stark sind Ihre Hüftschmerzen im Durchschnitt?",
+          textEn: "How severe is your hip pain on average?",
+          type: "slider",
+          min: 0,
+          max: 10,
+          showIf: { questionId: "A2", equals: "Ja" },
+        },
+        {
+          id: "A5",
+          textDe: "Wann treten die Schmerzen vor allem auf?",
+          textEn: "When does the pain mainly occur?",
+          type: "multiple",
+          options: options([
+            ["Beim Gehen oder Belasten", "When walking or putting weight on it"],
+            ["Beim Aufstehen oder Lagewechsel", "When standing up or changing position"],
+            ["In Ruhe", "At rest"],
+            ["Nachts", "At night"],
+            ["Eigentlich immer", "Almost all the time"],
+          ]),
+          showIf: { questionId: "A2", equals: "Ja" },
+        },
+        {
+          id: "A6",
+          textDe: "Was beschreibt Ihre Beschwerden am besten?",
+          textEn: "What best describes your symptoms?",
+          type: "multiple",
+          options: options([
+            ["Schmerz", "Pain"],
+            ["Steifigkeit", "Stiffness"],
+            ["Die Hüfte ist unbeweglich", "The hip is stiff or difficult to move"],
+            ["Ich humpele", "I limp"],
+            ["Die Hüfte fühlt sich schwach an", "The hip feels weak"],
+            ["Etwas anderes", "Something else"],
+          ]),
+        },
+        {
+          id: "A7",
+          textDe: "Was ist der Hauptgrund für Ihren Termin?",
+          textEn: "What is the main reason for your appointment?",
+          type: "single",
+          options: options([
+            ["Ursache klären", "Clarify the cause"],
+            ["Behandlung besprechen", "Discuss treatment"],
+            [
+              "Prüfen ob eine Operation sinnvoll sein könnte",
+              "Check whether surgery could make sense",
+            ],
+            ["Zweitmeinung", "Second opinion"],
+            ["Sonstiges", "Other"],
+          ]),
+        },
+      ],
+    },
+    {
+      id: "B",
+      titleDe: "Block B: Auswirkungen im Alltag",
+      titleEn: "Block B: Effects on everyday life",
+      questions: [
+        {
+          id: "B1",
+          textDe:
+            "Wie sehr schränken Ihre Hüftbeschwerden Ihren Alltag insgesamt ein?",
+          textEn:
+            "How much do your hip symptoms limit your everyday life overall?",
+          type: "slider",
+          min: 0,
+          max: 10,
+        },
+        {
+          id: "B2",
+          textDe:
+            "Seit wann schränken Ihre Hüftbeschwerden Ihren Alltag deutlich ein?",
+          textEn:
+            "Since when have your hip symptoms significantly limited your everyday life?",
+          type: "single",
+          options: common.duration,
+        },
+        {
+          id: "B3",
+          textDe:
+            "Bei welchen Aktivitäten haben Sie wegen Ihrer Hüfte Schwierigkeiten?",
+          textEn: "Which activities are difficult for you because of your hip?",
+          type: "multiple",
+          options: options([
+            ["Gehen", "Walking"],
+            ["Längeres Stehen", "Standing for longer periods"],
+            ["Treppensteigen", "Climbing stairs"],
+            ["Hinsetzen oder Aufstehen", "Sitting down or standing up"],
+            ["Schuhe oder Socken anziehen", "Putting on shoes or socks"],
+            ["Haushalt", "Household tasks"],
+            ["Arbeit oder Beruf", "Work or occupation"],
+            ["Sport oder Hobbys", "Sports or hobbies"],
+            ["Verkehrsmittel nutzen", "Using transport"],
+            ["Sexualität", "Sexual activity"],
+            ["Keine besonderen Schwierigkeiten", "No particular difficulties"],
+          ]),
+        },
+        {
+          id: "B4",
+          textDe:
+            "Wie weit können Sie ungefähr am Stück gehen, bevor die Hüfte Sie deutlich einschränkt?",
+          textEn:
+            "About how far can you walk at a time before the hip significantly limits you?",
+          type: "single",
+          options: options([
+            ["Mehr als 1 km", "More than 1 km"],
+            ["500 m bis 1 km", "500 m to 1 km"],
+            ["Unter 500 m", "Under 500 m"],
+            ["Unter 100 m", "Under 100 m"],
+            ["Kaum möglich", "Hardly possible"],
+          ]),
+        },
+        {
+          id: "B5",
+          textDe:
+            "Wie sehr leiden Sie persönlich unter Ihren Hüftbeschwerden?",
+          textEn: "How much do you personally suffer from your hip symptoms?",
+          type: "slider",
+          min: 0,
+          max: 10,
+        },
+      ],
+    },
+    {
+      id: "C",
+      titleDe: "Block C: Bisherige Behandlung",
+      titleEn: "Block C: Previous treatment",
+      questions: [
+        {
+          id: "C1",
+          textDe: "Wurden Ihre Hüftbeschwerden schon behandelt?",
+          textEn: "Have your hip symptoms already been treated?",
+          type: "single",
+          options: common.yesNo,
+        },
+        {
+          id: "C2",
+          textDe: "Welche Behandlungen haben Sie bisher erhalten?",
+          textEn: "Which treatments have you received so far?",
+          type: "multiple",
+          options: options([
+            ["Schmerzmittel", "Pain medication"],
+            [
+              "Physiotherapie oder Krankengymnastik",
+              "Physiotherapy or physical therapy",
+            ],
+            ["Übungen zu Hause", "Exercises at home"],
+            ["Spritzen in die Hüfte", "Injections into the hip"],
+            ["Gehstock oder andere Hilfsmittel", "Walking stick or other aids"],
+            ["Sonstige Behandlung", "Other treatment"],
+            ["Keine", "None"],
+          ]),
+          showIf: { questionId: "C1", equals: "Ja" },
+        },
+        {
+          id: "C3",
+          textDe:
+            "Seit wie lange werden Ihre Hüftbeschwerden schon behandelt?",
+          textEn: "How long have your hip symptoms already been treated?",
+          type: "single",
+          options: common.duration,
+          showIf: { questionId: "C1", equals: "Ja" },
+        },
+        {
+          id: "C4",
+          textDe:
+            "Haben die bisherigen Behandlungen Ihre Beschwerden gebessert?",
+          textEn: "Have the treatments so far improved your symptoms?",
+          type: "single",
+          options: options([
+            ["Ja, deutlich", "Yes, significantly"],
+            ["Ja, etwas", "Yes, somewhat"],
+            ["Nein, kaum oder gar nicht", "No, hardly or not at all"],
+          ]),
+          showIf: { questionId: "C1", equals: "Ja" },
+        },
+        {
+          id: "C5",
+          textDe:
+            "Wurden Sie über Ihre Hüfterkrankung und mögliche Behandlungen aufgeklärt oder beraten?",
+          textEn:
+            "Have you been informed or advised about your hip condition and possible treatments?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "C6",
+          textDe:
+            "Haben Sie in den letzten Monaten regelmäßig Bewegungstherapie, Krankengymnastik oder gezielte Übungen gemacht?",
+          textEn:
+            "In recent months, have you regularly done exercise therapy, physiotherapy or targeted exercises?",
+          type: "single",
+          options: options([
+            ["Ja", "Yes"],
+            ["Nein", "No"],
+            ["Teilweise", "Partly"],
+          ]),
+        },
+        {
+          id: "C7",
+          textDe:
+            "Wurde Ihnen von einem Arzt schon einmal gesagt, dass Sie zunächst weiter ohne Operation behandelt werden sollen?",
+          textEn:
+            "Has a doctor ever told you that you should first continue treatment without surgery?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+      ],
+    },
+    {
+      id: "D",
+      titleDe: "Block D: Vorbefunde und ärztliche Aussagen",
+      titleEn: "Block D: Previous findings and medical statements",
+      questions: [
+        {
+          id: "D1",
+          textDe:
+            "Wurde Ihnen gesagt, dass in Ihrer Hüfte ein deutlicher Gelenkverschleiß oder Arthrose vorliegt?",
+          textEn:
+            "Have you been told that there is significant joint wear or osteoarthritis in your hip?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "D2",
+          textDe:
+            "Haben Sie Arztbriefe, Röntgenbilder oder Befunde zu Ihrer Hüfte?",
+          textEn:
+            "Do you have medical letters, X-rays or findings related to your hip?",
+          type: "single",
+          options: options([
+            ["Ja, ich habe Unterlagen", "Yes, I have documents"],
+            ["Nein", "No"],
+          ]),
+          notesByValue: {
+            "Ja, ich habe Unterlagen":
+              "Bitte bringen Sie Unterlagen zum Termin mit.",
+          },
+          notesByValueEn: {
+            "Ja, ich habe Unterlagen":
+              "Please bring the documents to your appointment.",
+          },
+        },
+        {
+          id: "D3",
+          textDe: "Wurde Ihnen bereits einmal eine Hüftprothese empfohlen?",
+          textEn: "Has a hip replacement ever been recommended to you?",
+          type: "single_with_text",
+          options: options([
+            ["Ja", "Yes"],
+            ["Nein", "No"],
+            ["Weiß ich nicht", "I don’t know"],
+          ]),
+          detailsIf: ["Ja"],
+          detailsLabel: "Auf welcher Seite?",
+          detailsLabels: label("Auf welcher Seite?", "Which side?"),
+        },
+      ],
+    },
+    {
+      id: "E",
+      titleDe: "Block E: Gesundheit und Risiken",
+      titleEn: "Block E: Health and risks",
+      questions: [
+        {
+          id: "E1",
+          textDe:
+            "Haben Sie aktuell eine Entzündung oder Infektion in der Hüfte oder an anderer Stelle, die gerade behandelt wird?",
+          textEn:
+            "Do you currently have inflammation or an infection in the hip or elsewhere that is being treated?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "E2",
+          textDe:
+            "Gab es früher schon einmal eine Infektion in dieser Hüfte?",
+          textEn: "Has there ever been an infection in this hip before?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "E3",
+          textDe:
+            "Haben Sie eine schwere Herz-, Lungen-, Krebs- oder andere Erkrankung, wegen der Ärzte Ihnen ein erhöhtes Operationsrisiko gesagt haben?",
+          textEn:
+            "Do you have a serious heart, lung, cancer or other illness for which doctors have told you that you have an increased surgical risk?",
+          type: "single_with_text",
+          options: options([
+            ["Nein", "No"],
+            ["Ja", "Yes"],
+            ["Weiß ich nicht", "I don’t know"],
+          ]),
+          detailsIf: ["Ja"],
+          detailsLabel: "Erkrankungen",
+          detailsLabels: label("Erkrankungen", "Illnesses"),
+        },
+        {
+          id: "E4",
+          textDe: "Wie groß sind Sie und wie viel wiegen Sie ungefähr?",
+          textEn: "How tall are you and approximately how much do you weigh?",
+          type: "number_pair",
+        },
+        {
+          id: "E5",
+          textDe: "Rauchen Sie aktuell?",
+          textEn: "Do you currently smoke?",
+          type: "single_with_text",
+          options: options([
+            ["Ja, täglich", "Yes, daily"],
+            ["Ja, gelegentlich", "Yes, occasionally"],
+            ["Nein", "No"],
+            ["Ich habe aufgehört seit …", "I stopped since …"],
+          ]),
+          detailsIf: ["Ja, täglich", "Ich habe aufgehört seit …"],
+          detailsLabel: "Angabe",
+          detailsLabels: label("Angabe", "Details"),
+        },
+        {
+          id: "E6",
+          textDe: "Haben Sie Diabetes oder erhöhte Blutzuckerwerte?",
+          textEn: "Do you have diabetes or elevated blood sugar levels?",
+          type: "single_with_text",
+          options: common.yesNoUnknown,
+          detailsIf: ["Ja"],
+          detailsLabel: "Diabetes-Typ und HbA1c Wert",
+          detailsLabels: label(
+            "Diabetes-Typ und HbA1c Wert",
+            "Diabetes type and HbA1c value",
+          ),
+        },
+        {
+          id: "E7",
+          textDe:
+            "Wurde bei Ihnen schon einmal eine Blutarmut oder Anämie festgestellt?",
+          textEn: "Have you ever been diagnosed with anaemia?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "E8",
+          textDe:
+            "Haben Sie in letzter Zeit eine Kortison-Spritze direkt in die Hüfte bekommen?",
+          textEn:
+            "Have you recently had a cortisone injection directly into the hip?",
+          type: "single",
+          options: options([
+            ["Nein", "No"],
+            ["Ja, vor weniger als 6 Wochen", "Yes, less than 6 weeks ago"],
+            [
+              "Ja, vor 6 Wochen bis 3 Monaten",
+              "Yes, 6 weeks to 3 months ago",
+            ],
+            ["Ja, vor mehr als 3 Monaten", "Yes, more than 3 months ago"],
+            ["Weiß ich nicht", "I don’t know"],
+          ]),
+        },
+        {
+          id: "E9",
+          textDe:
+            "Wird oder wurde bei Ihnen eine psychische Erkrankung vermutet oder behandelt?",
+          textEn:
+            "Is or was a mental health condition suspected or treated in your case?",
+          type: "single_with_text",
+          options: options([
+            ["Ja und zwar…", "Yes, namely…"],
+            ["Nein", "No"],
+            ["Möchte ich nicht angeben", "I prefer not to say"],
+          ]),
+          detailsIf: ["Ja und zwar…"],
+          detailsLabel: "Angabe",
+          detailsLabels: label("Angabe", "Details"),
+        },
+        {
+          id: "E10",
+          textDe:
+            "Haben Sie aktuell Beschwerden beim Wasserlassen oder einen behandlungsbedürftigen Harnwegsinfekt?",
+          textEn:
+            "Do you currently have discomfort when urinating or a urinary tract infection requiring treatment?",
+          type: "single",
+          options: common.yesNoUnknown,
+        },
+        {
+          id: "E11",
+          textDe:
+            "Nehmen Sie dauerhaft Medikamente ein, die Ihr Immunsystem deutlich beeinflussen?",
+          textEn:
+            "Do you permanently take medication that significantly affects your immune system?",
+          type: "single_with_text",
+          options: options([
+            ["Ja, und zwar…", "Yes, namely…"],
+            ["Nein", "No"],
+            ["Weiß ich nicht", "I don’t know"],
+          ]),
+          detailsIf: ["Ja, und zwar…"],
+          detailsLabel: "Angabe",
+          detailsLabels: label("Angabe", "Details"),
+        },
+      ],
+    },
+    {
+      id: "F",
+      titleDe: "Block F: Ziele, Erwartungen und gemeinsame Entscheidung",
+      titleEn: "Block F: Goals, expectations and shared decision-making",
+      questions: [
+        {
+          id: "F1",
+          textDe:
+            "Haben Sie Sorgen oder Fragen zu einer möglichen Operation?",
+          textEn: "Do you have concerns or questions about possible surgery?",
+          type: "single_with_text",
+          options: options([
+            ["Ja", "Yes"],
+            ["Nein", "No"],
+            ["Vielleicht", "Maybe"],
+          ]),
+          detailsIf: ["Ja", "Vielleicht"],
+          detailsLabel: "Freitext",
+          detailsLabels: label("Freitext", "Free text"),
+        },
+        {
+          id: "F2",
+          textDe:
+            "Gibt es noch etwas, das Ihr Arzt über Ihre Hüfte wissen sollte?",
+          textEn: "Is there anything else your doctor should know about your hip?",
+          type: "text",
+          required: false,
+        },
+      ],
+    },
+  ],
+});
+
+export const questionnairesByIndication = {
+  knee_tep: kneeTepQuestionnaire,
+  hip_tep: hipTepQuestionnaire,
+};
+
+export function getQuestionnaire(indication = "knee_tep") {
+  return questionnairesByIndication[indication] || kneeTepQuestionnaire;
+}
+
+function flattenQuestions(questionnaire) {
+  return questionnaire.blocks.flatMap((block) => block.questions);
+}
+
+export const kneeTepBlocks = kneeTepQuestionnaire.blocks;
+export const hipTepBlocks = hipTepQuestionnaire.blocks;
+export const kneeTepQuestions = flattenQuestions(kneeTepQuestionnaire);
+export const hipTepQuestions = flattenQuestions(hipTepQuestionnaire);
+
+export function getQuestionsForIndication(indication = "knee_tep") {
+  return flattenQuestions(getQuestionnaire(indication));
+}
+
+function getRawAnswerValue(answer) {
+  if (answer && typeof answer === "object" && !Array.isArray(answer)) {
+    return answer.value ?? answer.choice ?? "";
   }
 
-  if (typeof questionOrId === "object" && questionOrId.labels) {
+  return answer;
+}
+
+function answerMatches(answer, condition) {
+  if (!condition) return true;
+
+  const raw = getRawAnswerValue(answer);
+
+  if (Object.prototype.hasOwnProperty.call(condition, "equals")) {
+    return raw === condition.equals;
+  }
+
+  if (Array.isArray(condition.in)) {
+    return condition.in.includes(raw);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(condition, "not")) {
+    return raw !== condition.not;
+  }
+
+  return true;
+}
+
+export function shouldShowQuestion(question, answers) {
+  if (!question.showIf) return true;
+
+  return answerMatches(answers[question.showIf.questionId], question.showIf);
+}
+
+export function getVisibleQuestions(questions, answers) {
+  return questions.filter((question) => shouldShowQuestion(question, answers));
+}
+
+export function getBlockTitle(blockId, language = "de", indication = "knee_tep") {
+  const block = getQuestionnaire(indication).blocks.find(
+    (item) => item.id === blockId,
+  );
+
+  return block?.labels?.[language] || block?.labels?.de || block?.title || blockId;
+}
+
+export function getQuestionText(
+  questionOrId,
+  language = "de",
+  fallback = "",
+  indication = "knee_tep",
+) {
+  if (typeof questionOrId === "object") {
     return (
-      questionOrId.labels[language] ||
-      questionOrId.labels.de ||
+      questionOrId.labels?.[language] ||
+      questionOrId.labels?.de ||
       questionOrId.text ||
       fallback
     );
   }
 
-  const questionId =
-    typeof questionOrId === "string" ? questionOrId : questionOrId.id;
-
-  const fallbackText =
-    typeof questionOrId === "string" ? fallback : questionOrId.text;
+  const question = getQuestionsForIndication(indication).find(
+    (item) => item.id === questionOrId,
+  );
 
   return (
-    questionTranslations[questionId]?.[language] ||
-    questionTranslations[questionId]?.de ||
-    fallbackText ||
-    questionId
+    question?.labels?.[language] ||
+    question?.labels?.de ||
+    question?.text ||
+    fallback ||
+    questionOrId
   );
 }
 
-export function getOptionLabel(option, language = "de") {
-  if (option && typeof option === "object") {
-    return (
-      option.labels?.[language] ||
-      option.labels?.de ||
-      option.label ||
-      option.value ||
-      ""
-    );
-  }
-
-  return optionTranslations[option]?.[language] || optionTranslations[option]?.de || option;
+export function getOptionLabel(optionItem, language = "de") {
+  return optionItem && typeof optionItem === "object"
+    ? optionItem.labels?.[language] || optionItem.labels?.de || optionItem.value || ""
+    : optionItem;
 }
 
-export function getOptionValue(option) {
-  return option && typeof option === "object" ? option.value : option;
+export function getOptionValue(optionItem) {
+  return optionItem && typeof optionItem === "object"
+    ? optionItem.value
+    : optionItem;
 }
 
 export function getAnswerLabel(answer, language = "de", noAnswer = "keine Angabe") {
@@ -965,9 +1138,19 @@ export function getAnswerLabel(answer, language = "de", noAnswer = "keine Angabe
   }
 
   if (answer && typeof answer === "object") {
-    const height = answer.height_cm ? `${answer.height_cm} cm` : noAnswer;
-    const weight = answer.weight_kg ? `${answer.weight_kg} kg` : noAnswer;
-    return `${height} / ${weight}`;
+    if (Object.prototype.hasOwnProperty.call(answer, "value")) {
+      const main = answer.value || noAnswer;
+      return answer.detail ? `${main}: ${answer.detail}` : main;
+    }
+
+    const height = answer.height_cm;
+    const weight = answer.weight_kg;
+
+    if (height || weight) {
+      return `Größe: ${height || "-"} cm, Gewicht: ${weight || "-"} kg`;
+    }
+
+    return noAnswer;
   }
 
   return answer ? getOptionLabel(answer, language) : noAnswer;
@@ -975,16 +1158,20 @@ export function getAnswerLabel(answer, language = "de", noAnswer = "keine Angabe
 
 export function normalizeAdminQuestion(question) {
   return {
-    id: question.id,
+    id: question.id || question.question_id,
     blockId: question.block_id,
-    blockTitle: question.block_title?.de || question.block_id,
+    blockTitle:
+      question.block_title?.de || question.block_title_de || question.block_id,
     blockLabels: question.block_title || {
-      de: question.block_id,
-      en: question.block_id,
+      de: question.block_title_de || question.block_id,
+      en: question.block_title_en || question.block_title_de || question.block_id,
     },
     type: question.type,
-    labels: question.labels,
-    text: question.labels?.de || question.id,
+    labels: question.labels || {
+      de: question.question_de || question.id,
+      en: question.question_en || question.question_de || question.id,
+    },
+    text: question.labels?.de || question.question_de || question.id,
     options: question.options || [],
     min: question.min ?? 0,
     max: question.max ?? 10,
@@ -996,32 +1183,16 @@ export function normalizeAdminQuestion(question) {
 }
 
 export function defaultAnswer(question) {
-  if (question.type === "multiple") {
-    return [];
-  }
-
-  if (question.type === "slider") {
-    return Math.round(((question.min ?? 0) + (question.max ?? 10)) / 2);
-  }
-
-  if (question.type === "number_pair") {
-    return {
-      height_cm: "",
-      weight_kg: "",
-    };
-  }
+  if (question.type === "multiple") return [];
+  if (question.type === "slider") return 5;
+  if (question.type === "number_pair") return { height_cm: "", weight_kg: "" };
+  if (question.type === "single_with_text") return { value: "", detail: "" };
 
   return "";
 }
 
 export function isAnswerComplete(question, value) {
-  if (!question) {
-    return false;
-  }
-
-  if (question.required === false) {
-    return true;
-  }
+  if (question.required === false) return true;
 
   if (question.type === "multiple") {
     return Array.isArray(value) && value.length > 0;
@@ -1033,6 +1204,18 @@ export function isAnswerComplete(question, value) {
 
   if (question.type === "slider") {
     return Number.isFinite(Number(value));
+  }
+
+  if (question.type === "single_with_text") {
+    const selected = value?.value || "";
+
+    if (!selected) return false;
+
+    if (question.detailsIf?.includes(selected)) {
+      return String(value?.detail || "").trim().length > 0;
+    }
+
+    return true;
   }
 
   return String(value || "").trim().length > 0;

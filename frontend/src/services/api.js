@@ -2,18 +2,15 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
 ).replace(/\/$/, "");
 
-
 function getToken() {
   return window.localStorage.getItem("klineus_doctor_token");
 }
-
 
 function getAdminToken() {
   return window.localStorage.getItem("klineus_admin_token");
 }
 
-
-function assetUrl(path, fallback = "") {
+export function assetUrl(path, fallback = "") {
   const value = path || fallback;
 
   if (!value) {
@@ -57,170 +54,151 @@ async function request(path, options = {}) {
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const fetchOptions = {
     ...options,
     headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  };
+
+  if (Object.prototype.hasOwnProperty.call(options, "body")) {
+    fetchOptions.body = JSON.stringify(options.body);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, fetchOptions);
+
+  const rawText = await response.text();
+
+  let data = null;
+
+  if (rawText) {
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = rawText;
+    }
+  }
 
   if (!response.ok) {
-    let message = "The request could not be processed.";
+    let message = "Die Anfrage konnte nicht verarbeitet werden.";
 
-    try {
-      const data = await response.json();
-      message = data.detail || data.message || message;
-    } catch {
-      message = response.statusText || message;
+    if (data?.detail) {
+      message = Array.isArray(data.detail)
+        ? data.detail.map((item) => item.msg || String(item)).join(", ")
+        : data.detail;
+    } else if (typeof data === "string" && data.trim()) {
+      message = data;
+    } else if (response.statusText) {
+      message = response.statusText;
     }
 
     throw new Error(message);
   }
 
-  if (response.status === 204) {
-    return null;
-  }
-
-  return response.json();
+  return data;
 }
 
+async function requestWithFallback(primaryPath, fallbackPath, options = {}) {
+  try {
+    return await request(primaryPath, options);
+  } catch (error) {
+    if (!fallbackPath) {
+      throw error;
+    }
 
-function normalizePatientCasePayload(payloadOrAnswers, metadata = {}) {
-  if (Array.isArray(payloadOrAnswers)) {
-    return {
-      indication: "knee_tep",
-      answers: payloadOrAnswers,
-      metadata,
-    };
+    return request(fallbackPath, options);
   }
-
-  const payload = payloadOrAnswers || {};
-
-  return {
-    indication: payload.indication,
-    patient_name: payload.patientName || payload.patient_name || null,
-    questionnaire_template_id:
-      payload.questionnaireTemplateId ||
-      payload.questionnaire_template_id ||
-      null,
-    questionnaire_version:
-      payload.questionnaireVersion ||
-      payload.questionnaire_version ||
-      null,
-    answers: payload.answers || [],
-    metadata: payload.metadata || {},
-  };
 }
-
 
 export const api = {
-  assetUrl,
-
   login: (email, password) =>
     request("/auth/login", {
       method: "POST",
+      body: { email, password },
+    }),
+
+  createPatientCase: (
+    answers,
+    metadata = {},
+    indication = "knee_tep",
+    questionnaireInfo = {},
+  ) =>
+    request("/patient/cases", {
+      method: "POST",
       body: {
-        email,
-        password,
+        indication,
+        patient_name: questionnaireInfo.patient_name || null,
+        questionnaire_template_id:
+          questionnaireInfo.questionnaire_template_id ||
+          questionnaireInfo.id ||
+          null,
+        questionnaire_version:
+          questionnaireInfo.questionnaire_version ||
+          questionnaireInfo.version ||
+          null,
+        answers,
+        metadata,
       },
     }),
 
-  getSiteSettings: () => request("/patient/site-settings"),
-
-  listPublicPages: () => request("/patient/pages"),
-
-  getPage: (slug) => request(`/patient/pages/${slug}`),
+  getQuestionnaireConfig: () =>
+    requestWithFallback("/patient/config", "/patient/questionnaire-config"),
 
   listQuestionnaires: () => request("/patient/questionnaires"),
 
   getQuestionnaire: (identifier) =>
-    request(`/patient/questionnaires/${identifier}`),
+    request(`/patient/questionnaires/${encodeURIComponent(identifier)}`),
 
-  getPatientConfig: () => request("/patient/config"),
+  getSiteSettings: () => request("/patient/site-settings"),
 
-  getQuestionnaireConfig: () => request("/patient/config"),
+  listPages: () => request("/patient/pages"),
 
-  createPatientCase: (payloadOrAnswers, metadata = {}) =>
-    request("/patient/cases", {
-      method: "POST",
-      body: normalizePatientCasePayload(payloadOrAnswers, metadata),
-    }),
+  getPage: (slug) => request(`/patient/pages/${encodeURIComponent(slug)}`),
 
-  listCases: () =>
-    request("/doctor/cases", {
-      auth: true,
-    }),
+  listCases: () => request("/doctor/cases", { auth: true }),
 
   getCase: (caseId) =>
-    request(`/doctor/cases/${caseId}`, {
-      auth: true,
-    }),
-
-  deleteCase: (caseId) =>
-    request(`/doctor/cases/${caseId}`, {
-      method: "DELETE",
+    request(`/doctor/cases/${encodeURIComponent(caseId)}`, {
       auth: true,
     }),
 
   generateReport: (caseId) =>
-    request(`/reports/${caseId}/generate`, {
+    request(`/reports/${encodeURIComponent(caseId)}/generate`, {
       method: "POST",
       auth: true,
     }),
 
-  saveReport: (caseId, reportText, reportJson = null) =>
-    request(`/reports/${caseId}`, {
+  saveReport: (caseId, reportText) =>
+    request(`/reports/${encodeURIComponent(caseId)}`, {
       method: "PUT",
       auth: true,
-      body: {
-        report_text: reportText,
-        report_json: reportJson,
-      },
+      body: { report_text: reportText },
     }),
 
-  getAdminConfig: () =>
-    request("/admin/analytics", {
-      auth: "admin",
+  deleteCase: (caseId) =>
+    request(`/doctor/cases/${encodeURIComponent(caseId)}`, {
+      method: "DELETE",
+      auth: true,
     }),
+
+  getAdminConfig: async () => {
+    try {
+      return await request("/admin/questionnaire-config", {
+        auth: "admin",
+      });
+    } catch {
+      const [languages, extraQuestions] = await Promise.all([
+        request("/admin/languages", { auth: "admin" }),
+        request("/admin/questions", { auth: "admin" }),
+      ]);
+
+      return {
+        languages,
+        extra_questions: extraQuestions,
+      };
+    }
+  },
 
   getAdminAnalytics: () =>
     request("/admin/analytics", {
-      auth: "admin",
-    }),
-
-  listApiLogs: (params = {}) => {
-    const searchParams = new URLSearchParams();
-
-    if (params.limit) {
-      searchParams.set("limit", String(params.limit));
-    }
-
-    if (params.errorsOnly || params.errors_only) {
-      searchParams.set("errors_only", "true");
-    }
-
-    const query = searchParams.toString();
-
-    return request(`/admin/api-logs${query ? `?${query}` : ""}`, {
-      auth: "admin",
-    });
-  },
-
-  listAiLogs: (params = {}) => {
-    const searchParams = new URLSearchParams();
-
-    if (params.limit) {
-      searchParams.set("limit", String(params.limit));
-    }
-
-    const query = searchParams.toString();
-
-    return request(`/admin/ai-logs${query ? `?${query}` : ""}`, {
-      auth: "admin",
-    });
-  },
-
-  listLanguages: () =>
-    request("/admin/languages", {
       auth: "admin",
     }),
 
@@ -231,74 +209,6 @@ export const api = {
       body: payload,
     }),
 
-  listMediaAssets: () =>
-    request("/admin/media", {
-      auth: "admin",
-    }),
-
-  upsertMediaAsset: (payload) =>
-    request("/admin/media", {
-      method: "POST",
-      auth: "admin",
-      body: payload,
-    }),
-
-  listContentPages: () =>
-    request("/admin/pages", {
-      auth: "admin",
-    }),
-
-  getContentPage: (slug) =>
-    request(`/admin/pages/${slug}`, {
-      auth: "admin",
-    }),
-
-  upsertContentPage: (slug, payload) =>
-    request(`/admin/pages/${slug}`, {
-      method: "PUT",
-      auth: "admin",
-      body: payload,
-    }),
-
-  createContentPage: (payload) =>
-    request("/admin/pages", {
-      method: "POST",
-      auth: "admin",
-      body: payload,
-    }),
-
-  deleteContentPage: (slug) =>
-    request(`/admin/pages/${slug}`, {
-      method: "DELETE",
-      auth: "admin",
-    }),
-
-  listAdminQuestionnaires: () =>
-    request("/admin/questionnaires", {
-      auth: "admin",
-    }),
-
-  getAdminQuestionnaire: (identifier) =>
-    request(`/admin/questionnaires/${identifier}`, {
-      auth: "admin",
-    }),
-
-  updateAdminQuestionnaire: (identifier, payload) =>
-    request(`/admin/questionnaires/${identifier}`, {
-      method: "PUT",
-      auth: "admin",
-      body: payload,
-    }),
-
-  publishQuestionnaire: (identifier, isPublished) =>
-    request(`/admin/questionnaires/${identifier}/publish`, {
-      method: "PATCH",
-      auth: "admin",
-      body: {
-        is_published: isPublished,
-      },
-    }),
-
   addQuestion: (payload) =>
     request("/admin/questions", {
       method: "POST",
@@ -307,8 +217,42 @@ export const api = {
     }),
 
   deleteQuestion: (questionId) =>
-    request(`/admin/questions/${questionId}`, {
+    request(`/admin/questions/${encodeURIComponent(questionId)}`, {
       method: "DELETE",
       auth: "admin",
+    }),
+
+  listAdminPages: () =>
+    request("/admin/pages", {
+      auth: "admin",
+    }),
+
+  getAdminPage: (slug) =>
+    request(`/admin/pages/${encodeURIComponent(slug)}`, {
+      auth: "admin",
+    }),
+
+  saveAdminPage: (slug, payload) =>
+    request(`/admin/pages/${encodeURIComponent(slug)}`, {
+      method: "PUT",
+      auth: "admin",
+      body: payload,
+    }),
+
+  listAdminQuestionnaires: () =>
+    request("/admin/questionnaires", {
+      auth: "admin",
+    }),
+
+  getAdminQuestionnaire: (identifier) =>
+    request(`/admin/questionnaires/${encodeURIComponent(identifier)}`, {
+      auth: "admin",
+    }),
+
+  saveAdminQuestionnaire: (identifier, payload) =>
+    request(`/admin/questionnaires/${encodeURIComponent(identifier)}`, {
+      method: "PUT",
+      auth: "admin",
+      body: payload,
     }),
 };

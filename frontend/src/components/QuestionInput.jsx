@@ -1,40 +1,96 @@
-import { getOptionLabel, getOptionValue, getQuestionText } from "../data/questionnaire.js";
-import { useLanguage } from "../i18n/LanguageContext.jsx";
+import {
+  getOptionLabel,
+  getOptionValue,
+  getQuestionText,
+} from "../data/questionnaire.js";
 
-function ChoiceButton({ selected, children, onClick }) {
-  return (
-    <button
-      className={selected ? "choice-button selected" : "choice-button"}
-      type="button"
-      aria-pressed={selected}
-      onClick={onClick}
-    >
-      <span className="choice-button-indicator" aria-hidden="true" />
-      <span>{children}</span>
-    </button>
-  );
+function selectedValue(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value.value || "";
+  }
+
+  return value || "";
 }
 
 export default function QuestionInput({ question, value, onChange }) {
-  const { language, t } = useLanguage();
-
   if (question.type === "single") {
     return (
-      <div className="choice-grid" role="radiogroup" aria-label={getQuestionText(question, language)}>
+      <div className="choice-grid">
         {question.options.map((option) => {
           const optionValue = getOptionValue(option);
-          const isSelected = value === optionValue;
 
           return (
-            <ChoiceButton
+            <button
+              className={
+                value === optionValue ? "choice-button selected" : "choice-button"
+              }
               key={optionValue}
-              selected={isSelected}
+              type="button"
               onClick={() => onChange(optionValue)}
             >
-              {getOptionLabel(option, language)}
-            </ChoiceButton>
+              {getOptionLabel(option)}
+            </button>
           );
         })}
+
+        {question.notesByValue?.[value] ? (
+          <p className="question-inline-note">
+            {question.notesByValue[value]}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (question.type === "single_with_text") {
+    const current =
+      value && typeof value === "object" && !Array.isArray(value)
+        ? value
+        : { value: "", detail: "" };
+
+    const activeValue = selectedValue(current);
+    const needsDetails = question.detailsIf?.includes(activeValue);
+
+    return (
+      <div className="choice-grid">
+        {question.options.map((option) => {
+          const optionValue = getOptionValue(option);
+
+          return (
+            <button
+              className={
+                activeValue === optionValue
+                  ? "choice-button selected"
+                  : "choice-button"
+              }
+              key={optionValue}
+              type="button"
+              onClick={() => onChange({ value: optionValue, detail: "" })}
+            >
+              {getOptionLabel(option)}
+            </button>
+          );
+        })}
+
+        {needsDetails ? (
+          <label className="question-detail-field">
+            <span>{question.detailsLabel || "Angabe"}</span>
+            <textarea
+              aria-label={question.detailsLabel || "Angabe"}
+              rows="4"
+              value={current.detail || ""}
+              onChange={(event) =>
+                onChange({ ...current, detail: event.target.value })
+              }
+            />
+          </label>
+        ) : null}
+
+        {question.notesByValue?.[activeValue] ? (
+          <p className="question-inline-note">
+            {question.notesByValue[activeValue]}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -43,15 +99,18 @@ export default function QuestionInput({ question, value, onChange }) {
     const selected = Array.isArray(value) ? value : [];
 
     return (
-      <div className="choice-grid" aria-label={getQuestionText(question, language)}>
+      <div className="choice-grid">
         {question.options.map((option) => {
           const optionValue = getOptionValue(option);
           const isSelected = selected.includes(optionValue);
 
           return (
-            <ChoiceButton
+            <button
+              className={
+                isSelected ? "choice-button selected" : "choice-button"
+              }
               key={optionValue}
-              selected={isSelected}
+              type="button"
               onClick={() => {
                 if (isSelected) {
                   onChange(selected.filter((item) => item !== optionValue));
@@ -60,8 +119,8 @@ export default function QuestionInput({ question, value, onChange }) {
                 }
               }}
             >
-              {getOptionLabel(option, language)}
-            </ChoiceButton>
+              {getOptionLabel(option)}
+            </button>
           );
         })}
       </div>
@@ -69,14 +128,16 @@ export default function QuestionInput({ question, value, onChange }) {
   }
 
   if (question.type === "slider") {
-    const sliderValue = Number.isFinite(Number(value)) ? Number(value) : question.min ?? 0;
+    const sliderValue = Number.isFinite(Number(value))
+      ? Number(value)
+      : question.min ?? 0;
 
     return (
       <div className="slider-panel">
         <div className="slider-value">{sliderValue}</div>
 
         <input
-          aria-label={getQuestionText(question, language)}
+          aria-label={getQuestionText(question)}
           max={question.max}
           min={question.min}
           type="range"
@@ -93,36 +154,35 @@ export default function QuestionInput({ question, value, onChange }) {
   }
 
   if (question.type === "number_pair") {
+    const current =
+      value && typeof value === "object" && !Array.isArray(value)
+        ? value
+        : { height_cm: "", weight_kg: "" };
+
     return (
       <div className="number-grid">
         <label>
-          <span>{t("heightCm")}</span>
+          <span>Größe in cm</span>
           <input
             inputMode="numeric"
             min="1"
             type="number"
-            value={value?.height_cm || ""}
+            value={current.height_cm || ""}
             onChange={(event) =>
-              onChange({
-                ...value,
-                height_cm: event.target.value,
-              })
+              onChange({ ...current, height_cm: event.target.value })
             }
           />
         </label>
 
         <label>
-          <span>{t("weightKg")}</span>
+          <span>Gewicht in kg</span>
           <input
             inputMode="numeric"
             min="1"
             type="number"
-            value={value?.weight_kg || ""}
+            value={current.weight_kg || ""}
             onChange={(event) =>
-              onChange({
-                ...value,
-                weight_kg: event.target.value,
-              })
+              onChange({ ...current, weight_kg: event.target.value })
             }
           />
         </label>
@@ -133,7 +193,7 @@ export default function QuestionInput({ question, value, onChange }) {
   if (question.type === "number") {
     return (
       <input
-        aria-label={getQuestionText(question, language)}
+        aria-label={getQuestionText(question)}
         className="number-input"
         inputMode="numeric"
         type="number"
@@ -145,7 +205,7 @@ export default function QuestionInput({ question, value, onChange }) {
 
   return (
     <textarea
-      aria-label={getQuestionText(question, language)}
+      aria-label={getQuestionText(question)}
       className="free-text-input"
       rows="6"
       value={value || ""}
