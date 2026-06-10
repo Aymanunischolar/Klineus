@@ -36,7 +36,7 @@ export default function PatientStartPage() {
         <div className="patient-intro-grid">
           <Link
             className="patient-info-card"
-            to="/questionnaire?indication=knee_tep"
+            to="/patient/questionnaire?indication=knee_tep"
           >
             <div className="joint-choice-image">
               <img alt="" src="/static/images/knee.png" />
@@ -53,13 +53,17 @@ export default function PatientStartPage() {
             </p>
 
             <span className="text-link">
-              {localText(language, "Knie-Fragebogen starten", "Start knee questionnaire")}
+              {localText(
+                language,
+                "Knie-Fragebogen starten",
+                "Start knee questionnaire",
+              )}
             </span>
           </Link>
 
           <Link
             className="patient-info-card"
-            to="/questionnaire?indication=hip_tep"
+            to="/patient/questionnaire?indication=hip_tep"
           >
             <div className="joint-choice-image">
               <img alt="" src="/static/images/hip.png" />
@@ -76,15 +80,18 @@ export default function PatientStartPage() {
             </p>
 
             <span className="text-link">
-              {localText(language, "Hüft-Fragebogen starten", "Start hip questionnaire")}
+              {localText(
+                language,
+                "Hüft-Fragebogen starten",
+                "Start hip questionnaire",
+              )}
             </span>
           </Link>
         </div>
 
         <div className="patient-start-note">
-          <strong>
-            {localText(language, "Wichtig", "Important")}
-          </strong>
+          <strong>{localText(language, "Wichtig", "Important")}</strong>
+
           <p>
             {localText(
               language,
