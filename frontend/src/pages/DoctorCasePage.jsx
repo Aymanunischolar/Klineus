@@ -43,6 +43,12 @@ function getCaseIdFromParams(params) {
 }
 
 function normalizeAnswer(answer) {
+  /*
+    Doctor dashboard rule:
+    Always show the stored German source answer.
+    Do not use English display-only values here.
+  */
+
   if (answer === null || answer === undefined || answer === "") {
     return "Keine Angabe";
   }
@@ -72,10 +78,20 @@ function normalizeAnswer(answer) {
 }
 
 function getQuestionText(answer) {
+  /*
+    IMPORTANT:
+    Patient may have seen English text, but the doctor dashboard must show
+    the German source question from Wajjahat's document.
+  */
+
   return (
     answer.question ||
+    answer.question_de ||
+    answer.question_text_de ||
     answer.question_text ||
+    answer.label_de ||
     answer.label ||
+    answer.text_de ||
     answer.text ||
     answer.question_id ||
     "-"
@@ -91,8 +107,14 @@ function getBlockId(answer) {
 }
 
 function getBlockTitle(answer) {
+  /*
+    Same rule as questions:
+    Always prefer the German source block title.
+  */
+
   return (
     answer.block_title ||
+    answer.block_title_de ||
     answer.blockTitle ||
     answer.block ||
     getBlockId(answer)
