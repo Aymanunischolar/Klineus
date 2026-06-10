@@ -1,0 +1,18 @@
+{
+  "experimentalServices": {
+    "frontend": {
+      "entrypoint": "frontend",
+      "routePrefix": "/",
+      "framework": "vite"
+    },
+    "backend": {
+      "entrypoint": "backend/app/main.py",
+      "routePrefix": "/api",
+      "framework": "fastapi",
+      "maxDuration": 60,
+      "includeFiles": [
+        "backend/app/static/**"
+      ]
+    }
+  }
+}
