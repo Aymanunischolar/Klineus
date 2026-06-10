@@ -3,69 +3,92 @@ import { Link } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
-
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+import { api } from "../services/api.js";
 
 
 const fallbackCopy = {
   de: {
-    eyebrow: "Orthopädische Dokumentationsunterstützung",
-    title: "Klineus strukturiert Patientenantworten für die ärztliche Prüfung.",
+    eyebrow: "Klineus Prototyp",
+    title: "Strukturierte Patientenerfassung für Knie- und Hüft-TEP.",
     lead:
-      "Ein schlanker Prototyp für Knie- und Hüft-TEP-Fragebögen, Fallübersicht und Dokumentationsentwürfe.",
-    sublead:
-      "Patientendaten werden strukturiert erhoben, medizinisch geordnet und für die ärztliche Bewertung vorbereitet.",
-    primaryAction: "Patientenfragebogen starten",
-    secondaryAction: "Arzt-Dashboard öffnen",
-    sectionEyebrow: "Workflow",
-    sectionTitle: "Vom Patientenfragebogen zur prüfbaren Fallübersicht.",
-    sectionText:
-      "Klineus reduziert unstrukturierte Vorinformationen und macht relevante Angaben für die ärztliche Dokumentation schneller sichtbar.",
-    ctaTitle: "Bereit für den ersten Testlauf?",
+      "Klineus unterstützt Patientinnen und Patienten beim Ausfüllen eines strukturierten Fragebogens und hilft Ärztinnen und Ärzten, Fälle effizient zu prüfen und Dokumentationsentwürfe vorzubereiten.",
+    primaryCta: "Fragebogen starten",
+    secondaryCta: "Produkt ansehen",
+    trustOne: "Knie- und Hüft-TEP",
+    trustTwo: "Arztprüfung vorgesehen",
+    trustThree: "KI-Entwurf mit Freigabe",
+    workflowEyebrow: "Ablauf",
+    workflowTitle: "Vom Fragebogen zum ärztlich geprüften Entwurf.",
+    steps: [
+      {
+        title: "Patientendaten erfassen",
+        text: "Patientinnen und Patienten beantworten indikationsspezifische Fragen zu Beschwerden, Alltag, Vorbehandlung und Risikohinweisen.",
+      },
+      {
+        title: "Fall im Dashboard prüfen",
+        text: "Ärztinnen und Ärzte sehen strukturierte Antworten, Warnhinweise und wichtige offene Punkte für das Gespräch.",
+      },
+      {
+        title: "Dokumentation vorbereiten",
+        text: "Ein KI-generierter Entwurf wird erstellt, bleibt aber immer prüfpflichtig und muss ärztlich freigegeben werden.",
+      },
+    ],
+    benefitsEyebrow: "Warum Klineus",
+    benefitsTitle: "Für bessere Vorbereitung, nicht für automatische Entscheidungen.",
+    benefits: [
+      "Standardisierte Erfassung vor dem Termin",
+      "Klarere Übersicht über Beschwerden und Funktion",
+      "Risikohinweise für die ärztliche Prüfung",
+      "PDF-tauglicher Dokumentationsentwurf",
+    ],
+    ctaTitle: "Starten Sie mit dem Prototyp.",
     ctaText:
-      "Starten Sie einen Fragebogen oder öffnen Sie das Arzt-Dashboard, um den Prototyp zu prüfen.",
-    patient: "Patientenaufnahme",
-    patientText: "Patienten wählen Knie oder Hüfte und beantworten strukturierte Fragen.",
-    review: "Ärztliche Prüfung",
-    reviewText: "Antworten werden nach Abschnitten gruppiert und im Dashboard sichtbar.",
-    report: "Dokumentationsentwurf",
-    reportText: "Die KI erstellt einen Entwurf, der ärztlich geprüft und freigegeben wird.",
-    badge1: "Knie und Hüfte",
-    badge2: "Ärztliche Kontrolle",
-    badge3: "KI nur als Entwurf",
+      "Wählen Sie einen Fragebogen aus und testen Sie den Ablauf vom Patientenformular bis zum ärztlichen Dashboard.",
+    ctaButton: "Zum Patientenstart",
   },
   en: {
-    eyebrow: "Orthopedic documentation support",
-    title: "Klineus structures patient answers for physician review.",
+    eyebrow: "Klineus prototype",
+    title: "Structured patient intake for knee and hip replacement pathways.",
     lead:
-      "A focused prototype for knee and hip replacement questionnaires, case review and documentation drafts.",
-    sublead:
-      "Patient information is collected in a structured way, medically organized and prepared for physician review.",
-    primaryAction: "Start patient questionnaire",
-    secondaryAction: "Open doctor dashboard",
-    sectionEyebrow: "Workflow",
-    sectionTitle: "From patient intake to a reviewable clinical case overview.",
-    sectionText:
-      "Klineus reduces unstructured pre-consultation information and makes relevant details easier to review for documentation.",
-    ctaTitle: "Ready for the first test run?",
+      "Klineus helps patients complete a structured questionnaire and supports doctors with efficient case review and documentation drafting.",
+    primaryCta: "Start questionnaire",
+    secondaryCta: "View product",
+    trustOne: "Knee and hip TEP",
+    trustTwo: "Doctor review required",
+    trustThree: "AI draft with approval",
+    workflowEyebrow: "Workflow",
+    workflowTitle: "From questionnaire to physician-reviewed draft.",
+    steps: [
+      {
+        title: "Collect patient information",
+        text: "Patients answer indication-specific questions about symptoms, daily life, prior treatment and risk notes.",
+      },
+      {
+        title: "Review case in dashboard",
+        text: "Doctors see structured answers, documentation notes and open points for the consultation.",
+      },
+      {
+        title: "Prepare documentation",
+        text: "An AI-generated draft can be created, but it always requires physician review and approval.",
+      },
+    ],
+    benefitsEyebrow: "Why Klineus",
+    benefitsTitle: "Built for preparation, not automated decisions.",
+    benefits: [
+      "Standardized intake before the appointment",
+      "Clearer overview of symptoms and function",
+      "Risk notes for medical review",
+      "PDF-ready documentation draft",
+    ],
+    ctaTitle: "Start with the prototype.",
     ctaText:
-      "Start a questionnaire or open the doctor dashboard to review the prototype.",
-    patient: "Patient intake",
-    patientText: "Patients choose knee or hip and answer structured questions.",
-    review: "Physician review",
-    reviewText: "Answers are grouped by section and displayed in the doctor dashboard.",
-    report: "Documentation draft",
-    reportText: "AI creates a draft that must be checked and approved by a physician.",
-    badge1: "Knee and hip",
-    badge2: "Physician controlled",
-    badge3: "AI as draft only",
+      "Select a questionnaire and test the flow from patient form to doctor dashboard.",
+    ctaButton: "Go to patient start",
   },
 };
 
 
-function getText(value, language = "de", fallback = "") {
+function getText(value, language, fallback = "") {
   if (!value) {
     return fallback;
   }
@@ -78,39 +101,35 @@ function getText(value, language = "de", fallback = "") {
 }
 
 
-function assetUrl(path) {
-  if (!path) {
+function normalizeImagePath(path, fallback) {
+  const value = path || fallback;
+
+  if (!value) {
     return "";
   }
 
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
   }
 
-  if (path.startsWith("/")) {
-    return `${API_BASE_URL}${path}`;
+  if (value.startsWith("/api/static/images/")) {
+    return value.replace("/api/static/images/", "/static/images/");
   }
 
-  return `${API_BASE_URL}/${path}`;
+  if (value.startsWith("/images/")) {
+    return value.replace("/images/", "/static/images/");
+  }
+
+  if (value.startsWith("static/images/")) {
+    return `/${value}`;
+  }
+
+  return value;
 }
 
 
-function findSection(sections, keys) {
-  return sections.find((section) => {
-    const searchable = [
-      section.id,
-      section.type,
-      section.eyebrow?.de,
-      section.eyebrow?.en,
-      section.title?.de,
-      section.title?.en,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    return keys.some((key) => searchable.includes(key.toLowerCase()));
-  });
+function findSection(page, id) {
+  return (page?.sections || []).find((section) => section.id === id);
 }
 
 
@@ -121,22 +140,17 @@ export default function LandingPage() {
   const [page, setPage] = useState(null);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let mounted = true;
 
     async function loadPage() {
       try {
-        const response = await fetch(`${API_BASE_URL}/patient/pages/home`, {
-          signal: controller.signal,
-        });
+        const data = await api.getPage("home");
 
-        if (!response.ok) {
-          throw new Error("Home page could not be loaded.");
+        if (mounted) {
+          setPage(data);
         }
-
-        const data = await response.json();
-        setPage(data);
-      } catch (error) {
-        if (error.name !== "AbortError") {
+      } catch {
+        if (mounted) {
           setPage(null);
         }
       }
@@ -144,155 +158,110 @@ export default function LandingPage() {
 
     loadPage();
 
-    return () => controller.abort();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const content = useMemo(() => {
-    const sections = page?.sections || [];
-    const heroSection =
-      findSection(sections, ["hero", "orthopedic", "documentation"]) ||
-      sections[0] ||
-      {};
+  const heroSection = useMemo(() => findSection(page, "hero"), [page]);
 
-    const workflowSection =
-      findSection(sections, ["workflow", "process", "patient answers"]) ||
-      sections[1] ||
-      {};
-
-    const workflowItems = workflowSection.items?.length
-      ? workflowSection.items
-      : [
-          {
-            id: "patient",
-            title: { de: text.patient, en: text.patient },
-            text: { de: text.patientText, en: text.patientText },
-          },
-          {
-            id: "review",
-            title: { de: text.review, en: text.review },
-            text: { de: text.reviewText, en: text.reviewText },
-          },
-          {
-            id: "report",
-            title: { de: text.report, en: text.report },
-            text: { de: text.reportText, en: text.reportText },
-          },
-        ];
-
-    return {
-      eyebrow: getText(heroSection.eyebrow, language, text.eyebrow),
-      title: getText(heroSection.title || page?.title, language, text.title),
-      lead: getText(
-        heroSection.subtitle || page?.description,
-        language,
-        text.lead
-      ),
-      sublead: getText(heroSection.body, language, text.sublead),
-      imagePath: heroSection.image_path || "/static/images/hero-medical.png",
-      imageAlt: getText(
-        heroSection.image_alt,
-        language,
-        "Doctor explaining knee and hip treatment"
-      ),
-      workflowEyebrow: getText(
-        workflowSection.eyebrow,
-        language,
-        text.sectionEyebrow
-      ),
-      workflowTitle: getText(
-        workflowSection.title,
-        language,
-        text.sectionTitle
-      ),
-      workflowText: getText(
-        workflowSection.subtitle || workflowSection.body,
-        language,
-        text.sectionText
-      ),
-      workflowItems,
-    };
-  }, [language, page, text]);
+  const heroTitle = getText(heroSection?.title, language, text.title);
+  const heroBody = getText(heroSection?.body, language, text.lead);
+  const heroEyebrow = getText(heroSection?.eyebrow, language, text.eyebrow);
+  const heroImage = normalizeImagePath(
+    heroSection?.image_path,
+    "/static/images/hero-medical.png"
+  );
+  const heroImageAlt = getText(
+    heroSection?.image_alt,
+    language,
+    "Klineus medical documentation support"
+  );
 
   return (
     <AppShell>
-      <main className="home-page-pro">
+      <main className="landing-page-pro">
         <section className="home-hero-pro">
           <div className="home-hero-copy-pro">
-            <p className="eyebrow">{content.eyebrow}</p>
+            <p className="eyebrow">{heroEyebrow}</p>
+            <h1>{heroTitle}</h1>
+            <p>{heroBody}</p>
 
-            <h1>{content.title}</h1>
-
-            <p className="home-hero-lead">{content.lead}</p>
-
-            <p className="home-hero-sublead">{content.sublead}</p>
-
-            <div className="home-hero-actions">
+            <div className="hero-actions">
               <Link className="primary-button" to="/patient/start">
-                {text.primaryAction}
+                {text.primaryCta}
               </Link>
 
-              <Link className="secondary-button" to="/doctor/login">
-                {text.secondaryAction}
+              <Link className="secondary-button" to="/product">
+                {text.secondaryCta}
               </Link>
             </div>
 
-            <div className="home-badge-row">
-              <span>{text.badge1}</span>
-              <span>{text.badge2}</span>
-              <span>{text.badge3}</span>
+            <div className="home-trust-row-pro" aria-label="Klineus features">
+              <span>{text.trustOne}</span>
+              <span>{text.trustTwo}</span>
+              <span>{text.trustThree}</span>
             </div>
           </div>
 
           <div className="home-hero-media-pro">
             <img
-              src={assetUrl(content.imagePath)}
-              alt={content.imageAlt}
-              width="720"
-              height="540"
+              className="home-hero-image"
+              src={heroImage}
+              alt={heroImageAlt}
               loading="eager"
             />
+
+            <div className="home-hero-note-pro">
+              <strong>Klineus</strong>
+              <span>{text.trustThree}</span>
+            </div>
           </div>
         </section>
 
         <section className="home-workflow-pro">
-          <div className="home-section-heading-pro">
-            <p className="eyebrow">{content.workflowEyebrow}</p>
-
-            <div>
-              <h2>{content.workflowTitle}</h2>
-              <p>{content.workflowText}</p>
-            </div>
+          <div className="section-heading">
+            <p className="eyebrow">{text.workflowEyebrow}</p>
+            <h2>{text.workflowTitle}</h2>
           </div>
 
-          <div className="home-workflow-grid-pro">
-            {content.workflowItems.slice(0, 3).map((item, index) => (
-              <article className="home-workflow-card-pro" key={item.id || index}>
+          <div className="home-step-grid-pro">
+            {text.steps.map((step, index) => (
+              <article className="home-step-card-pro" key={step.title}>
                 <span>{String(index + 1).padStart(2, "0")}</span>
-
-                <h3>{getText(item.title, language, text.patient)}</h3>
-
-                <p>{getText(item.text, language, text.patientText)}</p>
+                <h3>{step.title}</h3>
+                <p>{step.text}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="home-split-cta-pro">
+        <section className="home-benefits-pro">
+          <div>
+            <p className="eyebrow">{text.benefitsEyebrow}</p>
+            <h2>{text.benefitsTitle}</h2>
+          </div>
+
+          <div className="home-benefit-list-pro">
+            {text.benefits.map((benefit) => (
+              <article key={benefit}>
+                <span>✓</span>
+                <p>{benefit}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="home-cta-pro">
           <div>
             <p className="eyebrow">Klineus</p>
             <h2>{text.ctaTitle}</h2>
             <p>{text.ctaText}</p>
           </div>
 
-          <div className="home-cta-actions-pro">
-            <Link className="primary-button" to="/patient/start">
-              {text.primaryAction}
-            </Link>
-
-            <Link className="secondary-button" to="/contact">
-              Contact
-            </Link>
-          </div>
+          <Link className="primary-button" to="/patient/start">
+            {text.ctaButton}
+          </Link>
         </section>
       </main>
     </AppShell>

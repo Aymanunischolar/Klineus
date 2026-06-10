@@ -3,109 +3,82 @@ import { Link } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
-
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+import { api } from "../services/api.js";
 
 
 const fallbackCopy = {
   de: {
-    eyebrow: "Team",
-    title: "Medizin, Produktlogik und Automatisierung zusammengeführt.",
-    description:
-      "Klineus verbindet medizinische Anforderungen, strukturierte Datenerhebung und KI-gestützte Dokumentationsprozesse.",
-    primaryAction: "Kontakt aufnehmen",
-    secondaryAction: "Produkt ansehen",
-    sectionEyebrow: "Kompetenzen",
-    sectionTitle: "Ein interdisziplinärer Ansatz für klinisch sinnvolle Software.",
-    sectionText:
-      "Der Prototyp ist darauf ausgelegt, ärztliche Arbeit nicht zu ersetzen, sondern Vorinformationen sauberer aufzubereiten.",
-    missionEyebrow: "Arbeitsweise",
-    missionTitle: "Ärztliche Kontrolle steht im Mittelpunkt.",
-    missionText:
-      "Klineus sammelt Patientenantworten strukturiert, gruppiert sie medizinisch nachvollziehbar und erstellt nur prüfbare Dokumentationsentwürfe.",
-    ctaTitle: "Möchten Sie Klineus pilotieren?",
-    ctaText:
-      "Wir freuen uns über Rückmeldungen von Ärztinnen, Ärzten, Kliniken und Partnern.",
-    ctaButton: "Kontakt aufnehmen",
+    eyebrow: "Team & Verantwortung",
+    title: "Ein Prototyp für strukturierte medizinische Vorbereitung.",
+    lead:
+      "Klineus ist als ärztlich prüfpflichtiges Unterstützungssystem gedacht. Der Fokus liegt auf strukturierter Erfassung, transparenter Dokumentation und klarer Verantwortlichkeit.",
+    imageAlt: "Klineus medizinisches Team",
+    capabilitiesTitle: "Unsere Schwerpunkte",
     capabilities: [
       {
-        label: "Business",
-        title: "Produkt und Umsetzung",
-        text:
-          "Klineus wird als schlanker Prototyp entwickelt, um reale Abläufe schnell testbar zu machen.",
-      },
-      {
-        label: "Medizin",
         title: "Medizinische Struktur",
-        text:
-          "Fragebögen, Fallübersicht und Hinweise orientieren sich an ärztlich prüfbaren Informationen.",
+        text: "Fragebögen werden indikationsbezogen aufgebaut, damit Beschwerden, Funktion, Vorbehandlung und Risiken nachvollziehbar dokumentiert werden.",
       },
       {
-        label: "Technologie",
-        title: "KI und Prozesslogik",
-        text:
-          "KI unterstützt nur beim Entwurf. Die finale Prüfung und Freigabe bleibt ärztlich.",
+        title: "Produktqualität",
+        text: "Die Anwendung ist auf klare Abläufe, mobile Nutzbarkeit und ein verständliches Arzt-Dashboard ausgelegt.",
+      },
+      {
+        title: "Verantwortungsvolle KI",
+        text: "KI-Ausgaben sind nur Entwürfe. Jede medizinische Bewertung bleibt bei der Ärztin oder dem Arzt.",
       },
     ],
+    missionEyebrow: "Prinzipien",
+    missionTitle: "Was Klineus bewusst nicht macht.",
     principles: [
-      "Strukturierte Patientenantworten",
-      "Knie- und Hüft-TEP getrennt abbildbar",
-      "Ärztlich prüfbare Fallübersicht",
-      "KI-generierte Dokumentation nur als Entwurf",
+      "Keine automatische Diagnose",
+      "Keine automatische Operationsentscheidung",
+      "Keine ärztliche Freigabe ohne menschliche Prüfung",
+      "Keine unnötige Übermittlung direkter Identifikatoren an die KI",
     ],
+    ctaTitle: "Fragen zum Prototyp?",
+    ctaText:
+      "Kontaktieren Sie uns, wenn Sie Feedback geben oder den Ablauf besprechen möchten.",
+    ctaButton: "Kontakt aufnehmen",
   },
   en: {
-    eyebrow: "Team",
-    title: "Medicine, product logic and automation brought together.",
-    description:
-      "Klineus combines medical requirements, structured data collection and AI-supported documentation workflows.",
-    primaryAction: "Contact us",
-    secondaryAction: "View product",
-    sectionEyebrow: "Capabilities",
-    sectionTitle: "An interdisciplinary approach to clinically meaningful software.",
-    sectionText:
-      "The prototype is designed not to replace physician work, but to prepare pre-consultation information more clearly.",
-    missionEyebrow: "How we work",
-    missionTitle: "Physician control stays at the center.",
-    missionText:
-      "Klineus collects patient answers in a structured way, groups them medically and creates reviewable documentation drafts only.",
-    ctaTitle: "Would you like to pilot Klineus?",
-    ctaText:
-      "We welcome feedback from doctors, clinics and partners.",
-    ctaButton: "Contact us",
+    eyebrow: "Team & responsibility",
+    title: "A prototype for structured medical preparation.",
+    lead:
+      "Klineus is designed as a physician-reviewed support system. The focus is structured intake, transparent documentation and clear responsibility.",
+    imageAlt: "Klineus medical team",
+    capabilitiesTitle: "Our focus areas",
     capabilities: [
       {
-        label: "Business",
-        title: "Product and execution",
-        text:
-          "Klineus is built as a focused prototype to make real workflows quickly testable.",
-      },
-      {
-        label: "Medicine",
         title: "Medical structure",
-        text:
-          "Questionnaires, case review and notes are organized around physician-reviewable information.",
+        text: "Questionnaires are indication-specific so symptoms, function, prior treatment and risks can be documented clearly.",
       },
       {
-        label: "Technology",
-        title: "AI and process logic",
-        text:
-          "AI supports drafting only. Final review and approval remain with the physician.",
+        title: "Product quality",
+        text: "The application focuses on clear workflows, mobile usability and an understandable doctor dashboard.",
+      },
+      {
+        title: "Responsible AI",
+        text: "AI outputs are drafts only. Every medical evaluation remains with the physician.",
       },
     ],
+    missionEyebrow: "Principles",
+    missionTitle: "What Klineus deliberately does not do.",
     principles: [
-      "Structured patient answers",
-      "Separate knee and hip pathways",
-      "Physician-reviewable case overview",
-      "AI-generated documentation as draft only",
+      "No automatic diagnosis",
+      "No automatic surgery decision",
+      "No medical approval without human review",
+      "No unnecessary transfer of direct identifiers to AI",
     ],
+    ctaTitle: "Questions about the prototype?",
+    ctaText:
+      "Contact us if you want to give feedback or discuss the workflow.",
+    ctaButton: "Contact us",
   },
 };
 
 
-function getText(value, language = "de", fallback = "") {
+function getText(value, language, fallback = "") {
   if (!value) {
     return fallback;
   }
@@ -118,69 +91,35 @@ function getText(value, language = "de", fallback = "") {
 }
 
 
-function assetUrl(path) {
-  if (!path) {
+function normalizeImagePath(path, fallback) {
+  const value = path || fallback;
+
+  if (!value) {
     return "";
   }
 
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
   }
 
-  if (path.startsWith("/")) {
-    return `${API_BASE_URL}${path}`;
+  if (value.startsWith("/api/static/images/")) {
+    return value.replace("/api/static/images/", "/static/images/");
   }
 
-  return `${API_BASE_URL}/${path}`;
+  if (value.startsWith("/images/")) {
+    return value.replace("/images/", "/static/images/");
+  }
+
+  if (value.startsWith("static/images/")) {
+    return `/${value}`;
+  }
+
+  return value;
 }
 
 
-function normalize(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-");
-}
-
-
-function findSection(sections, keys) {
-  return sections.find((section) => {
-    const searchable = [
-      section.id,
-      section.type,
-      section.eyebrow?.de,
-      section.eyebrow?.en,
-      section.title?.de,
-      section.title?.en,
-      section.subtitle?.de,
-      section.subtitle?.en,
-      section.body?.de,
-      section.body?.en,
-    ]
-      .filter(Boolean)
-      .map(normalize)
-      .join(" ");
-
-    return keys.some((key) => searchable.includes(normalize(key)));
-  });
-}
-
-
-function normalizeItems(section, language, fallbackItems) {
-  const items = section?.items || [];
-
-  if (!items.length) {
-    return fallbackItems;
-  }
-
-  return items.map((item, index) => ({
-    label:
-      getText(item.eyebrow, language, "") ||
-      item.icon ||
-      String(index + 1).padStart(2, "0"),
-    title: getText(item.title, language, fallbackItems[index]?.title || ""),
-    text: getText(item.text, language, fallbackItems[index]?.text || ""),
-  }));
+function findSection(page, id) {
+  return (page?.sections || []).find((section) => section.id === id);
 }
 
 
@@ -191,22 +130,17 @@ export default function TeamPage() {
   const [page, setPage] = useState(null);
 
   useEffect(() => {
-    const controller = new AbortController();
+    let mounted = true;
 
     async function loadPage() {
       try {
-        const response = await fetch(`${API_BASE_URL}/patient/pages/team`, {
-          signal: controller.signal,
-        });
+        const data = await api.getPage("team");
 
-        if (!response.ok) {
-          throw new Error("Team page could not be loaded.");
+        if (mounted) {
+          setPage(data);
         }
-
-        const data = await response.json();
-        setPage(data);
-      } catch (error) {
-        if (error.name !== "AbortError") {
+      } catch {
+        if (mounted) {
           setPage(null);
         }
       }
@@ -214,126 +148,65 @@ export default function TeamPage() {
 
     loadPage();
 
-    return () => controller.abort();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const content = useMemo(() => {
-    const sections = page?.sections || [];
+  const heroSection = useMemo(() => findSection(page, "hero"), [page]);
 
-    const heroSection =
-      findSection(sections, ["hero", "team"]) ||
-      sections[0] ||
-      {};
-
-    const capabilitiesSection =
-      findSection(sections, ["capabilities", "business", "medicine", "technology"]) ||
-      sections[1] ||
-      {};
-
-    const missionSection =
-      findSection(sections, ["mission", "values", "approach", "working"]) ||
-      sections[2] ||
-      {};
-
-    return {
-      eyebrow: getText(heroSection.eyebrow, language, text.eyebrow),
-      title: getText(heroSection.title || page?.title, language, text.title),
-      description: getText(
-        heroSection.subtitle || heroSection.body || page?.description,
-        language,
-        text.description
-      ),
-      imagePath: heroSection.image_path || "/static/images/team.png",
-      imageAlt: getText(
-        heroSection.image_alt,
-        language,
-        "Klineus clinical and product team"
-      ),
-      sectionEyebrow: getText(
-        capabilitiesSection.eyebrow,
-        language,
-        text.sectionEyebrow
-      ),
-      sectionTitle: getText(
-        capabilitiesSection.title,
-        language,
-        text.sectionTitle
-      ),
-      sectionText: getText(
-        capabilitiesSection.subtitle || capabilitiesSection.body,
-        language,
-        text.sectionText
-      ),
-      capabilities: normalizeItems(
-        capabilitiesSection,
-        language,
-        text.capabilities
-      ),
-      missionEyebrow: getText(
-        missionSection.eyebrow,
-        language,
-        text.missionEyebrow
-      ),
-      missionTitle: getText(
-        missionSection.title,
-        language,
-        text.missionTitle
-      ),
-      missionText: getText(
-        missionSection.subtitle || missionSection.body,
-        language,
-        text.missionText
-      ),
-    };
-  }, [language, page, text]);
+  const heroEyebrow = getText(heroSection?.eyebrow, language, text.eyebrow);
+  const heroTitle = getText(heroSection?.title, language, text.title);
+  const heroBody = getText(heroSection?.body, language, text.lead);
+  const heroImage = normalizeImagePath(
+    heroSection?.image_path,
+    "/static/images/team.png"
+  );
+  const heroImageAlt = getText(
+    heroSection?.image_alt,
+    language,
+    text.imageAlt
+  );
 
   return (
     <AppShell>
       <main className="team-page-pro">
         <section className="team-hero-pro">
           <div className="team-hero-copy-pro">
-            <p className="eyebrow">{content.eyebrow}</p>
+            <p className="eyebrow">{heroEyebrow}</p>
+            <h1>{heroTitle}</h1>
+            <p>{heroBody}</p>
 
-            <h1>{content.title}</h1>
-
-            <p>{content.description}</p>
-
-            <div className="team-hero-actions-pro">
+            <div className="hero-actions">
               <Link className="primary-button" to="/contact">
-                {text.primaryAction}
+                {text.ctaButton}
               </Link>
 
               <Link className="secondary-button" to="/product">
-                {text.secondaryAction}
+                Product
               </Link>
             </div>
           </div>
 
           <div className="team-hero-media-pro">
             <img
-              src={assetUrl(content.imagePath)}
-              alt={content.imageAlt}
-              width="720"
-              height="540"
+              className="team-hero-image-pro"
+              src={heroImage}
+              alt={heroImageAlt}
               loading="eager"
             />
           </div>
         </section>
 
         <section className="team-capabilities-pro">
-          <div className="team-section-heading-pro">
-            <p className="eyebrow">{content.sectionEyebrow}</p>
-
-            <div>
-              <h2>{content.sectionTitle}</h2>
-              <p>{content.sectionText}</p>
-            </div>
+          <div className="section-heading">
+            <p className="eyebrow">Klineus</p>
+            <h2>{text.capabilitiesTitle}</h2>
           </div>
 
-          <div className="team-card-grid-pro">
-            {content.capabilities.slice(0, 3).map((item, index) => (
-              <article className="team-capability-card-pro" key={`${item.title}-${index}`}>
-                <span>{item.label}</span>
+          <div className="team-capability-grid-pro">
+            {text.capabilities.map((item) => (
+              <article className="team-capability-card-pro" key={item.title}>
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
               </article>
@@ -342,17 +215,16 @@ export default function TeamPage() {
         </section>
 
         <section className="team-mission-pro">
-          <div className="team-mission-copy-pro">
-            <p className="eyebrow">{content.missionEyebrow}</p>
-            <h2>{content.missionTitle}</h2>
-            <p>{content.missionText}</p>
+          <div>
+            <p className="eyebrow">{text.missionEyebrow}</p>
+            <h2>{text.missionTitle}</h2>
           </div>
 
           <div className="team-principle-list-pro">
-            {text.principles.map((principle, index) => (
+            {text.principles.map((principle) => (
               <article key={principle}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <strong>{principle}</strong>
+                <span>✓</span>
+                <p>{principle}</p>
               </article>
             ))}
           </div>

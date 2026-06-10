@@ -13,17 +13,36 @@ function getAdminToken() {
 }
 
 
-function assetUrl(path) {
-  if (!path) {
+function assetUrl(path, fallback = "") {
+  const value = path || fallback;
+
+  if (!value) {
     return "";
   }
 
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
   }
 
-  return path;
+  if (value.startsWith("/api/static/images/")) {
+    return value.replace("/api/static/images/", "/static/images/");
+  }
+
+  if (value.startsWith("/images/")) {
+    return value.replace("/images/", "/static/images/");
+  }
+
+  if (value.startsWith("/static/images/")) {
+    return value;
+  }
+
+  if (value.startsWith("static/images/")) {
+    return `/${value}`;
+  }
+
+  return value;
 }
+
 async function request(path, options = {}) {
   const headers = {
     "Content-Type": "application/json",
