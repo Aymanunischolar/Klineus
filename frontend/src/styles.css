@@ -7839,6 +7839,528 @@ p {
   }
 }
 
+
+/* -------------------------------------------------------------------------- */
+/* RESTORE CLEAN STATIC PAGE UI: landing / team / product */
+/* Put this as the LAST block in styles.css */
+/* -------------------------------------------------------------------------- */
+
+.landing-page-pro,
+.team-page-pro,
+.product-page-pro {
+  width: min(1120px, 100%) !important;
+  margin: 0 auto !important;
+  display: grid !important;
+  gap: 72px !important;
+  padding-bottom: 56px !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Hero: restore clean two-column layout */
+/* -------------------------------------------------------------------------- */
+
+.home-hero-pro,
+.team-hero-pro,
+.product-hero-pro {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr) !important;
+  align-items: center !important;
+  gap: 56px !important;
+
+  min-height: auto !important;
+  padding: 0 !important;
+
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.home-hero-copy-pro,
+.team-hero-copy-pro,
+.product-hero-copy-pro {
+  display: grid !important;
+  gap: 18px !important;
+  max-width: 720px !important;
+}
+
+.home-hero-copy-pro h1,
+.team-hero-copy-pro h1,
+.product-hero-copy-pro h1 {
+  max-width: 760px !important;
+  margin: 0 !important;
+  color: var(--brand-navy-dark) !important;
+  font-size: clamp(3.2rem, 6vw, 5.4rem) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.055em !important;
+}
+
+.home-hero-copy-pro p,
+.team-hero-copy-pro p,
+.product-hero-copy-pro p {
+  max-width: 720px !important;
+  margin: 0 !important;
+  color: var(--brand-muted) !important;
+  font-size: clamp(1.05rem, 1.4vw, 1.22rem) !important;
+  line-height: 1.7 !important;
+}
+
+/* Keep actions clean */
+.home-hero-pro .hero-actions,
+.team-hero-pro .hero-actions,
+.product-hero-pro .hero-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 14px !important;
+  width: auto !important;
+  margin-top: 10px !important;
+}
+
+.home-hero-pro .hero-actions .primary-button,
+.home-hero-pro .hero-actions .secondary-button,
+.team-hero-pro .hero-actions .primary-button,
+.team-hero-pro .hero-actions .secondary-button,
+.product-hero-pro .hero-actions .primary-button,
+.product-hero-pro .hero-actions .secondary-button {
+  width: auto !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Hero image card: clean premium image panel */
+/* -------------------------------------------------------------------------- */
+
+.home-hero-media-pro,
+.team-hero-media-pro,
+.product-hero-media-pro {
+  position: relative !important;
+  display: block !important;
+
+  width: 100% !important;
+  min-height: 380px !important;
+  max-height: none !important;
+
+  overflow: hidden !important;
+  border: 1px solid #cde3ed !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.home-hero-image,
+.team-hero-image-pro,
+.product-hero-image {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 380px !important;
+  max-height: none !important;
+
+  object-fit: cover !important;
+  object-position: center !important;
+  transform: none !important;
+}
+
+.home-hero-note-pro {
+  position: absolute !important;
+  right: 18px !important;
+  bottom: 18px !important;
+
+  display: grid !important;
+  gap: 4px !important;
+  max-width: 240px !important;
+
+  padding: 16px 18px !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: var(--shadow-sm) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.home-hero-note-pro strong {
+  color: var(--brand-navy-dark) !important;
+}
+
+.home-hero-note-pro span {
+  color: var(--brand-muted) !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+}
+
+/* Trust row: not too loud */
+.home-trust-row-pro {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-top: 12px !important;
+}
+
+.home-trust-row-pro span {
+  width: auto !important;
+  min-height: 36px !important;
+  justify-content: center !important;
+
+  padding: 7px 12px !important;
+  border: 1px solid rgba(22, 166, 182, 0.2) !important;
+  border-radius: 999px !important;
+  background: rgba(22, 166, 182, 0.08) !important;
+
+  color: var(--brand-teal-dark) !important;
+  font-size: 0.8rem !important;
+  font-weight: 900 !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Section cards: restore calmer spacing */
+/* -------------------------------------------------------------------------- */
+
+.home-workflow-pro,
+.home-benefits-pro,
+.home-cta-pro,
+.team-capabilities-pro,
+.team-mission-pro,
+.team-cta-pro,
+.product-feature-section-pro,
+.product-process-pro,
+.product-compliance-pro,
+.product-cta-pro {
+  padding: 36px !important;
+  border: 1px solid var(--brand-border) !important;
+  border-radius: 24px !important;
+  background:
+    linear-gradient(135deg, rgba(234, 246, 251, 0.86), rgba(232, 248, 247, 0.76)),
+    rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 18px 45px rgba(10, 55, 109, 0.09) !important;
+}
+
+.home-workflow-pro .section-heading,
+.team-capabilities-pro .section-heading,
+.product-feature-section-pro .section-heading {
+  display: block !important;
+  margin-bottom: 26px !important;
+}
+
+.home-workflow-pro .section-heading h2,
+.team-capabilities-pro .section-heading h2,
+.product-feature-section-pro .section-heading h2,
+.home-benefits-pro h2,
+.team-mission-pro h2,
+.product-process-pro h2,
+.product-compliance-pro h2,
+.home-cta-pro h2,
+.team-cta-pro h2,
+.product-cta-pro h2 {
+  max-width: 880px !important;
+  margin: 0 !important;
+  color: var(--brand-navy-dark) !important;
+  font-size: clamp(2rem, 4vw, 3.2rem) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.home-workflow-pro .section-heading p:not(.eyebrow),
+.team-capabilities-pro .section-heading p:not(.eyebrow),
+.product-feature-section-pro .section-heading p:not(.eyebrow),
+.home-benefits-pro p,
+.team-mission-pro p,
+.product-process-pro p,
+.product-compliance-pro p,
+.home-cta-pro p,
+.team-cta-pro p,
+.product-cta-pro p {
+  color: var(--brand-muted) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Three-card grids: original clean card feel */
+/* -------------------------------------------------------------------------- */
+
+.home-step-grid-pro,
+.team-capability-grid-pro,
+.product-feature-grid-pro {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+  margin-top: 28px !important;
+}
+
+.home-step-card-pro,
+.team-capability-card-pro,
+.product-feature-card-pro {
+  display: grid !important;
+  gap: 12px !important;
+  align-content: start !important;
+
+  min-height: 0 !important;
+  padding: 24px !important;
+
+  border: 1px solid var(--brand-border) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 10px 30px rgba(10, 55, 109, 0.07) !important;
+}
+
+.home-step-card-pro span {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 14px !important;
+
+  background: linear-gradient(135deg, var(--brand-navy), var(--brand-teal)) !important;
+  color: white !important;
+  font-size: 0.9rem !important;
+  font-weight: 900 !important;
+}
+
+.home-step-card-pro h3,
+.team-capability-card-pro h3,
+.product-feature-card-pro h3 {
+  margin: 8px 0 4px !important;
+  color: var(--brand-navy-dark) !important;
+  font-size: 1.2rem !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.home-step-card-pro p,
+.team-capability-card-pro p,
+.product-feature-card-pro p {
+  margin: 0 !important;
+  color: var(--brand-muted) !important;
+  font-size: 0.98rem !important;
+  line-height: 1.65 !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Split sections */
+/* -------------------------------------------------------------------------- */
+
+.home-benefits-pro,
+.team-mission-pro,
+.product-process-pro,
+.product-compliance-pro {
+  display: grid !important;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr) !important;
+  align-items: start !important;
+  gap: 36px !important;
+}
+
+.home-benefit-list-pro,
+.team-principle-list-pro,
+.product-process-list-pro {
+  display: grid !important;
+  gap: 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+.home-benefit-list-pro article,
+.team-principle-list-pro article,
+.product-process-list-pro li {
+  display: grid !important;
+  grid-template-columns: auto 1fr !important;
+  gap: 12px !important;
+  align-items: start !important;
+
+  padding: 16px !important;
+  border: 1px solid #e5edf4 !important;
+  border-radius: 14px !important;
+  background: #f8fcff !important;
+
+  color: var(--brand-navy-dark) !important;
+  font-size: 0.98rem !important;
+  font-weight: 800 !important;
+  line-height: 1.55 !important;
+}
+
+.home-benefit-list-pro span,
+.team-principle-list-pro span {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+
+  background: rgba(22, 166, 182, 0.11) !important;
+  color: var(--brand-teal-dark) !important;
+  font-weight: 950 !important;
+}
+
+.product-process-list-pro li::before {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+
+  background: rgba(22, 166, 182, 0.11) !important;
+  color: var(--brand-teal-dark) !important;
+  font-size: 0.8rem !important;
+  font-weight: 950 !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* CTA sections */
+/* -------------------------------------------------------------------------- */
+
+.home-cta-pro,
+.team-cta-pro,
+.product-cta-pro {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 32px !important;
+}
+
+.home-cta-pro .primary-button,
+.team-cta-pro .primary-button,
+.product-cta-pro .primary-button,
+.product-cta-pro .secondary-button {
+  width: auto !important;
+}
+
+.product-cta-pro .hero-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 14px !important;
+  width: auto !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Responsive restore */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 980px) {
+  .landing-page-pro,
+  .team-page-pro,
+  .product-page-pro {
+    gap: 48px !important;
+  }
+
+  .home-hero-pro,
+  .team-hero-pro,
+  .product-hero-pro {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+  }
+
+  .home-hero-copy-pro h1,
+  .team-hero-copy-pro h1,
+  .product-hero-copy-pro h1 {
+    font-size: clamp(2.6rem, 9vw, 4rem) !important;
+  }
+
+  .home-hero-media-pro,
+  .team-hero-media-pro,
+  .product-hero-media-pro,
+  .home-hero-image,
+  .team-hero-image-pro,
+  .product-hero-image {
+    min-height: 320px !important;
+  }
+
+  .home-step-grid-pro,
+  .team-capability-grid-pro,
+  .product-feature-grid-pro,
+  .home-benefits-pro,
+  .team-mission-pro,
+  .product-process-pro,
+  .product-compliance-pro {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-cta-pro,
+  .team-cta-pro,
+  .product-cta-pro {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .landing-page-pro,
+  .team-page-pro,
+  .product-page-pro {
+    gap: 32px !important;
+  }
+
+  .home-hero-copy-pro h1,
+  .team-hero-copy-pro h1,
+  .product-hero-copy-pro h1 {
+    font-size: clamp(2.1rem, 11vw, 3rem) !important;
+  }
+
+  .home-hero-copy-pro p,
+  .team-hero-copy-pro p,
+  .product-hero-copy-pro p {
+    font-size: 1rem !important;
+  }
+
+  .home-hero-media-pro,
+  .team-hero-media-pro,
+  .product-hero-media-pro,
+  .home-hero-image,
+  .team-hero-image-pro,
+  .product-hero-image {
+    min-height: 240px !important;
+  }
+
+  .home-workflow-pro,
+  .home-benefits-pro,
+  .home-cta-pro,
+  .team-capabilities-pro,
+  .team-mission-pro,
+  .team-cta-pro,
+  .product-feature-section-pro,
+  .product-process-pro,
+  .product-compliance-pro,
+  .product-cta-pro {
+    padding: 24px !important;
+    border-radius: 20px !important;
+  }
+
+  .home-step-grid-pro,
+  .team-capability-grid-pro,
+  .product-feature-grid-pro {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-hero-pro .hero-actions,
+  .team-hero-pro .hero-actions,
+  .product-hero-pro .hero-actions,
+  .product-cta-pro .hero-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+  }
+
+  .home-hero-pro .hero-actions .primary-button,
+  .home-hero-pro .hero-actions .secondary-button,
+  .team-hero-pro .hero-actions .primary-button,
+  .team-hero-pro .hero-actions .secondary-button,
+  .product-hero-pro .hero-actions .primary-button,
+  .product-hero-pro .hero-actions .secondary-button,
+  .home-cta-pro .primary-button,
+  .team-cta-pro .primary-button,
+  .product-cta-pro .primary-button,
+  .product-cta-pro .secondary-button {
+    width: 100% !important;
+  }
+
+  .home-hero-note-pro {
+    display: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     scroll-behavior: auto;
