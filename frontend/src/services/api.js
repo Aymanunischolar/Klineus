@@ -1,6 +1,24 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+function assetUrl(path) {
+  if (!path) {
+    return "";
+  }
 
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  if (path.startsWith("/static/")) {
+    return `${API_BASE_URL}${path}`;
+  }
+
+  if (path.startsWith("static/")) {
+    return `${API_BASE_URL}/${path}`;
+  }
+
+  return path;
+}
 
 function getDoctorToken() {
   return window.localStorage.getItem("klineus_doctor_token");
@@ -98,31 +116,16 @@ function normalizePatientCasePayload(payloadOrAnswers, metadata = {}) {
 
 
 export const api = {
-  // -------------------------------------------------------------------------
-  // Assets
-  // Use this for DB image paths like /static/images/knee.png
-  // -------------------------------------------------------------------------
-
-  assetUrl: (path) => {
-    if (!path) {
-      return "";
-    }
-
-    return buildUrl(path);
-  },
-
-  // -------------------------------------------------------------------------
-  // Auth
-  // -------------------------------------------------------------------------
+  assetUrl,
 
   login: (email, password) =>
     request("/auth/login", {
       method: "POST",
-      body: {
-        email,
-        password,
-      },
+      body: { email, password },
     }),
+
+  // rest of your functions...
+};
 
   // -------------------------------------------------------------------------
   // Public CMS / site content
