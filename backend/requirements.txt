@@ -1,6 +1,7 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-pydantic-settings==2.7.1
-python-jose[cryptography]==3.3.0
-requests==2.32.3
-bcrypt==4.2.1
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+python-jose
+bcrypt
+requests
