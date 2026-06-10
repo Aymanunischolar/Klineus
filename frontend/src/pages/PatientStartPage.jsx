@@ -1,10 +1,12 @@
-import { Link } from "react-router-dom";
-
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 
 function localText(language, de, en) {
   return language === "en" ? en : de;
+}
+
+function goToQuestionnaire(indication) {
+  window.location.href = `/patient/questionnaire?indication=${indication}`;
 }
 
 export default function PatientStartPage() {
@@ -34,9 +36,10 @@ export default function PatientStartPage() {
         </p>
 
         <div className="patient-intro-grid">
-          <Link
-            className="patient-info-card"
-            to="/patient/questionnaire?indication=knee_tep"
+          <button
+            className="patient-info-card patient-info-card-button"
+            type="button"
+            onClick={() => goToQuestionnaire("knee_tep")}
           >
             <div className="joint-choice-image">
               <img alt="" src="/static/images/knee.png" />
@@ -59,11 +62,12 @@ export default function PatientStartPage() {
                 "Start knee questionnaire",
               )}
             </span>
-          </Link>
+          </button>
 
-          <Link
-            className="patient-info-card"
-            to="/patient/questionnaire?indication=hip_tep"
+          <button
+            className="patient-info-card patient-info-card-button"
+            type="button"
+            onClick={() => goToQuestionnaire("hip_tep")}
           >
             <div className="joint-choice-image">
               <img alt="" src="/static/images/hip.png" />
@@ -86,7 +90,7 @@ export default function PatientStartPage() {
                 "Start hip questionnaire",
               )}
             </span>
-          </Link>
+          </button>
         </div>
 
         <div className="patient-start-note">
