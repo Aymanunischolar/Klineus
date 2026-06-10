@@ -8333,7 +8333,9 @@ p {
   .product-feature-grid-pro {
     grid-template-columns: 1fr !important;
   }
-
+.home-hero-note-pro {
+  display: none !important;
+}
   .home-hero-pro .hero-actions,
   .team-hero-pro .hero-actions,
   .product-hero-pro .hero-actions,
