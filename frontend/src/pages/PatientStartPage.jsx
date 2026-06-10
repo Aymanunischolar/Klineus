@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 
@@ -5,12 +7,13 @@ function localText(language, de, en) {
   return language === "en" ? en : de;
 }
 
-function goToQuestionnaire(indication) {
-  window.location.href = `/patient/questionnaire?indication=${indication}`;
-}
-
 export default function PatientStartPage() {
+  const navigate = useNavigate();
   const { language } = useLanguage();
+
+  function openQuestionnaire(indication) {
+    navigate(`/patient/questionnaire?indication=${indication}`);
+  }
 
   return (
     <AppShell compact>
@@ -39,7 +42,7 @@ export default function PatientStartPage() {
           <button
             className="patient-info-card patient-info-card-button"
             type="button"
-            onClick={() => goToQuestionnaire("knee_tep")}
+            onClick={() => openQuestionnaire("knee_tep")}
           >
             <div className="joint-choice-image">
               <img alt="" src="/static/images/knee.png" />
@@ -67,7 +70,7 @@ export default function PatientStartPage() {
           <button
             className="patient-info-card patient-info-card-button"
             type="button"
-            onClick={() => goToQuestionnaire("hip_tep")}
+            onClick={() => openQuestionnaire("hip_tep")}
           >
             <div className="joint-choice-image">
               <img alt="" src="/static/images/hip.png" />
