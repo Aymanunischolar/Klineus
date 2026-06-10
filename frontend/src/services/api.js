@@ -22,28 +22,8 @@ function assetUrl(path) {
     return path;
   }
 
-  // On Vercel, serve static app images from the Vite public folder.
-  // Example:
-  // /static/images/hero-medical.png -> /images/hero-medical.png
-  if (path.startsWith("/static/images/")) {
-    return path.replace("/static/images/", "/images/");
-  }
-
-  if (path.startsWith("static/images/")) {
-    return path.replace("static/images/", "/images/");
-  }
-
-  if (path.startsWith("/static/")) {
-    return `${API_BASE_URL}${path}`;
-  }
-
-  if (path.startsWith("static/")) {
-    return `${API_BASE_URL}/${path}`;
-  }
-
   return path;
 }
-
 async function request(path, options = {}) {
   const headers = {
     "Content-Type": "application/json",
