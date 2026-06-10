@@ -18,13 +18,30 @@ class Settings(BaseSettings):
     jwt_expires_minutes: int = 480
 
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-2.5-flash-lite"
+    gemini_fallback_models: str = "gemini-2.5-flash,gemini-2.0-flash"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        return [
+            origin.strip()
+            for origin in self.cors_origins.split(",")
+            if origin.strip()
+        ]
+
+    @property
+    def gemini_fallback_model_list(self) -> list[str]:
+        return [
+            model.strip()
+            for model in self.gemini_fallback_models.split(",")
+            if model.strip()
+        ]
 
 
 @lru_cache
