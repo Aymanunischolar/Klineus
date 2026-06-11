@@ -8761,7 +8761,19 @@ p {
   text-align: left;
   cursor: pointer;
 }
+.patient-info-card-button {
+  width: 100%;
+  border: 1px solid var(--brand-border);
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+}
 
+.patient-info-card-button:hover {
+  border-color: rgba(22, 166, 182, 0.45);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
 .patient-info-card-button:hover {
   border-color: rgba(22, 166, 182, 0.45);
   box-shadow: var(--shadow-md);

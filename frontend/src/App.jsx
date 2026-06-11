@@ -48,14 +48,8 @@ export default function App() {
       <Route path="/legal" element={<LegalPage />} />
 
       <Route path="/patient/start" element={<PatientStartPage />} />
-      <Route
-        path="/patient/questionnaire"
-        element={<Navigate to="/patient/start" replace />}
-      />
-      <Route
-        path="/patient/questionnaire/:indication"
-        element={<QuestionnairePage />}
-      />
+      <Route path="/patient/questionnaire" element={<QuestionnairePage />} />
+<Route path="/patient/questionnaire/:indication" element={<QuestionnairePage />} />
 
       {/* Support both with and without case id */}
       <Route path="/patient/done" element={<PatientDonePage />} />

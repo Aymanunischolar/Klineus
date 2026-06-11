@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell.jsx";
 import QuestionInput from "../components/QuestionInput.jsx";
 import { api } from "../services/api.js";
@@ -40,12 +39,17 @@ function serialiseAnswer(answer) {
 
 export default function QuestionnairePage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const params = useParams();
+const [searchParams] = useSearchParams();
   const { language, t } = useLanguage();
   const startedAtRef = useRef(Date.now());
 
-  const indication =
-    searchParams.get("indication") === "hip_tep" ? "hip_tep" : "knee_tep";
+  const rawIndication = params.indication || searchParams.get("indication");
+
+const indication =
+  rawIndication === "hip_tep" || rawIndication === "huefte" || rawIndication === "hip"
+    ? "hip_tep"
+    : "knee_tep";
 
   const questionnaire = useMemo(
     () => getQuestionnaire(indication),
