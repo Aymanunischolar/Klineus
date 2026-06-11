@@ -207,7 +207,7 @@ function flagLevelClass(flag) {
   return "flag-card success";
 }
 
-function ReportPreview({ text, language }) {
+function EditableReportTemplate({ text, language, onChange }) {
   if (!text) {
     return (
       <div className="doctor-report-empty">
@@ -222,59 +222,145 @@ function ReportPreview({ text, language }) {
         <p>
           {localText(
             language,
-            "Erstellen Sie einen KI-Entwurf. Danach kann der Text ärztlich geprüft, bearbeitet und gespeichert werden.",
-            "Generate an AI draft. Afterwards, the text can be medically reviewed, edited and saved.",
+            "Erstellen Sie einen KI-Entwurf. Danach kann der Text direkt im Dokument bearbeitet und gespeichert werden.",
+            "Generate an AI draft. Afterwards, the text can be edited directly inside the document and saved.",
           )}
         </p>
       </div>
     );
   }
 
-  const lines = text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const lines = text.split("\n");
+
+  function updateLine(index, nextContent, prefix = "") {
+    const cleanContent = String(nextContent || "")
+      .replace(/\n+/g, " ")
+      .trim();
+
+    const nextLines = [...lines];
+    nextLines[index] = prefix ? `${prefix}${cleanContent}` : cleanContent;
+
+    onChange(nextLines.join("\n"));
+  }
 
   return (
-    <article className="doctor-report-preview">
+    <article className="doctor-report-preview doctor-report-preview-editable">
       {lines.map((line, index) => {
-        const cleanLine = line.replace(/^[-*]\s*/, "");
+        const trimmedLine = line.trim();
+
+        if (!trimmedLine) {
+          return <div className="doctor-report-spacer" key={index} />;
+        }
 
         if (
-          line.includes("AI-generated draft") ||
-          line.includes("KI-generierter Entwurf") ||
-          line.includes("Ärztliche Prüfung") ||
-          line.includes("physician")
+          trimmedLine.includes("AI-generated draft") ||
+          trimmedLine.includes("KI-generierter Entwurf") ||
+          trimmedLine.includes("Ärztliche Prüfung") ||
+          trimmedLine.includes("physician")
         ) {
+          const cleanLine = trimmedLine.replace(/^[-*]\s*/, "");
+
           return (
-            <div className="doctor-report-disclaimer" key={index}>
+            <div
+              className="doctor-report-disclaimer editable-report-field"
+              contentEditable
+              suppressContentEditableWarning
+              spellCheck="true"
+              key={index}
+              onBlur={(event) =>
+                updateLine(index, event.currentTarget.innerText)
+              }
+            >
               {cleanLine}
             </div>
           );
         }
 
-        if (line.startsWith("# ")) {
-          return <h1 key={index}>{line.replace("# ", "")}</h1>;
+        if (trimmedLine.startsWith("# ")) {
+          return (
+            <h1
+              className="editable-report-field"
+              contentEditable
+              suppressContentEditableWarning
+              spellCheck="true"
+              key={index}
+              onBlur={(event) =>
+                updateLine(index, event.currentTarget.innerText, "# ")
+              }
+            >
+              {trimmedLine.replace("# ", "")}
+            </h1>
+          );
         }
 
-        if (line.startsWith("## ")) {
-          return <h2 key={index}>{line.replace("## ", "")}</h2>;
+        if (trimmedLine.startsWith("## ")) {
+          return (
+            <h2
+              className="editable-report-field"
+              contentEditable
+              suppressContentEditableWarning
+              spellCheck="true"
+              key={index}
+              onBlur={(event) =>
+                updateLine(index, event.currentTarget.innerText, "## ")
+              }
+            >
+              {trimmedLine.replace("## ", "")}
+            </h2>
+          );
         }
 
-        if (line.startsWith("### ")) {
-          return <h3 key={index}>{line.replace("### ", "")}</h3>;
+        if (trimmedLine.startsWith("### ")) {
+          return (
+            <h3
+              className="editable-report-field"
+              contentEditable
+              suppressContentEditableWarning
+              spellCheck="true"
+              key={index}
+              onBlur={(event) =>
+                updateLine(index, event.currentTarget.innerText, "### ")
+              }
+            >
+              {trimmedLine.replace("### ", "")}
+            </h3>
+          );
         }
 
-        if (line.startsWith("- ")) {
+        if (trimmedLine.startsWith("- ")) {
           return (
             <div className="doctor-report-bullet" key={index}>
               <span aria-hidden="true">•</span>
-              <p>{cleanLine}</p>
+
+              <p
+                className="editable-report-field"
+                contentEditable
+                suppressContentEditableWarning
+                spellCheck="true"
+                onBlur={(event) =>
+                  updateLine(index, event.currentTarget.innerText, "- ")
+                }
+              >
+                {trimmedLine.replace("- ", "")}
+              </p>
             </div>
           );
         }
 
-        return <p key={index}>{cleanLine}</p>;
+        return (
+          <p
+            className="editable-report-field"
+            contentEditable
+            suppressContentEditableWarning
+            spellCheck="true"
+            key={index}
+            onBlur={(event) =>
+              updateLine(index, event.currentTarget.innerText)
+            }
+          >
+            {trimmedLine}
+          </p>
+        );
       })}
     </article>
   );
@@ -410,37 +496,36 @@ export default function DoctorCasePage() {
     }
   }
 
-  async function handleCopyReport() {
-    if (!reportText) {
-      setNotice(
-        localText(
-          language,
-          "Es gibt noch keinen Bericht zum Kopieren.",
-          "There is no report to copy yet.",
-        ),
-      );
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(reportText);
-      setNotice(
-        localText(
-          language,
-          "Der Bericht wurde kopiert.",
-          "The report was copied.",
-        ),
-      );
-    } catch {
-      setError(
-        localText(
-          language,
-          "Der Bericht konnte nicht kopiert werden.",
-          "The report could not be copied.",
-        ),
-      );
-    }
+  function handleExportPdf() {
+  if (!reportText) {
+    setNotice(
+      localText(
+        language,
+        "Bitte erstellen Sie zuerst einen KI-Entwurf.",
+        "Please generate an AI draft first.",
+      ),
+    );
+    return;
   }
+
+  /*
+    If the doctor is currently editing inside the template,
+    force the active editable field to save its onBlur change before printing.
+  */
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+
+  document.body.classList.add("print-doctor-letter");
+
+  window.setTimeout(() => {
+    window.print();
+
+    window.setTimeout(() => {
+      document.body.classList.remove("print-doctor-letter");
+    }, 500);
+  }, 100);
+}
 
   if (isLoading) {
     return (
@@ -633,6 +718,19 @@ export default function DoctorCasePage() {
 
           <aside className="doctor-ai-sidebar">
             <section className="doctor-ai-panel">
+
+              <div className="doctor-pdf-header">
+                <div>
+                  <p className="eyebrow">Klineus</p>
+                  <h1>Ärztlicher Dokumentationsentwurf</h1>
+                </div>
+
+                <div>
+                  <span>Fall-ID</span>
+                  <strong>{patientCase?.case_id || caseId}</strong>
+                </div>
+              </div>
+
               <div className="doctor-section-heading">
                 <div>
                   <p className="eyebrow">
@@ -645,69 +743,56 @@ export default function DoctorCasePage() {
 
               <p className="report-helper">
                 {localText(
-                  language,
-                  "Dieser Text ist ein Entwurf und muss ärztlich geprüft und freigegeben werden.",
-                  "This text is a draft and must be medically reviewed and approved.",
+                    language,
+                    "Der Entwurf kann direkt im Dokument bearbeitet werden. Änderungen werden beim Speichern übernommen.",
+                    "The draft can be edited directly inside the document. Changes are saved when you click Save.",
                 )}
               </p>
 
               <div className="doctor-letter-actions">
                 <button
-                  className="primary-button"
-                  disabled={isGenerating}
-                  type="button"
-                  onClick={handleGenerateReport}
+                    className="primary-button"
+                    disabled={isGenerating}
+                    type="button"
+                    onClick={handleGenerateReport}
                 >
                   {isGenerating
-                    ? localText(language, "Wird erstellt…", "Generating…")
-                    : localText(
-                        language,
-                        "KI-Entwurf erstellen",
-                        "Generate AI draft",
+                      ? localText(language, "Wird erstellt…", "Generating…")
+                      : localText(
+                          language,
+                          "KI-Entwurf erstellen",
+                          "Generate AI draft",
                       )}
                 </button>
 
                 <button
-                  className="secondary-button"
-                  disabled={isSaving || !reportText}
-                  type="button"
-                  onClick={handleSaveReport}
+                    className="secondary-button"
+                    disabled={isSaving || !reportText}
+                    type="button"
+                    onClick={handleSaveReport}
                 >
                   {isSaving
-                    ? localText(language, "Speichert…", "Saving…")
-                    : localText(language, "Speichern", "Save")}
+                      ? localText(language, "Speichert…", "Saving…")
+                      : localText(language, "Speichern", "Save")}
                 </button>
 
                 <button
-                  className="secondary-button"
-                  disabled={!reportText}
-                  type="button"
-                  onClick={handleCopyReport}
+                    className="secondary-button"
+                    disabled={!reportText}
+                    type="button"
+                    onClick={handleExportPdf}
                 >
-                  {localText(language, "Kopieren", "Copy")}
+                  {localText(language, "Als PDF exportieren", "Export as PDF")}
                 </button>
               </div>
 
               <div className="doctor-letter-scroll">
-                <ReportPreview text={reportText} language={language} />
-              </div>
-
-              <details className="doctor-letter-editor">
-                <summary>
-                  {localText(language, "Rohtext bearbeiten", "Edit raw text")}
-                </summary>
-
-                <textarea
-                  className="report-textarea"
-                  placeholder={localText(
-                    language,
-                    "Noch kein Bericht erstellt.",
-                    "No report generated yet.",
-                  )}
-                  value={reportText}
-                  onChange={(event) => setReportText(event.target.value)}
+                <EditableReportTemplate
+                    text={reportText}
+                    language={language}
+                    onChange={setReportText}
                 />
-              </details>
+              </div>
             </section>
           </aside>
         </section>
