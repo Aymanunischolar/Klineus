@@ -9,6 +9,51 @@ function localText(language, de, en) {
   return language === "en" ? en : de;
 }
 
+function ReportPreview({ text }) {
+  if (!text) {
+    return (
+      <div className="report-preview report-preview-empty">
+        <p>No report generated yet.</p>
+      </div>
+    );
+  }
+
+  const lines = text.split("\n").map((line) => line.trimEnd());
+
+  return (
+    <div className="report-preview">
+      {lines.map((line, index) => {
+        if (!line.trim()) {
+          return <div className="report-spacer" key={index} />;
+        }
+
+        if (line.startsWith("# ")) {
+          return <h1 key={index}>{line.replace("# ", "")}</h1>;
+        }
+
+        if (line.startsWith("## ")) {
+          return <h2 key={index}>{line.replace("## ", "")}</h2>;
+        }
+
+        if (line.startsWith("### ")) {
+          return <h3 key={index}>{line.replace("### ", "")}</h3>;
+        }
+
+        if (line.startsWith("- ")) {
+          return <p className="report-bullet" key={index}>{line.replace("- ", "")}</p>;
+        }
+
+        if (line.includes("AI-generated draft") || line.includes("KI-generierter Entwurf")) {
+          return <p className="report-disclaimer" key={index}>{line}</p>;
+        }
+
+        return <p key={index}>{line}</p>;
+      })}
+    </div>
+  );
+}
+
+
 function formatDate(value, language) {
   if (!value) {
     return "-";
@@ -243,11 +288,26 @@ export default function DoctorCasePage() {
     };
   }, [caseId]);
 
-  const answers = Array.isArray(patientCase?.answers)
+  const answerGroups = useMemo(() => {
+  if (Array.isArray(patientCase?.answer_groups)) {
+    return patientCase.answer_groups.map((group) => ({
+      blockId: group.block_id || group.blockId || "Weitere Angaben",
+      blockTitle: group.block_title || group.blockTitle || "Weitere Angaben",
+      answers: Array.isArray(group.answers) ? group.answers : [],
+    }));
+  }
+
+  const rawAnswers = Array.isArray(patientCase?.answers)
     ? patientCase.answers
     : [];
 
-  const answerGroups = useMemo(() => groupAnswers(answers), [answers]);
+  return groupAnswers(rawAnswers);
+}, [patientCase]);
+
+const answers = useMemo(
+  () => answerGroups.flatMap((group) => group.answers || []),
+  [answerGroups],
+);
 
   const flags = useMemo(() => extractFlags(patientCase), [patientCase]);
 
@@ -535,16 +595,22 @@ export default function DoctorCasePage() {
                 </button>
               </div>
 
-              <textarea
-                className="report-textarea"
-                placeholder={localText(
-                  language,
-                  "Noch kein Bericht erstellt.",
-                  "No report generated yet.",
-                )}
-                value={reportText}
-                onChange={(event) => setReportText(event.target.value)}
-              />
+             <ReportPreview text={reportText} />
+
+<details className="report-edit-details">
+  <summary>Entwurf bearbeiten</summary>
+
+  <textarea
+    className="report-textarea"
+    placeholder={localText(
+      language,
+      "Noch kein Bericht erstellt.",
+      "No report generated yet.",
+    )}
+    value={reportText}
+    onChange={(event) => setReportText(event.target.value)}
+  />
+</details>
             </section>
           </aside>
         </section>
