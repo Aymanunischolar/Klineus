@@ -1077,6 +1077,193 @@ textarea {
   width: min(100%, 1360px);
 }
 
+.doctor-print-document {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  body.print-doctor-letter .topbar,
+  body.print-doctor-letter .case-back-link,
+  body.print-doctor-letter .case-header,
+  body.print-doctor-letter .case-summary-grid,
+  body.print-doctor-letter .form-error,
+  body.print-doctor-letter .form-notice,
+  body.print-doctor-letter .doctor-workspace-grid {
+    display: none !important;
+  }
+
+  body.print-doctor-letter .app-shell,
+  body.print-doctor-letter .main-content,
+  body.print-doctor-letter .doctor-case-shell {
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  body.print-doctor-letter .doctor-print-document {
+    display: block !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    color: #102033 !important;
+  }
+
+  body.print-doctor-letter .doctor-print-header {
+    display: flex !important;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 12mm;
+    padding-bottom: 7mm;
+    border-bottom: 2px solid #dbe8f2;
+    page-break-inside: avoid;
+  }
+
+  body.print-doctor-letter .doctor-print-header p {
+    margin: 0 0 4px;
+    color: #0f7c8b;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+  }
+
+  body.print-doctor-letter .doctor-print-header h1 {
+    margin: 0;
+    color: #102033;
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  body.print-doctor-letter .doctor-print-case-meta {
+    max-width: 250px;
+    text-align: right;
+  }
+
+  body.print-doctor-letter .doctor-print-case-meta span {
+    display: block;
+    margin-bottom: 4px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  body.print-doctor-letter .doctor-print-case-meta strong {
+    color: #102033;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 10.5px;
+    line-height: 1.4;
+    word-break: break-all;
+  }
+
+  body.print-doctor-letter .doctor-print-submeta {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 9mm;
+    padding: 8px 10px;
+    border: 1px solid #dbe8f2;
+    border-radius: 10px;
+    background: #f8fcff;
+    color: #40526b;
+    font-size: 11px;
+    font-weight: 800;
+    page-break-inside: avoid;
+  }
+
+  body.print-doctor-letter .doctor-print-body {
+    display: block !important;
+  }
+
+  body.print-doctor-letter .doctor-report-preview {
+    display: block !important;
+  }
+
+  body.print-doctor-letter .doctor-report-preview h1 {
+    margin: 0 0 14px !important;
+    color: #102033 !important;
+    font-size: 23px !important;
+    line-height: 1.2 !important;
+    page-break-after: avoid;
+  }
+
+  body.print-doctor-letter .doctor-report-preview h2 {
+    margin: 18px 0 8px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid #dbe8f2 !important;
+    color: #10324a !important;
+    font-size: 15px !important;
+    line-height: 1.3 !important;
+    page-break-after: avoid;
+  }
+
+  body.print-doctor-letter .doctor-report-preview h3 {
+    margin: 12px 0 6px !important;
+    color: #0f5965 !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    page-break-after: avoid;
+  }
+
+  body.print-doctor-letter .doctor-report-preview p {
+    margin: 0 0 7px !important;
+    color: #243447 !important;
+    font-size: 11.5px !important;
+    line-height: 1.55 !important;
+  }
+
+  body.print-doctor-letter .doctor-report-bullet {
+    display: grid !important;
+    grid-template-columns: 14px 1fr !important;
+    gap: 6px !important;
+    margin-bottom: 6px !important;
+    page-break-inside: avoid;
+  }
+
+  body.print-doctor-letter .doctor-report-bullet span {
+    color: #0f5965 !important;
+    font-weight: 900 !important;
+  }
+
+  body.print-doctor-letter .doctor-report-disclaimer {
+    margin: 0 0 14px !important;
+    padding: 10px 12px !important;
+    border: 1px solid #e7c46f !important;
+    border-radius: 10px !important;
+    background: #fff9ed !important;
+    color: #5f470f !important;
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+    line-height: 1.5 !important;
+    page-break-inside: avoid;
+  }
+
+  body.print-doctor-letter .editable-report-field {
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  body.print-doctor-letter .doctor-report-spacer {
+    height: 6px !important;
+  }
+}
+
+
 .case-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(300px, 0.6fr);
