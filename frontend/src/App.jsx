@@ -14,7 +14,6 @@ import ProductPage from "./pages/ProductPage.jsx";
 import QuestionnairePage from "./pages/QuestionnairePage.jsx";
 import TeamPage from "./pages/TeamPage.jsx";
 
-
 function NotFoundPage() {
   return (
     <div className="not-found-page">
@@ -35,7 +34,6 @@ function NotFoundPage() {
   );
 }
 
-
 export default function App() {
   return (
     <Routes>
@@ -48,17 +46,16 @@ export default function App() {
       <Route path="/legal" element={<LegalPage />} />
 
       <Route path="/patient/start" element={<PatientStartPage />} />
-      <Route path="/patient/questionnaire" element={<QuestionnairePage />} />
-<Route path="/patient/questionnaire/:indication" element={<QuestionnairePage />} />
 
-      {/* Support both with and without case id */}
+      {/* IMPORTANT: do not redirect this route */}
+      <Route path="/patient/questionnaire" element={<QuestionnairePage />} />
+      <Route path="/patient/questionnaire/:indication" element={<QuestionnairePage />} />
+
       <Route path="/patient/done" element={<PatientDonePage />} />
       <Route path="/patient/done/:caseId" element={<PatientDonePage />} />
 
       <Route path="/doctor/login" element={<DoctorLoginPage />} />
       <Route path="/doctor/dashboard" element={<DoctorDashboardPage />} />
-
-      {/* Support all possible doctor detail route formats */}
       <Route path="/doctor/cases/:caseId" element={<DoctorCasePage />} />
       <Route path="/doctor/case/:caseId" element={<DoctorCasePage />} />
       <Route

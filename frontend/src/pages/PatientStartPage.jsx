@@ -12,8 +12,8 @@ export default function PatientStartPage() {
   const { language } = useLanguage();
 
   function openQuestionnaire(indication) {
-  navigate(`/patient/questionnaire/${indication}`);
-}
+    navigate(`/patient/questionnaire/${indication}`);
+  }
 
   return (
     <AppShell compact>
