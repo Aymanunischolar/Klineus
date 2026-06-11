@@ -311,6 +311,74 @@ function flagLevelClass(flag) {
   return "flag-card success";
 }
 
+function ReportPreview({ text, language }) {
+  if (!text) {
+    return (
+      <div className="doctor-report-empty">
+        <strong>
+          {localText(language, "Noch kein Arztbrief erstellt", "No doctor letter yet")}
+        </strong>
+        <p>
+          {localText(
+            language,
+            "Erstellen Sie einen KI-Entwurf. Danach kann der Text ärztlich geprüft, bearbeitet und gespeichert werden.",
+            "Generate an AI draft. Afterwards, the text can be medically reviewed, edited and saved.",
+          )}
+        </p>
+      </div>
+    );
+  }
+
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return (
+    <article className="doctor-report-preview">
+      {lines.map((line, index) => {
+        const cleanLine = line.replace(/^[-*]\s*/, "");
+
+        if (
+          line.includes("AI-generated draft") ||
+          line.includes("KI-generierter Entwurf") ||
+          line.includes("Ärztliche Prüfung")
+        ) {
+          return (
+            <div className="doctor-report-disclaimer" key={index}>
+              {cleanLine}
+            </div>
+          );
+        }
+
+        if (line.startsWith("# ")) {
+          return <h1 key={index}>{line.replace("# ", "")}</h1>;
+        }
+
+        if (line.startsWith("## ")) {
+          return <h2 key={index}>{line.replace("## ", "")}</h2>;
+        }
+
+        if (line.startsWith("### ")) {
+          return <h3 key={index}>{line.replace("### ", "")}</h3>;
+        }
+
+        if (line.startsWith("- ")) {
+          return (
+            <div className="doctor-report-bullet" key={index}>
+              <span aria-hidden="true">•</span>
+              <p>{cleanLine}</p>
+            </div>
+          );
+        }
+
+        return <p key={index}>{cleanLine}</p>;
+      })}
+    </article>
+  );
+}
+
+
 export default function DoctorCasePage() {
   const params = useParams();
   const caseId = getCaseIdFromParams(params);
@@ -534,159 +602,165 @@ const answers = useMemo(
                   </p>
                   <h2>
                     {localText(
-                      language,
-                      "Patientenantworten",
-                      "Patient answers",
+                        language,
+                        "Patientenantworten",
+                        "Patient answers",
                     )}
                   </h2>
                 </div>
               </div>
 
               {answerGroups.length === 0 ? (
-                <p className="muted">
-                  {localText(
-                    language,
-                    "Für diesen Fall wurden keine Antworten gefunden.",
-                    "No answers were found for this case.",
-                  )}
-                </p>
+                  <p className="muted">
+                    {localText(
+                        language,
+                        "Für diesen Fall wurden keine Antworten gefunden.",
+                        "No answers were found for this case.",
+                    )}
+                  </p>
               ) : (
-                <div className="answer-group-list">
-                  {answerGroups.map((group) => (
-                    <article className="answer-group" key={group.blockId}>
-                      <h3>{group.blockTitle}</h3>
+                  <div className="answer-group-list">
+                    {answerGroups.map((group) => (
+                        <article className="answer-group" key={group.blockId}>
+                          <h3>{group.blockTitle}</h3>
 
-                      <div className="answer-list">
-                        {group.answers.map((answer, index) => (
-                          <div
-                            className="answer-row"
-                            key={`${getQuestionId(answer)}-${index}`}
-                          >
-                            <div>
+                          <div className="answer-list">
+                            {group.answers.map((answer, index) => (
+                                <div
+                                    className="answer-row"
+                                    key={`${getQuestionId(answer)}-${index}`}
+                                >
+                                  <div>
                               <span className="question-code">
                                 {getQuestionId(answer)}
                               </span>
-                              <p>{getQuestionText(answer)}</p>
-                            </div>
+                                    <p>{getQuestionText(answer)}</p>
+                                  </div>
 
-                            <strong>{normalizeAnswer(answer.answer)}</strong>
+                                  <strong>{normalizeAnswer(answer.answer)}</strong>
+                                </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </article>
-                  ))}
-                </div>
+                        </article>
+                    ))}
+                  </div>
               )}
             </section>
           </div>
 
-          <aside className="case-column">
-            <section className="case-panel">
-              <p className="eyebrow">
-                {localText(language, "Offene Punkte", "Open points")}
-              </p>
+          <aside className="doctor-workspace-sidebar">
+            <section className="case-panel doctor-notes-panel">
+              <div className="doctor-panel-header">
+                <div>
+                  <p className="eyebrow">
+                    {localText(language, "Offene Punkte", "Open points")}
+                  </p>
 
-              <h2>
-                {localText(
-                  language,
-                  "Hinweise für das Arztgespräch",
-                  "Notes for the consultation",
-                )}
-              </h2>
+                  <h2>
+                    {localText(
+                        language,
+                        "Für das Arztgespräch",
+                        "For the consultation",
+                    )}
+                  </h2>
+                </div>
+
+                <span className="doctor-count-pill">{flags.length}</span>
+              </div>
 
               {flags.length === 0 ? (
-                <p className="muted">
-                  {localText(
-                    language,
-                    "Noch keine KI-Hinweise erstellt. Erstellen Sie zuerst den Bericht.",
-                    "No AI notes yet. Generate the report first.",
-                  )}
-                </p>
+                  <p className="muted">
+                    {localText(
+                        language,
+                        "Keine Hinweise vorhanden.",
+                        "No notes available.",
+                    )}
+                  </p>
               ) : (
-                <div className="flag-list">
-                  {flags.map((flag, index) => (
-                    <article className={flagLevelClass(flag)} key={index}>
-                      <strong>
-                        {flag.title ||
-                          flag.label ||
-                          flag.message ||
-                          localText(language, "Hinweis", "Note")}
-                      </strong>
+                  <div className="doctor-flag-scroll">
+                    <div className="flag-list doctor-flag-list">
+                      {flags.map((flag, index) => (
+                          <article className={flagLevelClass(flag)} key={index}>
+                            <strong>
+                              {flag.title ||
+                                  flag.label ||
+                                  flag.message ||
+                                  localText(language, "Hinweis", "Note")}
+                            </strong>
 
-                      {flag.description || flag.text || flag.reason ? (
-                        <p>{flag.description || flag.text || flag.reason}</p>
-                      ) : null}
-                    </article>
-                  ))}
-                </div>
+                            {flag.description || flag.text || flag.reason ? (
+                                <p>{flag.description || flag.text || flag.reason}</p>
+                            ) : null}
+                          </article>
+                      ))}
+                    </div>
+                  </div>
               )}
             </section>
 
-            <section className="case-panel report-panel">
-              <p className="eyebrow">
-                {localText(language, "KI-Entwurf", "AI draft")}
-              </p>
+            <section className="case-panel doctor-letter-panel">
+              <div className="doctor-panel-header">
+                <div>
+                  <p className="eyebrow">
+                    {localText(language, "KI-Entwurf", "AI draft")}
+                  </p>
 
-              <h2>{localText(language, "Arztbrief", "Doctor letter")}</h2>
+                  <h2>{localText(language, "Arztbrief", "Doctor letter")}</h2>
+                </div>
+              </div>
 
               <p className="report-helper">
                 {localText(
-                  language,
-                  "Dieser Text ist ein Entwurf und muss ärztlich geprüft und freigegeben werden.",
-                  "This text is a draft and must be medically reviewed and approved.",
+                    language,
+                    "Dieser Text ist ein Entwurf und muss ärztlich geprüft und freigegeben werden.",
+                    "This text is a draft and must be medically reviewed and approved.",
                 )}
               </p>
 
-              <div className="report-actions">
+              <div className="doctor-letter-actions">
                 <button
-                  className="primary-button"
-                  disabled={isGenerating}
-                  type="button"
-                  onClick={handleGenerateReport}
+                    className="primary-button"
+                    disabled={isGenerating}
+                    type="button"
+                    onClick={handleGenerateReport}
                 >
                   {isGenerating
-                    ? localText(language, "Wird erstellt…", "Generating…")
-                    : localText(language, "KI-Entwurf erstellen", "Generate AI draft")}
+                      ? localText(language, "Wird erstellt…", "Generating…")
+                      : localText(language, "KI-Entwurf erstellen", "Generate AI draft")}
                 </button>
 
                 <button
-                  className="secondary-button"
-                  disabled={isSaving || !reportText}
-                  type="button"
-                  onClick={handleSaveReport}
+                    className="secondary-button"
+                    disabled={isSaving || !reportText}
+                    type="button"
+                    onClick={handleSaveReport}
                 >
                   {isSaving
-                    ? localText(language, "Speichert…", "Saving…")
-                    : localText(language, "Speichern", "Save")}
+                      ? localText(language, "Speichert…", "Saving…")
+                      : localText(language, "Speichern", "Save")}
                 </button>
               </div>
 
-             <ReportPreview text={reportText} />
+              <div className="doctor-letter-scroll">
+                <ReportPreview text={reportText} language={language}/>
+              </div>
 
-<details className="report-edit-details">
-  <summary>Entwurf bearbeiten</summary>
+              <details className="doctor-letter-editor">
+                <summary>
+                  {localText(language, "Rohtext bearbeiten", "Edit raw text")}
+                </summary>
 
-  <div className="report-scroll-area">
-    <ReportPreview text={reportText} language={language}/>
-  </div>
-
-  <details className="report-edit-box">
-    <summary>
-      {localText(language, "Entwurf bearbeiten", "Edit draft")}
-    </summary>
-
-    <textarea
-        className="report-textarea"
-        placeholder={localText(
-            language,
-            "Noch kein Bericht erstellt.",
-            "No report generated yet.",
-        )}
-        value={reportText}
-        onChange={(event) => setReportText(event.target.value)}
-    />
-  </details>
-</details>
+                <textarea
+                    className="report-textarea"
+                    placeholder={localText(
+                        language,
+                        "Noch kein Bericht erstellt.",
+                        "No report generated yet.",
+                    )}
+                    value={reportText}
+                    onChange={(event) => setReportText(event.target.value)}
+                />
+              </details>
             </section>
           </aside>
         </section>

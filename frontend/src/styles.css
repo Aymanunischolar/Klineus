@@ -8990,8 +8990,346 @@ p {
 
   .report-scroll-area {
     max-height: 520px;
+
+
+
   }
 }
+
+
+/* Doctor workspace polish */
+
+.case-layout-enhanced {
+  align-items: start;
+  grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.72fr);
+}
+
+.doctor-workspace-sidebar {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  grid-template-rows: minmax(180px, 0.38fr) minmax(420px, 1fr);
+  gap: 18px;
+  max-height: calc(100vh - 48px);
+  min-width: 0;
+}
+
+.case-panel,
+.doctor-notes-panel,
+.doctor-letter-panel {
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+}
+
+.doctor-notes-panel,
+.doctor-letter-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 22px;
+}
+
+.doctor-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.doctor-panel-header h2 {
+  margin: 0;
+  color: var(--brand-navy-dark);
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.doctor-count-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid #cde3ed;
+  border-radius: 999px;
+  background: #eefaff;
+  color: var(--brand-teal-dark);
+  font-weight: 900;
+}
+
+.doctor-flag-scroll {
+  min-height: 0;
+  margin-top: 14px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.doctor-flag-list {
+  gap: 10px;
+}
+
+.doctor-flag-list .flag-card {
+  padding: 14px;
+  border-radius: 14px;
+}
+
+.doctor-flag-list .flag-card strong {
+  display: block;
+  color: var(--brand-navy-dark);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.doctor-flag-list .flag-card p {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.flag-card.warning,
+.flag-card.orange {
+  border-color: #fed7aa;
+  border-left-color: var(--orange);
+  background: #fff7ed;
+}
+
+.flag-card.danger,
+.flag-card.red {
+  border-color: #fecdd3;
+  border-left-color: var(--red);
+  background: #fff1f2;
+}
+
+.flag-card.success,
+.flag-card.green {
+  border-color: #bbf7d0;
+  border-left-color: var(--green);
+  background: #ecfdf5;
+}
+
+.doctor-letter-panel {
+  min-height: 0;
+}
+
+.doctor-letter-actions {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.doctor-letter-actions .primary-button,
+.doctor-letter-actions .secondary-button {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+}
+
+.doctor-letter-scroll {
+  flex: 1;
+  min-height: 0;
+  margin-top: 16px;
+  overflow-y: auto;
+  padding: 18px;
+  border: 1px solid #dbe8f2;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
+}
+
+.doctor-letter-scroll::-webkit-scrollbar,
+.doctor-flag-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.doctor-letter-scroll::-webkit-scrollbar-track,
+.doctor-flag-scroll::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #edf5fa;
+}
+
+.doctor-letter-scroll::-webkit-scrollbar-thumb,
+.doctor-flag-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid #edf5fa;
+  border-radius: 999px;
+  background: #b8d3e5;
+}
+
+.doctor-report-preview {
+  display: grid;
+  gap: 11px;
+}
+
+.doctor-report-preview h1 {
+  margin: 0 0 8px;
+  color: var(--brand-navy-dark);
+  font-size: 1.35rem;
+  letter-spacing: -0.035em;
+  line-height: 1.16;
+}
+
+.doctor-report-preview h2 {
+  margin: 18px 0 4px;
+  padding-top: 16px;
+  border-top: 1px solid #e3edf5;
+  color: var(--brand-navy);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.doctor-report-preview h3 {
+  margin: 8px 0 2px;
+  color: var(--brand-teal-dark);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.doctor-report-preview p {
+  margin: 0;
+  color: #40526b;
+  font-size: 0.93rem;
+  line-height: 1.65;
+}
+
+.doctor-report-bullet {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.doctor-report-bullet span {
+  color: var(--brand-teal-dark);
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+.doctor-report-disclaimer {
+  padding: 13px 15px;
+  border: 1px solid #f1c976;
+  border-radius: 14px;
+  background: #fff9ed;
+  color: #6b4e16;
+  font-size: 0.92rem;
+  font-weight: 900;
+  line-height: 1.55;
+}
+
+.doctor-report-empty {
+  display: grid;
+  min-height: 220px;
+  align-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.doctor-report-empty strong {
+  color: var(--brand-navy-dark);
+  font-size: 1.05rem;
+}
+
+.doctor-report-empty p {
+  max-width: 320px;
+  margin: 0 auto;
+  color: var(--brand-muted);
+  line-height: 1.6;
+}
+
+.doctor-letter-editor {
+  flex-shrink: 0;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #e3edf5;
+}
+
+.doctor-letter-editor summary {
+  cursor: pointer;
+  color: var(--brand-teal-dark);
+  font-weight: 900;
+}
+
+.doctor-letter-editor summary:hover {
+  color: var(--brand-navy);
+}
+
+.doctor-letter-editor .report-textarea {
+  min-height: 260px;
+  margin-top: 12px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.answer-group-list {
+  display: grid;
+  gap: 18px;
+}
+
+.answer-group-list > .answer-group {
+  background: #f8fcff;
+}
+
+.answer-row {
+  grid-template-columns: minmax(0, 1fr) minmax(160px, max-content);
+  align-items: start;
+}
+
+.answer-row strong {
+  width: fit-content;
+  max-width: 280px;
+  padding: 7px 11px;
+  border: 1px solid #d8e8f2;
+  border-radius: 999px;
+  background: white;
+  color: var(--brand-navy-dark);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 1100px) {
+  .case-layout-enhanced {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-workspace-sidebar {
+    position: static;
+    grid-template-rows: none;
+    max-height: none;
+  }
+
+  .doctor-notes-panel,
+  .doctor-letter-panel {
+    max-height: none;
+  }
+
+  .doctor-flag-scroll {
+    max-height: 320px;
+  }
+
+  .doctor-letter-scroll {
+    max-height: 620px;
+  }
+}
+
+@media (max-width: 620px) {
+  .doctor-letter-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .answer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .answer-row strong {
+    max-width: 100%;
+  }
+}
+
 
 @media (min-width: 921px) {
   .case-layout-enhanced > aside.case-column {
