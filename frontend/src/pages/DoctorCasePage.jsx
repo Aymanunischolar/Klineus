@@ -9,6 +9,72 @@ function localText(language, de, en) {
   return language === "en" ? en : de;
 }
 
+function ReportPreview({ text, language }) {
+  if (!text) {
+    return (
+      <div className="report-preview-empty">
+        <strong>
+          {localText(language, "Noch kein Entwurf erstellt", "No draft generated yet")}
+        </strong>
+        <p>
+          {localText(
+            language,
+            "Klicken Sie auf KI-Entwurf erstellen, um den Arztbrief vorzubereiten.",
+            "Click Generate AI draft to prepare the doctor letter.",
+          )}
+        </p>
+      </div>
+    );
+  }
+
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="report-preview-clean">
+      {lines.map((line, index) => {
+        if (
+          line.includes("AI-generated draft") ||
+          line.includes("KI-generierter Entwurf") ||
+          line.includes("Ärztliche Prüfung")
+        ) {
+          return (
+            <div className="report-warning-box" key={index}>
+              {line}
+            </div>
+          );
+        }
+
+        if (line.startsWith("# ")) {
+          return <h1 key={index}>{line.replace("# ", "")}</h1>;
+        }
+
+        if (line.startsWith("## ")) {
+          return <h2 key={index}>{line.replace("## ", "")}</h2>;
+        }
+
+        if (line.startsWith("### ")) {
+          return <h3 key={index}>{line.replace("### ", "")}</h3>;
+        }
+
+        if (line.startsWith("- ")) {
+          return (
+            <div className="report-preview-bullet" key={index}>
+              <span aria-hidden="true">•</span>
+              <p>{line.replace("- ", "")}</p>
+            </div>
+          );
+        }
+
+        return <p key={index}>{line}</p>;
+      })}
+    </div>
+  );
+}
+
+
 function ReportPreview({ text }) {
   if (!text) {
     return (
@@ -600,16 +666,26 @@ const answers = useMemo(
 <details className="report-edit-details">
   <summary>Entwurf bearbeiten</summary>
 
-  <textarea
-    className="report-textarea"
-    placeholder={localText(
-      language,
-      "Noch kein Bericht erstellt.",
-      "No report generated yet.",
-    )}
-    value={reportText}
-    onChange={(event) => setReportText(event.target.value)}
-  />
+  <div className="report-scroll-area">
+    <ReportPreview text={reportText} language={language}/>
+  </div>
+
+  <details className="report-edit-box">
+    <summary>
+      {localText(language, "Entwurf bearbeiten", "Edit draft")}
+    </summary>
+
+    <textarea
+        className="report-textarea"
+        placeholder={localText(
+            language,
+            "Noch kein Bericht erstellt.",
+            "No report generated yet.",
+        )}
+        value={reportText}
+        onChange={(event) => setReportText(event.target.value)}
+    />
+  </details>
 </details>
             </section>
           </aside>
