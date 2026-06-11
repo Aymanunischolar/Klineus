@@ -1,334 +1,240 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import AppShell from "../components/AppShell.jsx";
-import QuestionInput from "../components/QuestionInput.jsx";
-import { api } from "../services/api.js";
 import {
-  defaultAnswer,
-  getQuestionnaire,
+  getOptionLabel,
+  getOptionValue,
   getQuestionText,
-  getQuestionsForIndication,
-  getVisibleQuestions,
-  isAnswerComplete,
 } from "../data/questionnaire.js";
-import { useLanguage } from "../i18n/LanguageContext.jsx";
+
+function selectedValue(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value.value || "";
+  }
+
+  return value || "";
+}
 
 function localText(language, de, en) {
   return language === "en" ? en : de;
 }
 
-function serialiseAnswer(answer) {
-  if (answer && typeof answer === "object" && !Array.isArray(answer)) {
-    if (Object.prototype.hasOwnProperty.call(answer, "value")) {
-      return answer.detail ? `${answer.value}: ${answer.detail}` : answer.value;
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(answer, "height_cm") ||
-      Object.prototype.hasOwnProperty.call(answer, "weight_kg")
-    ) {
-      return {
-        height_cm: answer.height_cm || "",
-        weight_kg: answer.weight_kg || "",
-      };
-    }
+function getNote(question, value, language) {
+  if (language === "en" && question.notesByValueEn?.[value]) {
+    return question.notesByValueEn[value];
   }
 
-  return answer;
+  return question.notesByValue?.[value] || "";
 }
 
-export default function QuestionnairePage() {
-  const navigate = useNavigate();
-  const params = useParams();
-const [searchParams] = useSearchParams();
-  const { language, t } = useLanguage();
-  const startedAtRef = useRef(Date.now());
-
-  const rawIndication = params.indication || searchParams.get("indication");
-
-const indication =
-  rawIndication === "hip_tep" || rawIndication === "huefte" || rawIndication === "hip"
-    ? "hip_tep"
-    : "knee_tep";
-
-  const questionnaire = useMemo(
-    () => getQuestionnaire(indication),
-    [indication],
+function getDetailsLabel(question, language) {
+  return (
+    question.detailsLabels?.[language] ||
+    question.detailsLabels?.de ||
+    question.detailsLabel ||
+    localText(language, "Angabe", "Details")
   );
+}
 
-  const allQuestions = useMemo(
-    () => getQuestionsForIndication(indication),
-    [indication],
-  );
-
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const visibleQuestions = useMemo(
-    () => getVisibleQuestions(allQuestions, answers),
-    [allQuestions, answers],
-  );
-
-  useEffect(() => {
-    setCurrentIndex((index) =>
-      Math.min(index, Math.max(visibleQuestions.length - 1, 0)),
-    );
-  }, [visibleQuestions.length]);
-
-  const currentQuestion = visibleQuestions[currentIndex];
-
-  const value = currentQuestion
-    ? answers[currentQuestion.id] ?? defaultAnswer(currentQuestion)
-    : "";
-
-  const isLastQuestion = currentIndex === visibleQuestions.length - 1;
-
-  const progress = visibleQuestions.length
-    ? Math.round(((currentIndex + 1) / visibleQuestions.length) * 100)
-    : 0;
-
-  function updateAnswer(nextValue) {
-    if (!currentQuestion) return;
-
-    setAnswers((previous) => ({
-      ...previous,
-      [currentQuestion.id]: nextValue,
-    }));
-
-    setError("");
-  }
-
-  function buildPayload(nextAnswers) {
-    return visibleQuestions.map((question) => ({
-      question_id: question.id,
-
-      /*
-        IMPORTANT:
-        The doctor dashboard receives the German source wording.
-        The English toggle only changes what the patient sees.
-      */
-      question: getQuestionText(question, "de"),
-      question_displayed:
-        language === "en" ? getQuestionText(question, "en") : undefined,
-
-      answer: serialiseAnswer(nextAnswers[question.id] ?? defaultAnswer(question)),
-
-      block_id: question.blockId,
-      block_title: question.blockLabels?.de || question.blockTitle,
-      block_title_displayed:
-        language === "en" ? question.blockLabels?.en : undefined,
-
-      pii_category: question.piiCategory || "none",
-      include_in_ai: question.includeInAi !== false,
-    }));
-  }
-
-  async function submitQuestionnaire(nextAnswers) {
-    setIsSubmitting(true);
-    setError("");
-
-    const navigationEntry = performance.getEntriesByType("navigation")[0];
-
-    const metadata = {
-      language,
-      fill_duration_seconds: Math.max(
-        1,
-        Math.round((Date.now() - startedAtRef.current) / 1000),
-      ),
-      page_load_ms: navigationEntry
-        ? Math.round(navigationEntry.duration)
-        : undefined,
-      question_count: visibleQuestions.length,
-      user_agent_family: navigator.userAgent.includes("Mobile")
-        ? "mobile"
-        : "desktop",
-    };
-
-    try {
-      await api.createPatientCase(
-        buildPayload(nextAnswers),
-        metadata,
-        indication,
-        {
-          questionnaire_template_id: questionnaire.id,
-          questionnaire_version: questionnaire.version,
-        },
-      );
-
-      navigate("/patient/done");
-    } catch (submitError) {
-      setError(
-        submitError?.message ||
-          localText(
-            language,
-            "Der Fragebogen konnte nicht übermittelt werden.",
-            "The questionnaire could not be submitted.",
-          ),
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function handleForward() {
-    if (!currentQuestion) return;
-
-    const nextAnswers = {
-      ...answers,
-      [currentQuestion.id]: value,
-    };
-
-    if (!isAnswerComplete(currentQuestion, value)) {
-      setError(
-        t("answerRequired") ||
-          localText(language, "Bitte beantworten Sie diese Frage.", "Please answer this question."),
-      );
-      return;
-    }
-
-    setAnswers(nextAnswers);
-
-    if (isLastQuestion) {
-      await submitQuestionnaire(nextAnswers);
-      return;
-    }
-
-    setCurrentIndex((index) => index + 1);
-    setError("");
-  }
-
-  function handleBack() {
-    setCurrentIndex((index) => Math.max(index - 1, 0));
-    setError("");
-  }
-
-  function handleCancel() {
-    navigate("/patient/start");
-  }
-
-  if (!currentQuestion) {
+export default function QuestionInput({
+  question,
+  value,
+  onChange,
+  language = "de",
+}) {
+  if (question.type === "single") {
     return (
-      <AppShell compact>
-        <section className="questionnaire-card questionnaire-card-pro">
-          <p className="form-error">
-            {localText(
-              language,
-              "Der Fragebogen konnte nicht geladen werden.",
-              "The questionnaire could not be loaded.",
-            )}
+      <div className="choice-grid">
+        {question.options.map((option) => {
+          const optionValue = getOptionValue(option);
+
+          return (
+            <button
+              className={
+                value === optionValue ? "choice-button selected" : "choice-button"
+              }
+              key={optionValue}
+              type="button"
+              onClick={() => onChange(optionValue)}
+            >
+              {getOptionLabel(option, language)}
+            </button>
+          );
+        })}
+
+        {getNote(question, value, language) ? (
+          <p className="question-inline-note">
+            {getNote(question, value, language)}
           </p>
-        </section>
-      </AppShell>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (question.type === "single_with_text") {
+    const current =
+      value && typeof value === "object" && !Array.isArray(value)
+        ? value
+        : { value: "", detail: "" };
+
+    const activeValue = selectedValue(current);
+    const needsDetails = question.detailsIf?.includes(activeValue);
+    const detailsLabel = getDetailsLabel(question, language);
+
+    return (
+      <div className="choice-grid">
+        {question.options.map((option) => {
+          const optionValue = getOptionValue(option);
+
+          return (
+            <button
+              className={
+                activeValue === optionValue
+                  ? "choice-button selected"
+                  : "choice-button"
+              }
+              key={optionValue}
+              type="button"
+              onClick={() => onChange({ value: optionValue, detail: "" })}
+            >
+              {getOptionLabel(option, language)}
+            </button>
+          );
+        })}
+
+        {needsDetails ? (
+          <label className="question-detail-field">
+            <span>{detailsLabel}</span>
+            <textarea
+              aria-label={detailsLabel}
+              rows="4"
+              value={current.detail || ""}
+              onChange={(event) =>
+                onChange({ ...current, detail: event.target.value })
+              }
+            />
+          </label>
+        ) : null}
+
+        {getNote(question, activeValue, language) ? (
+          <p className="question-inline-note">
+            {getNote(question, activeValue, language)}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (question.type === "multiple") {
+    const selected = Array.isArray(value) ? value : [];
+
+    return (
+      <div className="choice-grid">
+        {question.options.map((option) => {
+          const optionValue = getOptionValue(option);
+          const isSelected = selected.includes(optionValue);
+
+          return (
+            <button
+              className={isSelected ? "choice-button selected" : "choice-button"}
+              key={optionValue}
+              type="button"
+              onClick={() => {
+                if (isSelected) {
+                  onChange(selected.filter((item) => item !== optionValue));
+                } else {
+                  onChange([...selected, optionValue]);
+                }
+              }}
+            >
+              {getOptionLabel(option, language)}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (question.type === "slider") {
+    const sliderValue = Number.isFinite(Number(value))
+      ? Number(value)
+      : question.min ?? 0;
+
+    return (
+      <div className="slider-panel">
+        <div className="slider-value">{sliderValue}</div>
+
+        <input
+          aria-label={getQuestionText(question, language)}
+          max={question.max}
+          min={question.min}
+          type="range"
+          value={sliderValue}
+          onChange={(event) => onChange(Number(event.target.value))}
+        />
+
+        <div className="slider-scale">
+          <span>{question.min}</span>
+          <span>{question.max}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (question.type === "number_pair") {
+    const current =
+      value && typeof value === "object" && !Array.isArray(value)
+        ? value
+        : { height_cm: "", weight_kg: "" };
+
+    return (
+      <div className="number-grid">
+        <label>
+          <span>{localText(language, "Größe in cm", "Height in cm")}</span>
+          <input
+            inputMode="numeric"
+            min="1"
+            type="number"
+            value={current.height_cm || ""}
+            onChange={(event) =>
+              onChange({ ...current, height_cm: event.target.value })
+            }
+          />
+        </label>
+
+        <label>
+          <span>{localText(language, "Gewicht in kg", "Weight in kg")}</span>
+          <input
+            inputMode="numeric"
+            min="1"
+            type="number"
+            value={current.weight_kg || ""}
+            onChange={(event) =>
+              onChange({ ...current, weight_kg: event.target.value })
+            }
+          />
+        </label>
+      </div>
+    );
+  }
+
+  if (question.type === "number") {
+    return (
+      <input
+        aria-label={getQuestionText(question, language)}
+        className="number-input"
+        inputMode="numeric"
+        type="number"
+        value={value || ""}
+        onChange={(event) => onChange(event.target.value)}
+      />
     );
   }
 
   return (
-    <AppShell compact>
-      <section className="questionnaire-card questionnaire-card-pro">
-        <div className="questionnaire-progress-panel">
-          <div className="questionnaire-progress-topline">
-            <div>
-              <p className="questionnaire-progress-kicker">
-                {questionnaire.labels?.[language] || questionnaire.labels?.de}
-              </p>
-
-              <strong>
-                {currentQuestion.blockLabels?.[language] ||
-                  currentQuestion.blockLabels?.de ||
-                  currentQuestion.blockTitle}
-              </strong>
-            </div>
-
-            <span>
-              {localText(language, "Schritt", "Step")} {currentIndex + 1}{" "}
-              {localText(language, "von", "of")} {visibleQuestions.length}
-            </span>
-          </div>
-
-          <div
-            aria-label={localText(language, "Fortschritt", "Progress")}
-            aria-valuemax="100"
-            aria-valuemin="0"
-            aria-valuenow={progress}
-            className="questionnaire-progress-track-pro"
-            role="progressbar"
-          >
-            <div
-              className="questionnaire-progress-fill-pro"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          <div className="questionnaire-progress-footer">
-            <span>{progress}%</span>
-            <span>
-              {localText(
-                language,
-                "Eine Frage pro Bildschirm",
-                "One question per screen",
-              )}
-            </span>
-          </div>
-        </div>
-
-        <div className="questionnaire-question-shell">
-          <p className="question-id">{currentQuestion.id}</p>
-
-          <h1>{getQuestionText(currentQuestion, language)}</h1>
-
-          {currentQuestion.helpText?.[language] ||
-          currentQuestion.helpText?.de ? (
-            <p className="question-help-text">
-              {currentQuestion.helpText?.[language] ||
-                currentQuestion.helpText?.de}
-            </p>
-          ) : null}
-
-          <QuestionInput
-            language={language}
-            question={currentQuestion}
-            value={value}
-            onChange={updateAnswer}
-          />
-        </div>
-
-        {error ? <p className="form-error">{error}</p> : null}
-
-        <div className="question-nav question-nav-pro">
-          <button
-            className="secondary-button"
-            disabled={currentIndex === 0 || isSubmitting}
-            type="button"
-            onClick={handleBack}
-          >
-            {t("back") || localText(language, "Zurück", "Back")}
-          </button>
-
-          <button
-            className="secondary-button questionnaire-cancel-button"
-            disabled={isSubmitting}
-            type="button"
-            onClick={handleCancel}
-          >
-            {localText(language, "Abbrechen", "Cancel")}
-          </button>
-
-          <button
-            className="primary-button"
-            disabled={isSubmitting}
-            type="button"
-            onClick={handleForward}
-          >
-            {isSubmitting
-              ? localText(language, "Wird gesendet…", "Submitting…")
-              : isLastQuestion
-                ? t("submit") || localText(language, "Absenden", "Submit")
-                : t("next") || localText(language, "Weiter", "Next")}
-          </button>
-        </div>
-      </section>
-    </AppShell>
+    <textarea
+      aria-label={getQuestionText(question, language)}
+      className="free-text-input"
+      rows="6"
+      value={value || ""}
+      onChange={(event) => onChange(event.target.value)}
+    />
   );
 }

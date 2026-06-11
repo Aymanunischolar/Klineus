@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+
 import AppShell from "../components/AppShell.jsx";
 import QuestionInput from "../components/QuestionInput.jsx";
 import { api } from "../services/api.js";
@@ -15,6 +16,19 @@ import { useLanguage } from "../i18n/LanguageContext.jsx";
 
 function localText(language, de, en) {
   return language === "en" ? en : de;
+}
+
+function normalizeIndication(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/ü/g, "ue");
+
+  if (["hip_tep", "hip", "huefte", "hufte"].includes(normalized)) {
+    return "hip_tep";
+  }
+
+  return "knee_tep";
 }
 
 function serialiseAnswer(answer) {
@@ -40,16 +54,13 @@ function serialiseAnswer(answer) {
 export default function QuestionnairePage() {
   const navigate = useNavigate();
   const params = useParams();
-const [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { language, t } = useLanguage();
   const startedAtRef = useRef(Date.now());
 
-  const rawIndication = params.indication || searchParams.get("indication");
-
-const indication =
-  rawIndication === "hip_tep" || rawIndication === "huefte" || rawIndication === "hip"
-    ? "hip_tep"
-    : "knee_tep";
+  const indication = normalizeIndication(
+    params.indication || searchParams.get("indication"),
+  );
 
   const questionnaire = useMemo(
     () => getQuestionnaire(indication),
@@ -76,6 +87,13 @@ const indication =
       Math.min(index, Math.max(visibleQuestions.length - 1, 0)),
     );
   }, [visibleQuestions.length]);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+    setAnswers({});
+    setError("");
+    startedAtRef.current = Date.now();
+  }, [indication]);
 
   const currentQuestion = visibleQuestions[currentIndex];
 
@@ -105,15 +123,17 @@ const indication =
       question_id: question.id,
 
       /*
-        IMPORTANT:
-        The doctor dashboard receives the German source wording.
-        The English toggle only changes what the patient sees.
+        Doctor dashboard rule:
+        Always send the German source question and block title.
+        The English language mode only changes what the patient sees.
       */
       question: getQuestionText(question, "de"),
       question_displayed:
         language === "en" ? getQuestionText(question, "en") : undefined,
 
-      answer: serialiseAnswer(nextAnswers[question.id] ?? defaultAnswer(question)),
+      answer: serialiseAnswer(
+        nextAnswers[question.id] ?? defaultAnswer(question),
+      ),
 
       block_id: question.blockId,
       block_title: question.blockLabels?.de || question.blockTitle,
@@ -147,7 +167,7 @@ const indication =
     };
 
     try {
-      await api.createPatientCase(
+      const createdCase = await api.createPatientCase(
         buildPayload(nextAnswers),
         metadata,
         indication,
@@ -157,7 +177,11 @@ const indication =
         },
       );
 
-      navigate("/patient/done");
+      if (createdCase?.case_id) {
+        navigate(`/patient/done/${createdCase.case_id}`);
+      } else {
+        navigate("/patient/done");
+      }
     } catch (submitError) {
       setError(
         submitError?.message ||
@@ -183,7 +207,11 @@ const indication =
     if (!isAnswerComplete(currentQuestion, value)) {
       setError(
         t("answerRequired") ||
-          localText(language, "Bitte beantworten Sie diese Frage.", "Please answer this question."),
+          localText(
+            language,
+            "Bitte beantworten Sie diese Frage.",
+            "Please answer this question.",
+          ),
       );
       return;
     }
@@ -231,7 +259,9 @@ const indication =
           <div className="questionnaire-progress-topline">
             <div>
               <p className="questionnaire-progress-kicker">
-                {questionnaire.labels?.[language] || questionnaire.labels?.de}
+                {questionnaire.labels?.[language] ||
+                  questionnaire.labels?.de ||
+                  localText(language, "Fragebogen", "Questionnaire")}
               </p>
 
               <strong>

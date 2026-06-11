@@ -44,7 +44,7 @@ export default function PatientStartPage() {
             type="button"
             onClick={() => openQuestionnaire("knee_tep")}
           >
-            <div className="joint-choice-image">
+            <div className="joint-choice-image" aria-hidden="true">
               <img alt="" src="/static/images/knee.png" />
             </div>
 
@@ -72,7 +72,7 @@ export default function PatientStartPage() {
             type="button"
             onClick={() => openQuestionnaire("hip_tep")}
           >
-            <div className="joint-choice-image">
+            <div className="joint-choice-image" aria-hidden="true">
               <img alt="" src="/static/images/hip.png" />
             </div>
 

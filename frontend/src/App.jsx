@@ -46,11 +46,11 @@ export default function App() {
       <Route path="/legal" element={<LegalPage />} />
 
       <Route path="/patient/start" element={<PatientStartPage />} />
-
-      {/* IMPORTANT: do not redirect this route */}
       <Route path="/patient/questionnaire" element={<QuestionnairePage />} />
-      <Route path="/patient/questionnaire/:indication" element={<QuestionnairePage />} />
-
+      <Route
+        path="/patient/questionnaire/:indication"
+        element={<QuestionnairePage />}
+      />
       <Route path="/patient/done" element={<PatientDonePage />} />
       <Route path="/patient/done/:caseId" element={<PatientDonePage />} />
 
