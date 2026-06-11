@@ -12,7 +12,33 @@ function selectedValue(value) {
   return value || "";
 }
 
-export default function QuestionInput({ question, value, onChange }) {
+function localText(language, de, en) {
+  return language === "en" ? en : de;
+}
+
+function getNote(question, value, language) {
+  if (language === "en" && question.notesByValueEn?.[value]) {
+    return question.notesByValueEn[value];
+  }
+
+  return question.notesByValue?.[value] || "";
+}
+
+function getDetailsLabel(question, language) {
+  return (
+    question.detailsLabels?.[language] ||
+    question.detailsLabels?.de ||
+    question.detailsLabel ||
+    localText(language, "Angabe", "Details")
+  );
+}
+
+export default function QuestionInput({
+  question,
+  value,
+  onChange,
+  language = "de",
+}) {
   if (question.type === "single") {
     return (
       <div className="choice-grid">
@@ -28,14 +54,14 @@ export default function QuestionInput({ question, value, onChange }) {
               type="button"
               onClick={() => onChange(optionValue)}
             >
-              {getOptionLabel(option)}
+              {getOptionLabel(option, language)}
             </button>
           );
         })}
 
-        {question.notesByValue?.[value] ? (
+        {getNote(question, value, language) ? (
           <p className="question-inline-note">
-            {question.notesByValue[value]}
+            {getNote(question, value, language)}
           </p>
         ) : null}
       </div>
@@ -50,6 +76,7 @@ export default function QuestionInput({ question, value, onChange }) {
 
     const activeValue = selectedValue(current);
     const needsDetails = question.detailsIf?.includes(activeValue);
+    const detailsLabel = getDetailsLabel(question, language);
 
     return (
       <div className="choice-grid">
@@ -67,16 +94,16 @@ export default function QuestionInput({ question, value, onChange }) {
               type="button"
               onClick={() => onChange({ value: optionValue, detail: "" })}
             >
-              {getOptionLabel(option)}
+              {getOptionLabel(option, language)}
             </button>
           );
         })}
 
         {needsDetails ? (
           <label className="question-detail-field">
-            <span>{question.detailsLabel || "Angabe"}</span>
+            <span>{detailsLabel}</span>
             <textarea
-              aria-label={question.detailsLabel || "Angabe"}
+              aria-label={detailsLabel}
               rows="4"
               value={current.detail || ""}
               onChange={(event) =>
@@ -86,9 +113,9 @@ export default function QuestionInput({ question, value, onChange }) {
           </label>
         ) : null}
 
-        {question.notesByValue?.[activeValue] ? (
+        {getNote(question, activeValue, language) ? (
           <p className="question-inline-note">
-            {question.notesByValue[activeValue]}
+            {getNote(question, activeValue, language)}
           </p>
         ) : null}
       </div>
@@ -119,7 +146,7 @@ export default function QuestionInput({ question, value, onChange }) {
                 }
               }}
             >
-              {getOptionLabel(option)}
+              {getOptionLabel(option, language)}
             </button>
           );
         })}
@@ -137,7 +164,7 @@ export default function QuestionInput({ question, value, onChange }) {
         <div className="slider-value">{sliderValue}</div>
 
         <input
-          aria-label={getQuestionText(question)}
+          aria-label={getQuestionText(question, language)}
           max={question.max}
           min={question.min}
           type="range"
@@ -162,7 +189,7 @@ export default function QuestionInput({ question, value, onChange }) {
     return (
       <div className="number-grid">
         <label>
-          <span>Größe in cm</span>
+          <span>{localText(language, "Größe in cm", "Height in cm")}</span>
           <input
             inputMode="numeric"
             min="1"
@@ -175,7 +202,7 @@ export default function QuestionInput({ question, value, onChange }) {
         </label>
 
         <label>
-          <span>Gewicht in kg</span>
+          <span>{localText(language, "Gewicht in kg", "Weight in kg")}</span>
           <input
             inputMode="numeric"
             min="1"
@@ -193,7 +220,7 @@ export default function QuestionInput({ question, value, onChange }) {
   if (question.type === "number") {
     return (
       <input
-        aria-label={getQuestionText(question)}
+        aria-label={getQuestionText(question, language)}
         className="number-input"
         inputMode="numeric"
         type="number"
@@ -205,7 +232,7 @@ export default function QuestionInput({ question, value, onChange }) {
 
   return (
     <textarea
-      aria-label={getQuestionText(question)}
+      aria-label={getQuestionText(question, language)}
       className="free-text-input"
       rows="6"
       value={value || ""}
