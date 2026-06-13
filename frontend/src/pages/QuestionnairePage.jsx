@@ -142,6 +142,7 @@ export default function QuestionnairePage() {
   const { language, t } = useLanguage();
 
   const startedAtRef = useRef(Date.now());
+
   const didRestoreResumeRef = useRef(false);
 
   const [patientIdentity] = useState(() => readPatientIdentity());
@@ -308,7 +309,9 @@ export default function QuestionnairePage() {
           current_question_id: nextQuestionId,
         }),
       );
-    } catch {
+    }   catch (saveError) {
+      console.error("Questionnaire progress save failed:", saveError);
+
       setNotice(
         localText(
           language,
@@ -384,46 +387,49 @@ export default function QuestionnairePage() {
     }
   }
 
-  async function handleForward() {
-    if (!currentQuestion) return;
+async function handleForward() {
+  if (!currentQuestion) return;
 
-    const nextAnswers = {
-      ...answers,
-      [currentQuestion.id]: value,
-    };
+  setError("");
+  setNotice("");
 
-    if (!isAnswerComplete(currentQuestion, value)) {
-      setError(
-        t("answerRequired") ||
-          localText(
-            language,
-            "Bitte beantworten Sie diese Frage.",
-            "Please answer this question.",
-          ),
-      );
-      return;
-    }
+  const nextAnswers = {
+    ...answers,
+    [currentQuestion.id]: value,
+  };
 
-    setAnswers(nextAnswers);
-
-    if (isLastQuestion) {
-      await submitQuestionnaire(nextAnswers);
-      return;
-    }
-
-    const nextVisibleQuestions = getVisibleQuestions(allQuestions, nextAnswers);
-    const nextIndex = Math.min(
-      currentIndex + 1,
-      nextVisibleQuestions.length - 1,
+  if (!isAnswerComplete(currentQuestion, value)) {
+    setError(
+      t("answerRequired") ||
+        localText(
+          language,
+          "Bitte beantworten Sie diese Frage.",
+          "Please answer this question.",
+        ),
     );
-    const nextQuestionId = nextVisibleQuestions[nextIndex]?.id || "";
 
-    await saveProgress(nextAnswers, nextQuestionId);
-
-    setCurrentIndex(nextIndex);
-    setError("");
+    return;
   }
 
+  setAnswers(nextAnswers);
+
+  if (isLastQuestion) {
+    await submitQuestionnaire(nextAnswers);
+    return;
+  }
+
+  const nextVisibleQuestions = getVisibleQuestions(allQuestions, nextAnswers);
+  const nextIndex = Math.min(
+    currentIndex + 1,
+    nextVisibleQuestions.length - 1,
+  );
+  const nextQuestionId = nextVisibleQuestions[nextIndex]?.id || "";
+
+  await saveProgress(nextAnswers, nextQuestionId);
+
+  setCurrentIndex(nextIndex);
+  setError("");
+}
   function handleBack() {
     setCurrentIndex((index) => Math.max(index - 1, 0));
     setError("");
