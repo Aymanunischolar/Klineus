@@ -7,7 +7,11 @@ from typing import Any
 from app.schemas import AnswerGroup, DocumentationFlag, QuestionnaireAnswer
 
 
-DISCLAIMER = "AI-generated draft. Must be reviewed and approved by a physician."
+DISCLAIMER = (
+    "KI-generierter Entwurf. Dieser Text ist keine Diagnose und ersetzt keine "
+    "ärztliche Entscheidung. Muss von einer Ärztin oder einem Arzt geprüft, "
+    "bearbeitet und freigegeben werden."
+)
 
 BLOCK_TITLES = {
     "A": "Block A: Ihr Knieproblem",
