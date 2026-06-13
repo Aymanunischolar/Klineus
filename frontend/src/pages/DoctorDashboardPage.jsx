@@ -5,6 +5,10 @@ import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
 
+function localText(language, de, en) {
+  return language === "en" ? en : de;
+}
+
 function formatDate(value, language) {
   if (!value) {
     return "-";
@@ -84,10 +88,15 @@ export default function DoctorDashboardPage() {
       <section className="dashboard-header">
         <div>
           <p className="eyebrow">{t("dashboardEyebrow")}</p>
+
           <h1>{t("patientCases")}</h1>
+
           <p className="dashboard-subtitle">
-            Eingereichte Fragebögen werden hier mit Indikation, Status und
-            Öffnen-Link angezeigt.
+            {localText(
+              language,
+              "Eingereichte Fragebögen werden hier mit Patient, Versicherungsnummer, Indikation, Status und Öffnen-Link angezeigt.",
+              "Submitted questionnaires are shown here with patient, insurance ID, indication, status and open link.",
+            )}
           </p>
         </div>
 
@@ -114,18 +123,32 @@ export default function DoctorDashboardPage() {
           <table className="case-table">
             <thead>
               <tr>
+                <th>{localText(language, "Patient", "Patient")}</th>
+                <th>
+                  {localText(
+                    language,
+                    "Versicherungsnummer",
+                    "Insurance ID",
+                  )}
+                </th>
                 <th>{t("caseId")}</th>
                 <th>{t("created")}</th>
                 <th>{t("indication")}</th>
                 <th>{t("status")}</th>
                 <th>{t("report")}</th>
-                <th>Aktion</th>
+                <th>{localText(language, "Aktion", "Action")}</th>
               </tr>
             </thead>
 
             <tbody>
               {cases.map((patientCase) => (
                 <tr key={patientCase.case_id}>
+                  <td>
+                    <strong>{patientCase.patient_name || "-"}</strong>
+                  </td>
+
+                  <td className="mono">{patientCase.insurance_id || "-"}</td>
+
                   <td className="mono">
                     {patientCase.case_id
                       ? patientCase.case_id.slice(0, 8)
@@ -142,9 +165,7 @@ export default function DoctorDashboardPage() {
 
                   <td>{statusLabel(patientCase.status, t)}</td>
 
-                  <td>
-                    {reportStatusLabel(patientCase.report_status, t)}
-                  </td>
+                  <td>{reportStatusLabel(patientCase.report_status, t)}</td>
 
                   <td>
                     {patientCase.case_id ? (
@@ -152,10 +173,12 @@ export default function DoctorDashboardPage() {
                         className="small-button"
                         to={`/doctor/cases/${patientCase.case_id}`}
                       >
-                        {t("openCase") || "Öffnen"}
+                        {t("openCase") || localText(language, "Öffnen", "Open")}
                       </Link>
                     ) : (
-                      <span className="muted">Keine Fall-ID</span>
+                      <span className="muted">
+                        {localText(language, "Keine Fall-ID", "No case ID")}
+                      </span>
                     )}
                   </td>
                 </tr>

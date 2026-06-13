@@ -23,19 +23,25 @@ def get_case_metadata(case) -> dict:
 
 
 def get_case_patient_name(case) -> str | None:
-    direct_patient_name = getattr(case, "patient_name", None)
+    # Privacy decision:
+    # Do not expose patient names in the doctor API for the current version.
+    # The requirement document only mentions last name for a future pause/resume flow.
+    return None
 
-    if direct_patient_name:
-        return direct_patient_name
+def get_case_insurance_id(case) -> str | None:
+    direct_insurance_id = getattr(case, "insurance_id", None)
+
+    if direct_insurance_id:
+        return direct_insurance_id
 
     metadata = get_case_metadata(case)
 
     return (
-        metadata.get("patient_name")
-        or metadata.get("patientName")
-        or metadata.get("name")
+        metadata.get("insurance_id")
+        or metadata.get("insuranceId")
+        or metadata.get("insurance_number")
+        or metadata.get("insuranceNumber")
     )
-
 
 def get_case_questionnaire_template_id(case) -> str | None:
     direct_template_id = getattr(case, "questionnaire_template_id", None)
@@ -93,6 +99,7 @@ def build_case_summary(case) -> PatientCaseSummary:
         created_at=case.created_at,
         updated_at=case.updated_at,
         patient_name=get_case_patient_name(case),
+        insurance_id=get_case_insurance_id(case),
         indication=case.indication,
         questionnaire_template_id=get_case_questionnaire_template_id(case),
         questionnaire_version=get_case_questionnaire_version(case),
@@ -130,6 +137,7 @@ def get_case(
         created_at=case.created_at,
         updated_at=case.updated_at,
         patient_name=get_case_patient_name(case),
+        insurance_id=get_case_insurance_id(case),
         indication=case.indication,
         questionnaire_template_id=get_case_questionnaire_template_id(case),
         questionnaire_version=get_case_questionnaire_version(case),
@@ -137,10 +145,10 @@ def get_case(
         report_status=case.report_status,
         report_generated_at=case.report_generated_at,
         answer_groups=group_answers(case.answers),
-        flags=generate_documentation_flags(case.answers),
+        flags=generate_documentation_flags(case.answers, case.indication),
         report_text=case.report_text,
         report_json=get_case_report_json(case),
-        bmi=calculate_bmi(case.answers),
+        bmi=calculate_bmi(case.answers, case.indication),
     )
 
 

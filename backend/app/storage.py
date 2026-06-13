@@ -44,8 +44,9 @@ class SQLiteCaseStorage:
                 """
                 CREATE TABLE IF NOT EXISTS patient_cases (
                     case_id TEXT PRIMARY KEY,
-                    patient_name TEXT,
-                    indication TEXT NOT NULL,
+                   patient_name TEXT,
+insurance_id TEXT,
+indication TEXT NOT NULL,
                     questionnaire_template_id TEXT,
                     questionnaire_version INTEGER,
                     answers_json TEXT NOT NULL,
@@ -65,6 +66,7 @@ class SQLiteCaseStorage:
 
             migrations = {
                 "patient_name": "ALTER TABLE patient_cases ADD COLUMN patient_name TEXT",
+                "insurance_id": "ALTER TABLE patient_cases ADD COLUMN insurance_id TEXT",
                 "questionnaire_template_id": "ALTER TABLE patient_cases ADD COLUMN questionnaire_template_id TEXT",
                 "questionnaire_version": "ALTER TABLE patient_cases ADD COLUMN questionnaire_version INTEGER",
                 "metadata_json": "ALTER TABLE patient_cases ADD COLUMN metadata_json TEXT NOT NULL DEFAULT '{}'",
@@ -101,6 +103,7 @@ class SQLiteCaseStorage:
         return PatientCase(
             case_id=row["case_id"],
             patient_name=row["patient_name"],
+            insurance_id=row["insurance_id"],
             indication=row["indication"],
             questionnaire_template_id=row["questionnaire_template_id"],
             questionnaire_version=row["questionnaire_version"],
@@ -116,13 +119,14 @@ class SQLiteCaseStorage:
         )
 
     def create_case(
-        self,
-        indication: str,
-        answers: list[dict[str, Any]],
-        metadata: dict[str, Any] | None = None,
-        patient_name: str | None = None,
-        questionnaire_template_id: str | None = None,
-        questionnaire_version: int | None = None,
+            self,
+            indication: str,
+            answers: list[dict[str, Any]],
+            metadata: dict[str, Any] | None = None,
+            patient_name: str | None = None,
+            insurance_id: str | None = None,
+            questionnaire_template_id: str | None = None,
+            questionnaire_version: int | None = None,
     ) -> PatientCase:
         now = utc_now()
 
@@ -131,6 +135,7 @@ class SQLiteCaseStorage:
         case = PatientCase(
             case_id=str(uuid4()),
             patient_name=patient_name.strip() if patient_name else None,
+            insurance_id=insurance_id.strip() if insurance_id else None,
             indication=indication,
             questionnaire_template_id=questionnaire_template_id,
             questionnaire_version=questionnaire_version,
@@ -149,9 +154,10 @@ class SQLiteCaseStorage:
             with connect() as connection:
                 connection.execute(
                     """
-                    INSERT INTO patient_cases (
-                        case_id,
-                        patient_name,
+                   INSERT INTO patient_cases (
+                         case_id,
+                         patient_name,
+                         insurance_id,
                         indication,
                         questionnaire_template_id,
                         questionnaire_version,
@@ -165,12 +171,14 @@ class SQLiteCaseStorage:
                         updated_at,
                         report_generated_at
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
-                        case.case_id,
-                        case.patient_name,
-                        case.indication,
+                        (
+                            case.case_id,
+                            case.patient_name,
+                            case.insurance_id,
+                            case.indication,
                         case.questionnaire_template_id,
                         case.questionnaire_version,
                         dumps(case.answers),

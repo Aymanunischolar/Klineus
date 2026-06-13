@@ -89,6 +89,7 @@ def case_to_summary(case) -> PatientCaseSummary:
         updated_at=case.updated_at,
         indication=case.indication,
         patient_name=case.patient_name,
+        insurance_id=getattr(case, "insurance_id", None),
         questionnaire_template_id=case.questionnaire_template_id,
         questionnaire_version=case.questionnaire_version,
         status=case.status,

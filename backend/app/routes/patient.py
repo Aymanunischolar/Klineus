@@ -116,12 +116,12 @@ def create_patient_case(
     created_case = storage.create_case(
         indication=request.indication,
         patient_name=request.patient_name,
+        insurance_id=request.insurance_id,
         questionnaire_template_id=request.questionnaire_template_id,
         questionnaire_version=request.questionnaire_version,
         answers=answers,
         metadata=metadata,
     )
-
     return CreatePatientCaseResponse(
         case_id=created_case.case_id,
         status="completed",

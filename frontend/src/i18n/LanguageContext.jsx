@@ -52,13 +52,12 @@ const translations = {
     productPageEyebrow: "Produkt",
     productPageTitle:
       "KI-gestützte Dokumentationsunterstützung für Orthopädie und Unfallchirurgie.",
-    productPageIntro:
-      "Klineus unterstützt die leitlinienbasierte Erhebung, Einordnung und Dokumentation patientenbezogener Informationen vor dem Arztkontakt.",
-
+ productPageIntro:
+  "Klineus unterstützt die leitlinienbasierte Erhebung, Einordnung und Dokumentation von Fragebogenangaben vor dem Arztkontakt.",
     workflowEyebrow: "So funktioniert Klineus",
     workflowTitle: "Von der Patientenantwort zur ärztlich prüfbaren Entscheidungsgrundlage.",
-    workflowIntro:
-      "Klineus strukturiert den Indikationsprozess vor dem Arztkontakt. Patientendaten werden gezielt erhoben, anhand medizinischer Kriterien eingeordnet und für den Arzt verständlich aufbereitet.",
+  workflowIntro:
+  "Klineus strukturiert den Indikationsprozess vor dem Arztkontakt. Fragebogenangaben werden gezielt erhoben, anhand medizinischer Kriterien eingeordnet und für den Arzt verständlich aufbereitet.",
     workflowStep1Title: "Adaptiver Patientenfragebogen",
     workflowStep1Text:
       "Patientinnen und Patienten beantworten vor dem Arztkontakt einen digitalen Fragebogen. Die Fragen orientieren sich an relevanten Leitlinienkriterien und sind patientengerecht formuliert.",
@@ -66,9 +65,8 @@ const translations = {
     workflowStep2Text:
       "Die Antworten werden automatisch strukturiert und mit hinterlegter Leitlinienlogik abgeglichen. Das System erkennt erfüllte Kriterien, offene Punkte und fehlende Informationen.",
     workflowStep3Title: "Arzt-Dashboard und Epikrise-Entwurf",
-    workflowStep3Text:
-      "Der Arzt erhält eine klare Zusammenfassung mit Patientendaten, Dokumentationshinweisen, offenen Punkten und einem vorbereiteten Entwurf für die ärztliche Dokumentation.",
-
+  workflowStep3Text:
+  "Der Arzt erhält eine klare Zusammenfassung mit Fragebogenangaben, Dokumentationshinweisen, offenen Punkten und einem vorbereiteten Entwurf für die ärztliche Dokumentation.",
     productSystemKicker: "Ein Produkt, ein Ablauf",
     productSystemTitle:
       "Klineus verbindet Patientenangaben, ärztliche Prüfung und Dokumentationsentwurf.",
@@ -164,8 +162,8 @@ const translations = {
     terms2Text:
       "Klineus stellt keine Diagnosen, trifft keine endgültigen Behandlungsentscheidungen und gibt keine Operationsempfehlungen.",
     terms3Title: "3. Datenverarbeitung",
-    terms3Text:
-      "Der Prototyp ist auf anonyme Fall-IDs ausgelegt und vermeidet direkte Identifikatoren in KI-Prompts.",
+   terms3Text:
+  "Patientenname und Versicherungsnummer dienen der ärztlichen Zuordnung. Direkte Identifikatoren sollen nicht an KI-Prompts übergeben werden.",
     terms4Title: "4. KI-generierte Entwürfe",
     terms4Text:
       "KI-generierte Texte sind ausschließlich Dokumentationsentwürfe und müssen ärztlich geprüft werden.",
@@ -292,13 +290,12 @@ const translations = {
     productPageEyebrow: "Product",
     productPageTitle:
       "AI-supported documentation support for orthopedics and trauma surgery.",
-    productPageIntro:
-      "Klineus supports guideline-based collection, structuring and documentation of patient-related information before the consultation.",
-
+   productPageIntro:
+  "Klineus supports guideline-based collection, structuring and documentation of questionnaire information before the consultation.",
     workflowEyebrow: "How Klineus works",
     workflowTitle: "From patient answers to a physician-reviewable decision basis.",
-    workflowIntro:
-      "Klineus structures the indication process before the medical consultation. Patient data is collected in a targeted way, mapped against medical criteria and prepared clearly for physician review.",
+   workflowIntro:
+  "Klineus structures the indication process before the medical consultation. Questionnaire answers are collected in a targeted way, mapped against medical criteria and prepared clearly for physician review.",
     workflowStep1Title: "Adaptive patient questionnaire",
     workflowStep1Text:
       "Patients complete a digital questionnaire before the consultation. The questions are based on relevant guideline criteria and written in patient-friendly language.",
@@ -306,9 +303,8 @@ const translations = {
     workflowStep2Text:
       "The answers are automatically structured and compared with embedded guideline logic. The system identifies fulfilled criteria, open points and missing information.",
     workflowStep3Title: "Doctor dashboard and documentation draft",
-    workflowStep3Text:
-      "The physician receives a clear summary with patient data, documentation flags, open points and a prepared draft for medical documentation.",
-
+  workflowStep3Text:
+  "The physician receives a clear summary with questionnaire answers, documentation flags, open points and a prepared draft for medical documentation.",
     productSystemKicker: "One product, one workflow",
     productSystemTitle:
       "Klineus connects patient input, physician review and documentation drafting.",
@@ -404,8 +400,8 @@ const translations = {
     terms2Text:
       "Klineus does not provide diagnoses, final treatment decisions or surgery recommendations.",
     terms3Title: "3. Data handling",
-    terms3Text:
-      "The prototype is designed around anonymous case IDs and avoids direct identifiers in AI prompts.",
+   terms3Text:
+  "Patient name and insurance ID are used for doctor-side identification. Direct identifiers should not be passed into AI prompts.",
     terms4Title: "4. AI-generated drafts",
     terms4Text:
       "AI-generated text is documentation draft only and must be reviewed by a physician.",

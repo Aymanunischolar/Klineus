@@ -23,9 +23,9 @@ const fallbackCopy = {
         text: "Knie- und Hüft-TEP-Fragebögen mit strukturierten Antwortgruppen, Pflichtfragen und mobilen Eingabemasken.",
       },
       {
-        title: "Ärztliches Dashboard",
-        text: "Übersicht über eingereichte Fälle, Patientennamen, Indikation, Status, Warnhinweise und Antworten.",
-      },
+  title: "Ärztliches Dashboard",
+  text: "Übersicht über eingereichte Fälle, Indikation, Status, Warnhinweise und Antworten.",
+},
       {
         title: "KI-Dokumentationsentwurf",
         text: "Generierung eines prüfpflichtigen medizinischen Entwurfs, inklusive offener Punkte und PDF-fähiger Vorschau.",
@@ -62,9 +62,9 @@ const fallbackCopy = {
         text: "Knee and hip replacement questionnaires with structured answer groups, required questions and mobile-friendly inputs.",
       },
       {
-        title: "Doctor dashboard",
-        text: "Overview of submitted cases, patient names, indication, status, documentation notes and answers.",
-      },
+  title: "Doctor dashboard",
+  text: "Overview of submitted cases, indication, status, documentation notes and answers.",
+},
       {
         title: "AI documentation draft",
         text: "Generation of a review-required medical draft with open points and PDF-ready preview.",

@@ -484,11 +484,11 @@ DEFAULT_CONTENT_PAGES = [
                 "links": [],
                 "items": [
                     item(
-                        "case-ids",
-                        "Anonyme Fall-IDs",
-                        "Anonymous case IDs",
-                        "Der Prototyp arbeitet mit anonymen Fall-IDs und vermeidet direkte Identifikatoren in KI-Prompts.",
-                        "The prototype uses anonymous case IDs and avoids direct identifiers in AI prompts.",
+                        "doctor-identification",
+                        "Ärztliche Zuordnung",
+                        "Doctor-side identification",
+                        "Patientenname und Versicherungsnummer dienen der ärztlichen Zuordnung. Direkte Identifikatoren sollen nicht an KI-Prompts übergeben werden.",
+                        "Patient name and insurance ID are used for doctor-side identification. Direct identifiers should not be passed into AI prompts.",
                         icon="privacy",
                     ),
                     item(

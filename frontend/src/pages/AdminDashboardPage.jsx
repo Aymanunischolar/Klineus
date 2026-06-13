@@ -46,8 +46,10 @@ const copy = {
     aiGenerated: "AI generiert",
     aiEdited: "Bearbeitet",
     noData: "Keine Daten vorhanden.",
-    patient: "Patient",
-    indication: "Fragebogen",
+   caseReference: "Fall",
+patient: "Patient",
+insuranceId: "Versicherungsnummer",
+indication: "Fragebogen",
     version: "Version",
     created: "Erstellt",
     status: "Status",
@@ -131,8 +133,10 @@ const copy = {
     aiGenerated: "AI generated",
     aiEdited: "Edited",
     noData: "No data available.",
-    patient: "Patient",
-    indication: "Questionnaire",
+   caseReference: "Case",
+patient: "Patient",
+insuranceId: "Insurance ID",
+indication: "Questionnaire",
     version: "Version",
     created: "Created",
     status: "Status",
@@ -313,38 +317,53 @@ function JsonEditor({
   actions,
 }) {
   return (
-    <section className="admin-panel">
-      <div className="admin-panel-header">
-        <div>
-          <h2>{title}</h2>
-          {hint ? <p>{hint}</p> : null}
-        </div>
+<section className="admin-panel">
+  <h2>{text.recentCases}</h2>
 
-        {actions ? <div className="admin-panel-actions">{actions}</div> : null}
-      </div>
+  <div className="admin-table-wrap">
+    <table className="admin-table">
+      <thead>
+      <tr>
+        <th>{text.patient}</th>
+        <th>{text.insuranceId}</th>
+        <th>{text.caseId}</th>
+        <th>{text.indication}</th>
+        <th>{text.version}</th>
+        <th>{text.status}</th>
+        <th>{text.created}</th>
+      </tr>
+      </thead>
 
-      {error ? <p className="form-error">{error}</p> : null}
-      {notice ? <p className="form-success">{notice}</p> : null}
+      <tbody>
+      {(analytics.recent_cases || []).map((patientCase) => (
+          <tr key={patientCase.case_id}>
+            <td>
+              <strong>{patientCase.patient_name || "—"}</strong>
+            </td>
 
-      <textarea
-        className="admin-json-editor"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        spellCheck="false"
-      />
+            <td className="mono">{patientCase.insurance_id || "—"}</td>
 
-      <div className="admin-panel-actions">
-        <button
-          className="primary-button"
-          type="button"
-          onClick={onSave}
-          disabled={saving}
-        >
-          {saving ? "..." : saveLabel}
-        </button>
-      </div>
-    </section>
-  );
+            <td className="mono">
+              {patientCase.case_id ? patientCase.case_id.slice(0, 8) : "—"}
+            </td>
+
+            <td>{getIndicationLabel(patientCase.indication, language)}</td>
+
+            <td>
+              {patientCase.questionnaire_version
+                  ? `v${patientCase.questionnaire_version}`
+                  : "—"}
+            </td>
+
+            <td>{patientCase.status || "—"}</td>
+
+            <td>{formatDate(patientCase.created_at, language)}</td>
+          </tr>
+      ))}
+      </tbody>
+    </table>
+  </div>
+</section>);
 }
 
 
@@ -796,25 +815,29 @@ export default function AdminDashboardPage() {
                 <div className="admin-table-wrap">
                   <table className="admin-table">
                     <thead>
-                      <tr>
-                        <th>{text.patient}</th>
-                        <th>{text.caseId}</th>
-                        <th>{text.indication}</th>
-                        <th>{text.version}</th>
-                        <th>{text.created}</th>
-                      </tr>
+                    <tr>
+                      <th>{text.caseReference}</th>
+                      <th>{text.indication}</th>
+                      <th>{text.version}</th>
+                      <th>{text.status}</th>
+                      <th>{text.created}</th>
+                    </tr>
                     </thead>
 
                     <tbody>
-                      {(analytics.recent_cases || []).map((patientCase) => (
+                    {(analytics.recent_cases || []).map((patientCase) => (
                         <tr key={patientCase.case_id}>
-                          <td>{patientCase.patient_name || "—"}</td>
                           <td className="mono">{patientCase.case_id?.slice(0, 8)}</td>
                           <td>{getIndicationLabel(patientCase.indication, language)}</td>
-                          <td>{patientCase.questionnaire_version ? `v${patientCase.questionnaire_version}` : "—"}</td>
+                          <td>
+                            {patientCase.questionnaire_version
+                                ? `v${patientCase.questionnaire_version}`
+                                : "—"}
+                          </td>
+                          <td>{patientCase.status || "—"}</td>
                           <td>{formatDate(patientCase.created_at, language)}</td>
                         </tr>
-                      ))}
+                    ))}
                     </tbody>
                   </table>
                 </div>
@@ -823,15 +846,15 @@ export default function AdminDashboardPage() {
           ) : null}
 
           {activeTab === "cms" ? (
-            <div className="admin-layout">
-              <JsonEditor
-                title={text.siteSettings}
-                hint={text.jsonHint}
-                value={siteJson}
-                onChange={setSiteJson}
-                onSave={saveSiteSettings}
-                saveLabel={text.save}
-                saving={actionStatus === "saving"}
+              <div className="admin-layout">
+                <JsonEditor
+                    title={text.siteSettings}
+                    hint={text.jsonHint}
+                    value={siteJson}
+                    onChange={setSiteJson}
+                    onSave={saveSiteSettings}
+                    saveLabel={text.save}
+                    saving={actionStatus === "saving"}
                 error={error}
                 notice={notice}
               />

@@ -115,29 +115,30 @@ export const api = {
       body: { email, password },
     }),
 
-  createPatientCase: (
-    answers,
-    metadata = {},
-    indication = "knee_tep",
-    questionnaireInfo = {},
-  ) =>
-    request("/patient/cases", {
-      method: "POST",
-      body: {
-        indication,
-        patient_name: questionnaireInfo.patient_name || null,
-        questionnaire_template_id:
-          questionnaireInfo.questionnaire_template_id ||
-          questionnaireInfo.id ||
-          null,
-        questionnaire_version:
-          questionnaireInfo.questionnaire_version ||
-          questionnaireInfo.version ||
-          null,
-        answers,
-        metadata,
-      },
-    }),
+ createPatientCase: (
+  answers,
+  metadata = {},
+  indication = "knee_tep",
+  questionnaireInfo = {},
+) =>
+  request("/patient/cases", {
+    method: "POST",
+    body: {
+      indication,
+      patient_name: questionnaireInfo.patient_name || null,
+      insurance_id: questionnaireInfo.insurance_id || null,
+      questionnaire_template_id:
+        questionnaireInfo.questionnaire_template_id ||
+        questionnaireInfo.id ||
+        null,
+      questionnaire_version:
+        questionnaireInfo.questionnaire_version ||
+        questionnaireInfo.version ||
+        null,
+      answers,
+      metadata,
+    },
+  }),
 
   getQuestionnaireConfig: () =>
     requestWithFallback("/patient/config", "/patient/questionnaire-config"),
@@ -179,23 +180,41 @@ export const api = {
       auth: true,
     }),
 
-  getAdminConfig: async () => {
-    try {
-      return await request("/admin/questionnaire-config", {
-        auth: "admin",
-      });
-    } catch {
-      const [languages, extraQuestions] = await Promise.all([
-        request("/admin/languages", { auth: "admin" }),
-        request("/admin/questions", { auth: "admin" }),
-      ]);
+ getAdminConfig: async () => {
+  const [
+    analytics,
+    siteSettings,
+    pagesResponse,
+    media,
+    questionnairesResponse,
+    apiLogs,
+    aiLogs,
+    languages,
+    extraQuestions,
+  ] = await Promise.all([
+    request("/admin/analytics", { auth: "admin" }),
+    request("/admin/site-settings", { auth: "admin" }),
+    request("/admin/pages", { auth: "admin" }),
+    request("/admin/media", { auth: "admin" }),
+    request("/admin/questionnaires", { auth: "admin" }),
+    request("/admin/api-logs", { auth: "admin" }),
+    request("/admin/ai-logs", { auth: "admin" }),
+    request("/admin/languages", { auth: "admin" }),
+    request("/admin/questions", { auth: "admin" }),
+  ]);
 
-      return {
-        languages,
-        extra_questions: extraQuestions,
-      };
-    }
-  },
+  return {
+    analytics,
+    siteSettings,
+    pages: pagesResponse?.pages || [],
+    media: media || [],
+    questionnaires: questionnairesResponse?.questionnaires || [],
+    apiLogs: apiLogs || [],
+    aiLogs: aiLogs || [],
+    languages: languages || [],
+    extra_questions: extraQuestions || [],
+  };
+},
 
   getAdminAnalytics: () =>
     request("/admin/analytics", {

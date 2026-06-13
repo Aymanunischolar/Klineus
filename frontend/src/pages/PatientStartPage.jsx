@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
@@ -11,7 +12,33 @@ export default function PatientStartPage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
 
+  const [patientName, setPatientName] = useState("");
+  const [insuranceId, setInsuranceId] = useState("");
+  const [error, setError] = useState("");
+
   function openQuestionnaire(indication) {
+    const cleanPatientName = patientName.trim();
+    const cleanInsuranceId = insuranceId.trim();
+
+    if (!cleanPatientName || !cleanInsuranceId) {
+      setError(
+        localText(
+          language,
+          "Bitte geben Sie den Patientennamen und die Versicherungsnummer ein.",
+          "Please enter the patient name and insurance ID.",
+        ),
+      );
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      "klineus_patient_identity",
+      JSON.stringify({
+        patient_name: cleanPatientName,
+        insurance_id: cleanInsuranceId,
+      }),
+    );
+
     navigate(`/patient/questionnaire/${indication}`);
   }
 
@@ -33,10 +60,84 @@ export default function PatientStartPage() {
         <p className="patient-start-lead">
           {localText(
             language,
-            "Wählen Sie den passenden Fragebogen aus. Die Fragen erscheinen einzeln und können vor dem Absenden korrigiert werden.",
-            "Select the matching questionnaire. Questions appear one by one and can be corrected before submission.",
+            "Bitte geben Sie zuerst Ihre Patientendaten für das ärztliche Dashboard ein. Danach wählen Sie den passenden Fragebogen aus.",
+            "Please enter your patient details for the doctor dashboard first. Then select the matching questionnaire.",
           )}
         </p>
+
+        <div className="patient-identity-panel">
+          <div className="patient-identity-heading">
+            <p className="eyebrow">
+              {localText(language, "Patientendaten", "Patient details")}
+            </p>
+
+            <h2>
+              {localText(
+                language,
+                "Angaben für die ärztliche Zuordnung",
+                "Details for doctor identification",
+              )}
+            </h2>
+
+            <p>
+              {localText(
+                language,
+                "Diese Angaben werden dem Arzt angezeigt, aber nicht als medizinische Fragebogenantwort an die KI übergeben.",
+                "These details are shown to the doctor, but are not sent to the AI as medical questionnaire answers.",
+              )}
+            </p>
+          </div>
+
+          <div className="patient-identity-grid">
+            <label>
+              <span>
+                {localText(language, "Patientenname", "Patient name")}
+              </span>
+
+              <input
+                autoComplete="name"
+                placeholder={localText(
+                  language,
+                  "z. B. Max Mustermann",
+                  "e.g. Max Mustermann",
+                )}
+                type="text"
+                value={patientName}
+                onChange={(event) => {
+                  setPatientName(event.target.value);
+                  setError("");
+                }}
+              />
+            </label>
+
+            <label>
+              <span>
+                {localText(
+                  language,
+                  "Versicherungsnummer",
+                  "Insurance ID",
+                )}
+              </span>
+
+              <input
+                autoComplete="off"
+                placeholder={localText(
+                  language,
+                  "z. B. A123456789",
+                  "e.g. A123456789",
+                )}
+                type="text"
+                value={insuranceId}
+                onChange={(event) => {
+                  setInsuranceId(event.target.value);
+                  setError("");
+                }}
+              />
+            </label>
+          </div>
+        </div>
+
+        {error ? <p className="form-error">{error}</p> : null}
 
         <div className="patient-intro-grid">
           <button
@@ -44,7 +145,7 @@ export default function PatientStartPage() {
             type="button"
             onClick={() => openQuestionnaire("knee_tep")}
           >
-            <div className="joint-choice-image" aria-hidden="true">
+            <div className="joint-choice-image">
               <img alt="" src="/static/images/knee.png" />
             </div>
 
@@ -72,7 +173,7 @@ export default function PatientStartPage() {
             type="button"
             onClick={() => openQuestionnaire("hip_tep")}
           >
-            <div className="joint-choice-image" aria-hidden="true">
+            <div className="joint-choice-image">
               <img alt="" src="/static/images/hip.png" />
             </div>
 

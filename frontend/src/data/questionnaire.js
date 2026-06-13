@@ -395,7 +395,7 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
           id: "E6",
           textDe: "Rauchen Sie aktuell?",
           textEn: "Do you currently smoke?",
-          type: "single_with_text",
+          type: "smoking_details",
           options: options([
             [
               "Ja, mit Angabe Packungen pro Tag und Rauchjahre",
@@ -896,7 +896,7 @@ export const hipTepQuestionnaire = makeQuestionnaire({
           id: "E5",
           textDe: "Rauchen Sie aktuell?",
           textEn: "Do you currently smoke?",
-          type: "single_with_text",
+          type: "smoking_details",
           options: options([
             ["Ja, täglich", "Yes, daily"],
             ["Ja, gelegentlich", "Yes, occasionally"],
@@ -1186,7 +1186,20 @@ export function defaultAnswer(question) {
   if (question.type === "multiple") return [];
   if (question.type === "slider") return 5;
   if (question.type === "number_pair") return { height_cm: "", weight_kg: "" };
-  if (question.type === "single_with_text") return { value: "", detail: "" };
+
+  if (question.type === "single_with_text") {
+    return { value: "", detail: "" };
+  }
+
+  if (question.type === "smoking_details") {
+    return {
+      value: "",
+      packs_per_day: "",
+      smoking_years: "",
+      stopped_since: "",
+      occasional_details: "",
+    };
+  }
 
   return "";
 }
@@ -1206,17 +1219,30 @@ export function isAnswerComplete(question, value) {
     return Number.isFinite(Number(value));
   }
 
-  if (question.type === "single_with_text") {
-    const selected = value?.value || "";
+ if (question.type === "smoking_details") {
+  const selected = value?.value || "";
 
-    if (!selected) return false;
+  if (!selected) return false;
 
-    if (question.detailsIf?.includes(selected)) {
-      return String(value?.detail || "").trim().length > 0;
-    }
-
-    return true;
+  if (
+    selected === "Ja, mit Angabe Packungen pro Tag und Rauchjahre" ||
+    selected === "Ja, täglich"
+  ) {
+    return (
+      Number(value?.packs_per_day) > 0 &&
+      Number(value?.smoking_years) > 0
+    );
   }
+
+  if (
+    selected === "Ich habe aufgehört seit…" ||
+    selected === "Ich habe aufgehört seit …"
+  ) {
+    return String(value?.stopped_since || "").trim().length > 0;
+  }
+
+  return true;
+}
 
   return String(value || "").trim().length > 0;
 }

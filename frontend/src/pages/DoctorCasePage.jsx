@@ -53,6 +53,37 @@ function normalizeAnswer(answer) {
 
   if (typeof answer === "object") {
     if (
+      Object.prototype.hasOwnProperty.call(answer, "packs_per_day") ||
+      Object.prototype.hasOwnProperty.call(answer, "smoking_years") ||
+      Object.prototype.hasOwnProperty.call(answer, "pack_years") ||
+      Object.prototype.hasOwnProperty.call(answer, "stopped_since")
+    ) {
+      const parts = [];
+
+      if (answer.value) {
+        parts.push(answer.value);
+      }
+
+      if (answer.packs_per_day) {
+        parts.push(`${answer.packs_per_day} Packungen/Tag`);
+      }
+
+      if (answer.smoking_years) {
+        parts.push(`${answer.smoking_years} Raucherjahre`);
+      }
+
+      if (answer.pack_years !== "" && answer.pack_years !== undefined) {
+        parts.push(`${answer.pack_years} Pack Years`);
+      }
+
+      if (answer.stopped_since) {
+        parts.push(`Aufgehört seit: ${answer.stopped_since}`);
+      }
+
+      return parts.length ? parts.join(" · ") : "Keine Angabe";
+    }
+
+    if (
       Object.prototype.hasOwnProperty.call(answer, "height_cm") ||
       Object.prototype.hasOwnProperty.call(answer, "weight_kg")
     ) {
@@ -70,6 +101,7 @@ function normalizeAnswer(answer) {
 
   return String(answer);
 }
+
 
 function getQuestionText(answer) {
   return (
@@ -577,33 +609,44 @@ export default function DoctorCasePage() {
     </div>
   </section>
 
-  <section className="case-summary-grid">
-    <article className="case-summary-card">
-      <span>{localText(language, "Fall-ID", "Case ID")}</span>
-      <strong className="mono">{patientCase?.case_id || caseId}</strong>
-    </article>
+<section className="case-summary-grid">
+  <article className="case-summary-card">
+    <span>{localText(language, "Patient", "Patient")}</span>
+    <strong>{patientCase?.patient_name || "-"}</strong>
+  </article>
 
-    <article className="case-summary-card">
-      <span>{localText(language, "Erstellt", "Created")}</span>
-      <strong>{formatDate(patientCase?.created_at, language)}</strong>
-    </article>
+  <article className="case-summary-card">
+    <span>
+      {localText(language, "Versicherungsnummer", "Insurance ID")}
+    </span>
+    <strong className="mono">{patientCase?.insurance_id || "-"}</strong>
+  </article>
 
-    <article className="case-summary-card">
-      <span>{localText(language, "Indikation", "Indication")}</span>
-      <strong>{indicationLabel(patientCase?.indication)}</strong>
-    </article>
+  <article className="case-summary-card">
+    <span>{localText(language, "Fall-ID", "Case ID")}</span>
+    <strong className="mono">{patientCase?.case_id || caseId}</strong>
+  </article>
 
-    <article className="case-summary-card">
-      <span>{localText(language, "Status", "Status")}</span>
-      <strong>{patientCase?.status || "-"}</strong>
-    </article>
+  <article className="case-summary-card">
+    <span>{localText(language, "Erstellt", "Created")}</span>
+    <strong>{formatDate(patientCase?.created_at, language)}</strong>
+  </article>
 
-    <article className="case-summary-card">
-      <span>{localText(language, "Antworten", "Answers")}</span>
-      <strong>{answers.length}</strong>
-    </article>
-  </section>
+  <article className="case-summary-card">
+    <span>{localText(language, "Indikation", "Indication")}</span>
+    <strong>{indicationLabel(patientCase?.indication)}</strong>
+  </article>
 
+  <article className="case-summary-card">
+    <span>{localText(language, "Status", "Status")}</span>
+    <strong>{patientCase?.status || "-"}</strong>
+  </article>
+
+  <article className="case-summary-card">
+    <span>{localText(language, "Antworten", "Answers")}</span>
+    <strong>{answers.length}</strong>
+  </article>
+</section>
   {error ? <p className="form-error">{error}</p> : null}
   {notice ? <p className="form-notice">{notice}</p> : null}
 
@@ -784,32 +827,49 @@ export default function DoctorCasePage() {
     </aside>
   </section>
 
-  <section className="doctor-print-document">
-    <header className="doctor-print-header">
-      <div>
-        <p>KLINEUS</p>
-        <h1>Ärztlicher Dokumentationsentwurf</h1>
-      </div>
-
-      <div className="doctor-print-case-meta">
-        <span>Fall-ID</span>
-        <strong>{patientCase?.case_id || caseId}</strong>
-      </div>
-    </header>
-
-    <div className="doctor-print-submeta">
-      <span>{indicationLabel(patientCase?.indication)}</span>
-      <span>{formatDate(patientCase?.created_at, language)}</span>
+<section className="doctor-print-document">
+  <header className="doctor-print-header">
+    <div>
+      <p>KLINEUS</p>
+      <h1>Ärztlicher Dokumentationsentwurf</h1>
     </div>
 
-    <main className="doctor-print-body">
-      <EditableReportTemplate
-          text={reportText}
-          language={language}
-          onChange={setReportText}
-      />
-    </main>
-  </section>
+    <div className="doctor-print-case-meta">
+      <span>Fall-ID</span>
+      <strong>{patientCase?.case_id || caseId}</strong>
+    </div>
+  </header>
+
+  <div className="doctor-print-patient-grid">
+    <div>
+      <span>Patient</span>
+      <strong>{patientCase?.patient_name || "-"}</strong>
+    </div>
+
+    <div>
+      <span>Versicherungsnummer</span>
+      <strong>{patientCase?.insurance_id || "-"}</strong>
+    </div>
+
+    <div>
+      <span>Indikation</span>
+      <strong>{indicationLabel(patientCase?.indication)}</strong>
+    </div>
+
+    <div>
+      <span>Erstellt</span>
+      <strong>{formatDate(patientCase?.created_at, language)}</strong>
+    </div>
+  </div>
+
+  <main className="doctor-print-body">
+    <EditableReportTemplate
+        text={reportText}
+        language={language}
+        onChange={setReportText}
+    />
+  </main>
+</section>
 </div>
     </AppShell>
   );

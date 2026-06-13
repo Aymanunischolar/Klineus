@@ -18,6 +18,8 @@ QuestionType = Literal[
     "number",
     "text",
     "number_pair",
+    "single_with_text",
+    "smoking_details",
 ]
 
 PiiCategory = Literal[
@@ -300,6 +302,7 @@ class CaseClientMetadata(BaseModel):
 class CreatePatientCaseRequest(BaseModel):
     indication: Indication
     patient_name: str | None = None
+    insurance_id: str | None = None
     questionnaire_template_id: str | None = None
     questionnaire_version: int | None = None
     answers: list[QuestionnaireAnswer] = Field(default_factory=list)
@@ -329,6 +332,7 @@ class PatientCaseSummary(BaseModel):
     updated_at: datetime
     indication: Indication
     patient_name: str | None = None
+    insurance_id: str | None = None
     questionnaire_template_id: str | None = None
     questionnaire_version: int | None = None
     status: CaseStatus

@@ -24,6 +24,7 @@ class PatientCase:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     patient_name: str | None = None
+    insurance_id: str | None = None
     questionnaire_template_id: str | None = None
     questionnaire_version: int | None = None
 

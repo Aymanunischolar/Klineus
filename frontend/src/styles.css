@@ -1252,6 +1252,134 @@ textarea {
     page-break-inside: avoid;
   }
 
+
+ .doctor-print-patient-grid {
+  display: none;
+}
+
+@media print {
+  body.print-doctor-letter .doctor-print-patient-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 10mm;
+    padding: 10px;
+    border: 1px solid #dbe8f2;
+    border-radius: 12px;
+    background: #f8fcff;
+    page-break-inside: avoid;
+  }
+
+  body.print-doctor-letter .doctor-print-patient-grid span {
+    display: block;
+    margin-bottom: 3px;
+    color: #64748b;
+    font-size: 9.5px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  body.print-doctor-letter .doctor-print-patient-grid strong {
+    display: block;
+    color: #102033;
+    font-size: 11.5px;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+}
+
+  .patient-identity-panel {
+  margin: 24px 0;
+  padding: 22px;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-sm);
+}
+
+.patient-identity-heading {
+  margin-bottom: 18px;
+}
+
+.patient-identity-heading h2 {
+  margin: 0 0 8px;
+  color: var(--brand-navy-dark);
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  letter-spacing: -0.03em;
+}
+
+.patient-identity-heading p:not(.eyebrow) {
+  margin: 0;
+  color: var(--brand-muted);
+  line-height: 1.6;
+}
+
+.patient-identity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.patient-identity-grid label {
+  display: grid;
+  gap: 8px;
+}
+
+.patient-identity-grid span {
+  color: var(--brand-navy-dark);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.patient-identity-grid input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--brand-border);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--brand-navy-dark);
+  font: inherit;
+  font-weight: 700;
+  padding: 0 14px;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.patient-identity-grid input:focus {
+  border-color: var(--brand-teal-dark);
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.14);
+}
+
+.case-table-wrap,
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.case-table,
+.admin-table {
+  min-width: 920px;
+}
+
+.case-table td strong,
+.admin-table td strong {
+  color: var(--brand-navy-dark);
+}
+
+@media (max-width: 720px) {
+  .patient-identity-panel {
+    padding: 18px;
+  }
+
+  .patient-identity-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
   body.print-doctor-letter .editable-report-field {
     background: transparent !important;
     box-shadow: none !important;

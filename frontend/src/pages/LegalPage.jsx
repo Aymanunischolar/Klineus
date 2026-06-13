@@ -50,11 +50,11 @@ const fallbackCopy = {
           "Klineus stellt keine Diagnosen, trifft keine endgültigen Behandlungsentscheidungen und gibt keine Operationsempfehlungen.",
       },
       {
-        label: "Daten",
-        title: "Datenverarbeitung",
-        text:
-          "Der Prototyp arbeitet mit Fall-IDs und soll direkte Identifikatoren in KI-Prompts vermeiden.",
-      },
+  label: "Daten",
+  title: "Datenverarbeitung",
+  text:
+    "Patientenname und Versicherungsnummer dienen der ärztlichen Zuordnung. Direkte Identifikatoren sollen nicht an KI-Prompts übergeben werden.",
+},
       {
         label: "KI",
         title: "KI-generierte Entwürfe",
@@ -114,12 +114,12 @@ const fallbackCopy = {
         text:
           "Klineus does not provide diagnoses, final treatment decisions or surgery recommendations.",
       },
-      {
-        label: "Data",
-        title: "Data handling",
-        text:
-          "The prototype works with case IDs and aims to avoid direct identifiers in AI prompts.",
-      },
+     {
+  label: "Data",
+  title: "Data handling",
+  text:
+    "Patient name and insurance ID are used for doctor-side identification. Direct identifiers should not be passed into AI prompts.",
+},
       {
         label: "AI",
         title: "AI-generated drafts",
