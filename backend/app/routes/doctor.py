@@ -233,13 +233,16 @@ def get_case(
         report_generated_at=summary.report_generated_at,
         answers=case.answers,
         answer_groups=group_answers(case.answers),
+
+        # Keep both names so old and new frontend/schema versions work.
+        flags=documentation_flags,
         documentation_flags=documentation_flags,
+
         traffic_light=traffic_light,
         report_text=case.report_text,
         report_json=get_case_report_json(case),
         bmi=calculate_bmi(case.answers, case.indication),
     )
-
 
 @router.delete("/cases/{case_id}", response_model=DeleteCaseResponse)
 def delete_case(
