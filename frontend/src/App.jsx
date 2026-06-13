@@ -47,11 +47,18 @@ export default function App() {
       <Route path="/legal" element={<LegalPage />} />
 
       <Route path="/patient/start" element={<PatientStartPage />} />
-<Route path="/patient/resume" element={<PatientResumePage />} />
-<Route
-  path="/patient/questionnaire"
-  element={<Navigate to="/patient/start" replace />}
-/>
+      <Route path="/patient/resume" element={<PatientResumePage />} />
+
+      <Route
+        path="/patient/questionnaire"
+        element={<Navigate to="/patient/start" replace />}
+      />
+
+      <Route
+        path="/patient/questionnaire/:indication"
+        element={<QuestionnairePage />}
+      />
+
       <Route path="/patient/done" element={<PatientDonePage />} />
       <Route path="/patient/done/:caseId" element={<PatientDonePage />} />
 
@@ -59,6 +66,7 @@ export default function App() {
       <Route path="/doctor/dashboard" element={<DoctorDashboardPage />} />
       <Route path="/doctor/cases/:caseId" element={<DoctorCasePage />} />
       <Route path="/doctor/case/:caseId" element={<DoctorCasePage />} />
+
       <Route
         path="/doctor/cases"
         element={<Navigate to="/doctor/dashboard" replace />}
