@@ -140,7 +140,9 @@ export default function QuestionnairePage() {
   const params = useParams();
   const [searchParams] = useSearchParams();
   const { language, t } = useLanguage();
+
   const startedAtRef = useRef(Date.now());
+  const didRestoreResumeRef = useRef(false);
 
   const [patientIdentity] = useState(() => readPatientIdentity());
 
@@ -181,6 +183,10 @@ export default function QuestionnairePage() {
   );
 
   useEffect(() => {
+    if (didRestoreResumeRef.current) {
+      return;
+    }
+
     if (!patientIdentity.current_question_id || visibleQuestions.length === 0) {
       return;
     }
@@ -192,6 +198,8 @@ export default function QuestionnairePage() {
     if (restoredIndex >= 0) {
       setCurrentIndex(restoredIndex);
     }
+
+    didRestoreResumeRef.current = true;
   }, [patientIdentity.current_question_id, visibleQuestions]);
 
   useEffect(() => {
@@ -404,7 +412,10 @@ export default function QuestionnairePage() {
     }
 
     const nextVisibleQuestions = getVisibleQuestions(allQuestions, nextAnswers);
-    const nextIndex = Math.min(currentIndex + 1, nextVisibleQuestions.length - 1);
+    const nextIndex = Math.min(
+      currentIndex + 1,
+      nextVisibleQuestions.length - 1,
+    );
     const nextQuestionId = nextVisibleQuestions[nextIndex]?.id || "";
 
     await saveProgress(nextAnswers, nextQuestionId);
