@@ -83,15 +83,79 @@ def get_indication_label(indication: str) -> str:
 
 
 def case_to_summary(case) -> PatientCaseSummary:
+    metadata = case.metadata if isinstance(case.metadata, dict) else {}
+
+    def pick(field_name: str, *metadata_keys: str):
+        direct_value = getattr(case, field_name, None)
+
+        if direct_value:
+            return direct_value
+
+        for key in metadata_keys:
+            metadata_value = metadata.get(key)
+
+            if metadata_value:
+                return metadata_value
+
+        return None
+
+    questionnaire_version = getattr(case, "questionnaire_version", None)
+
+    if questionnaire_version is None:
+        metadata_version = (
+            metadata.get("questionnaire_version")
+            or metadata.get("questionnaireVersion")
+        )
+
+        if metadata_version is not None:
+            try:
+                questionnaire_version = int(metadata_version)
+            except (TypeError, ValueError):
+                questionnaire_version = None
+
     return PatientCaseSummary(
         case_id=case.case_id,
         created_at=case.created_at,
         updated_at=case.updated_at,
         indication=case.indication,
-        patient_name=case.patient_name,
-        insurance_id=getattr(case, "insurance_id", None),
-        questionnaire_template_id=case.questionnaire_template_id,
-        questionnaire_version=case.questionnaire_version,
+
+        patient_name=pick(
+            "patient_name",
+            "patient_name",
+            "patientName",
+            "name",
+        ),
+        patient_last_name=pick(
+            "patient_last_name",
+            "patient_last_name",
+            "patientLastName",
+            "last_name",
+            "lastName",
+        ),
+        patient_email=pick(
+            "patient_email",
+            "patient_email",
+            "patientEmail",
+            "email",
+        ),
+        insurance_id=pick(
+            "insurance_id",
+            "insurance_id",
+            "insuranceId",
+        ),
+        session_id=pick(
+            "session_id",
+            "session_id",
+            "sessionId",
+        ),
+
+        questionnaire_template_id=pick(
+            "questionnaire_template_id",
+            "questionnaire_template_id",
+            "questionnaireTemplateId",
+        ),
+        questionnaire_version=questionnaire_version,
+
         status=case.status,
         report_status=case.report_status,
         report_generated_at=case.report_generated_at,

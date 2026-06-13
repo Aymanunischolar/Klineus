@@ -580,13 +580,15 @@ def generate_documentation_flags(
 
 
 def _is_direct_identifier(answer: dict[str, Any]) -> bool:
-    pii_category = answer.get("pii_category") or "none"
-    if pii_category in DIRECT_IDENTIFIER_CATEGORIES:
+    pii_category = str(answer.get("pii_category") or "none").strip().lower()
+
+    if pii_category and pii_category != "none":
         return True
 
     question_id = str(answer.get("question_id", "")).lower()
     question = str(answer.get("question", "")).lower()
     haystack = f"{question_id} {question}"
+
     return any(term in haystack for term in DIRECT_IDENTIFIER_TERMS)
 
 

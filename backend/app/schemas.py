@@ -13,12 +13,12 @@ Indication = Literal["knee_tep", "hip_tep"]
 
 QuestionType = Literal[
     "single",
+    "single_with_text",
     "multiple",
     "slider",
     "number",
     "text",
     "number_pair",
-    "single_with_text",
     "smoking_details",
 ]
 
@@ -278,15 +278,21 @@ class QuestionnaireConfigResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Patient cases replace from here
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # Patient cases
 # ---------------------------------------------------------------------------
 
 class QuestionnaireAnswer(BaseModel):
     question_id: str
     question: str
+    question_displayed: str | None = None
     answer: Any
     block_id: str | None = None
     block_title: str | None = None
+    block_title_displayed: str | None = None
     pii_category: PiiCategory | None = None
     include_in_ai: bool = True
 
@@ -299,10 +305,60 @@ class CaseClientMetadata(BaseModel):
     user_agent_family: str | None = None
 
 
+class StartPatientQuestionnaireRequest(BaseModel):
+    patient_name: str
+    patient_last_name: str
+    patient_email: str
+    insurance_id: str
+    indication: Indication
+
+
+class StartPatientQuestionnaireResponse(BaseModel):
+    session_id: str
+    resume_code_sent: bool
+    resume_code: str | None = None
+
+
+class SavePatientQuestionnaireProgressRequest(BaseModel):
+    session_id: str
+    indication: Indication
+    patient_name: str | None = None
+    patient_last_name: str | None = None
+    patient_email: str | None = None
+    insurance_id: str | None = None
+    questionnaire_template_id: str | None = None
+    questionnaire_version: int | None = None
+    answers: list[QuestionnaireAnswer] = Field(default_factory=list)
+    metadata: CaseClientMetadata | None = None
+    current_question_id: str | None = None
+
+
+class ResumePatientQuestionnaireRequest(BaseModel):
+    patient_last_name: str
+    resume_code: str
+
+
+class ResumePatientQuestionnaireResponse(BaseModel):
+    session_id: str
+    indication: Indication
+    patient_name: str | None = None
+    patient_last_name: str | None = None
+    patient_email: str | None = None
+    insurance_id: str | None = None
+    questionnaire_template_id: str | None = None
+    questionnaire_version: int | None = None
+    answers: list[QuestionnaireAnswer] = Field(default_factory=list)
+    metadata: CaseClientMetadata | None = None
+    current_question_id: str | None = None
+
+
 class CreatePatientCaseRequest(BaseModel):
     indication: Indication
     patient_name: str | None = None
+    patient_last_name: str | None = None
+    patient_email: str | None = None
     insurance_id: str | None = None
+    session_id: str | None = None
     questionnaire_template_id: str | None = None
     questionnaire_version: int | None = None
     answers: list[QuestionnaireAnswer] = Field(default_factory=list)
@@ -331,10 +387,16 @@ class PatientCaseSummary(BaseModel):
     created_at: datetime
     updated_at: datetime
     indication: Indication
+
     patient_name: str | None = None
+    patient_last_name: str | None = None
+    patient_email: str | None = None
     insurance_id: str | None = None
+    session_id: str | None = None
+
     questionnaire_template_id: str | None = None
     questionnaire_version: int | None = None
+
     status: CaseStatus
     report_status: ReportStatus
     report_generated_at: datetime | None = None
@@ -363,9 +425,7 @@ class SaveReportRequest(BaseModel):
 class DeleteCaseResponse(BaseModel):
     case_id: str
     deleted: bool
-
-
-# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------till here
 # Admin analytics and logs
 # ---------------------------------------------------------------------------
 

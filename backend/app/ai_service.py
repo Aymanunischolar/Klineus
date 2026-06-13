@@ -120,6 +120,10 @@ Do not diagnose.
 Do not recommend surgery.
 Do not make treatment decisions.
 Use only the supplied questionnaire answers.
+The questionnaire answers are pre-filtered before this prompt is created.
+Never include direct patient identifiers in the output.
+Do not include patient name, last name, email, phone number, insurance number, address or date of birth.
+If a direct identifier appears accidentally, ignore it and do not repeat it.
 Use German medical documentation style.
 Keep the language concise and professional.
 Translate unclear answers such as "Idk" to "unklar".

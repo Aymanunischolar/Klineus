@@ -5,7 +5,6 @@ import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
 
-
 const copy = {
   de: {
     eyebrow: "Admin-Dashboard",
@@ -46,10 +45,11 @@ const copy = {
     aiGenerated: "AI generiert",
     aiEdited: "Bearbeitet",
     noData: "Keine Daten vorhanden.",
-   caseReference: "Fall",
-patient: "Patient",
-insuranceId: "Versicherungsnummer",
-indication: "Fragebogen",
+    caseReference: "Fall",
+    patient: "Patient",
+    email: "E-Mail",
+    insuranceId: "Versicherungsnummer",
+    indication: "Fragebogen",
     version: "Version",
     created: "Erstellt",
     status: "Status",
@@ -133,10 +133,11 @@ indication: "Fragebogen",
     aiGenerated: "AI generated",
     aiEdited: "Edited",
     noData: "No data available.",
-   caseReference: "Case",
-patient: "Patient",
-insuranceId: "Insurance ID",
-indication: "Questionnaire",
+    caseReference: "Case",
+    patient: "Patient",
+    email: "Email",
+    insuranceId: "Insurance ID",
+    indication: "Questionnaire",
     version: "Version",
     created: "Created",
     status: "Status",
@@ -183,7 +184,6 @@ indication: "Questionnaire",
   },
 };
 
-
 function formatDate(value, language) {
   if (!value) {
     return "—";
@@ -199,7 +199,6 @@ function formatDate(value, language) {
   }
 }
 
-
 function formatSeconds(value) {
   if (!Number.isFinite(Number(value))) {
     return "—";
@@ -214,7 +213,6 @@ function formatSeconds(value) {
   return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
 }
 
-
 function formatMs(value) {
   if (!Number.isFinite(Number(value))) {
     return "—";
@@ -223,7 +221,6 @@ function formatMs(value) {
   return `${Math.round(Number(value))} ms`;
 }
 
-
 function formatNumber(value, digits = 1) {
   if (!Number.isFinite(Number(value))) {
     return "—";
@@ -231,7 +228,6 @@ function formatNumber(value, digits = 1) {
 
   return Number(value).toFixed(digits);
 }
-
 
 function getIndicationLabel(indication, language) {
   if (indication === "hip_tep") {
@@ -245,6 +241,16 @@ function getIndicationLabel(indication, language) {
   return indication || "—";
 }
 
+function patientDisplayName(patientCase) {
+  const fullName = patientCase?.patient_name || "";
+  const lastName = patientCase?.patient_last_name || "";
+
+  if (fullName && lastName && !fullName.includes(lastName)) {
+    return `${fullName} ${lastName}`;
+  }
+
+  return fullName || lastName || "—";
+}
 
 function safeJsonParse(value) {
   try {
@@ -260,11 +266,9 @@ function safeJsonParse(value) {
   }
 }
 
-
 function prettyJson(value) {
   return JSON.stringify(value || {}, null, 2);
 }
-
 
 function cleanPagePayload(page) {
   return {
@@ -276,7 +280,6 @@ function cleanPagePayload(page) {
     is_published: page.is_published !== false,
   };
 }
-
 
 function cleanQuestionnairePayload(questionnaire) {
   return {
@@ -292,7 +295,6 @@ function cleanQuestionnairePayload(questionnaire) {
   };
 }
 
-
 function StatCard({ label, value, hint }) {
   return (
     <article className="admin-stat-card">
@@ -302,7 +304,6 @@ function StatCard({ label, value, hint }) {
     </article>
   );
 }
-
 
 function JsonEditor({
   title,
@@ -317,55 +318,39 @@ function JsonEditor({
   actions,
 }) {
   return (
-<section className="admin-panel">
-  <h2>{text.recentCases}</h2>
+    <section className="admin-panel">
+      <div className="admin-panel-header">
+        <div>
+          <h2>{title}</h2>
+          {hint ? <p>{hint}</p> : null}
+        </div>
 
-  <div className="admin-table-wrap">
-    <table className="admin-table">
-      <thead>
-      <tr>
-        <th>{text.patient}</th>
-        <th>{text.insuranceId}</th>
-        <th>{text.caseId}</th>
-        <th>{text.indication}</th>
-        <th>{text.version}</th>
-        <th>{text.status}</th>
-        <th>{text.created}</th>
-      </tr>
-      </thead>
+        <div className="admin-header-actions">
+          {actions}
 
-      <tbody>
-      {(analytics.recent_cases || []).map((patientCase) => (
-          <tr key={patientCase.case_id}>
-            <td>
-              <strong>{patientCase.patient_name || "—"}</strong>
-            </td>
+          <button
+            className="primary-button"
+            disabled={saving}
+            type="button"
+            onClick={onSave}
+          >
+            {saving ? "..." : saveLabel}
+          </button>
+        </div>
+      </div>
 
-            <td className="mono">{patientCase.insurance_id || "—"}</td>
+      {error ? <p className="form-error">{error}</p> : null}
+      {notice ? <p className="form-notice">{notice}</p> : null}
 
-            <td className="mono">
-              {patientCase.case_id ? patientCase.case_id.slice(0, 8) : "—"}
-            </td>
-
-            <td>{getIndicationLabel(patientCase.indication, language)}</td>
-
-            <td>
-              {patientCase.questionnaire_version
-                  ? `v${patientCase.questionnaire_version}`
-                  : "—"}
-            </td>
-
-            <td>{patientCase.status || "—"}</td>
-
-            <td>{formatDate(patientCase.created_at, language)}</td>
-          </tr>
-      ))}
-      </tbody>
-    </table>
-  </div>
-</section>);
+      <textarea
+        className="admin-json-editor"
+        spellCheck="false"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </section>
+  );
 }
-
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
@@ -423,9 +408,19 @@ export default function AdminDashboardPage() {
 
   const statusCodeRows = useMemo(() => {
     return Object.entries(apiAnalytics.status_code_counts || {}).sort(
-      ([a], [b]) => String(a).localeCompare(String(b))
+      ([a], [b]) => String(a).localeCompare(String(b)),
     );
   }, [apiAnalytics.status_code_counts]);
+
+  const questionnairePublishLabel = useMemo(() => {
+    const parsed = safeJsonParse(questionnaireJson || "{}");
+
+    if (!parsed.ok) {
+      return text.unpublish;
+    }
+
+    return parsed.data?.is_published === false ? text.publish : text.unpublish;
+  }, [questionnaireJson, text.publish, text.unpublish]);
 
   function logout() {
     window.localStorage.removeItem("klineus_admin_token");
@@ -477,7 +472,7 @@ export default function AdminDashboardPage() {
           sections: [],
           seo: {},
           is_published: true,
-        })
+        }),
       );
       return;
     }
@@ -634,7 +629,7 @@ export default function AdminDashboardPage() {
 
       const saved = await api.updateQuestionnaire(
         selectedQuestionnaire || payload.indication,
-        payload
+        payload,
       );
 
       setQuestionnaireJson(prettyJson(saved));
@@ -664,7 +659,7 @@ export default function AdminDashboardPage() {
 
       const saved = await api.publishQuestionnaire(
         selectedQuestionnaire || parsed.data.indication,
-        nextPublished
+        nextPublished,
       );
 
       setQuestionnaireJson(prettyJson(saved));
@@ -694,7 +689,11 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="admin-header-actions">
-          <button className="secondary-button" type="button" onClick={loadAdminData}>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={loadAdminData}
+          >
             {text.refresh}
           </button>
 
@@ -728,7 +727,11 @@ export default function AdminDashboardPage() {
           <h2>{text.errorTitle}</h2>
           <p>{error}</p>
 
-          <button className="primary-button" type="button" onClick={loadAdminData}>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={loadAdminData}
+          >
             {text.refresh}
           </button>
         </section>
@@ -739,57 +742,118 @@ export default function AdminDashboardPage() {
           {activeTab === "overview" ? (
             <div className="admin-layout">
               <section className="admin-stat-grid">
-                <StatCard label={text.totalCases} value={analytics.total_cases || 0} />
-                <StatCard label={text.completedCases} value={analytics.completed_cases || 0} />
-                <StatCard label={text.generatedReports} value={analytics.generated_reports || 0} />
-                <StatCard label={text.editedReports} value={analytics.edited_reports || 0} />
-                <StatCard label={text.avgFillTime} value={formatSeconds(analytics.average_fill_duration_seconds)} />
-                <StatCard label={text.avgPageLoad} value={formatMs(analytics.average_page_load_ms)} />
-                <StatCard label={text.avgQuestions} value={formatNumber(analytics.average_question_count)} />
-                <StatCard label={text.contentPages} value={analytics.content_page_count || 0} />
-                <StatCard label={text.mediaAssets} value={analytics.media_asset_count || 0} />
-                <StatCard label={text.questionnaireCount} value={analytics.questionnaire_count || 0} />
-                <StatCard label={text.questionCount} value={analytics.question_count || 0} />
-                <StatCard label={text.aiRequests} value={aiAnalytics.total_requests || 0} />
-                <StatCard label={text.aiFailures} value={aiAnalytics.failed_requests || 0} />
-                <StatCard label={text.aiAvgTime} value={formatMs(aiAnalytics.average_response_time_ms)} />
-                <StatCard label={text.apiRequests} value={apiAnalytics.total_requests || 0} />
-                <StatCard label={text.apiErrors} value={apiAnalytics.error_requests || 0} />
-                <StatCard label={text.apiAvgTime} value={formatMs(apiAnalytics.average_response_time_ms)} />
+                <StatCard
+                  label={text.totalCases}
+                  value={analytics.total_cases || 0}
+                />
+                <StatCard
+                  label={text.completedCases}
+                  value={analytics.completed_cases || 0}
+                />
+                <StatCard
+                  label={text.generatedReports}
+                  value={analytics.generated_reports || 0}
+                />
+                <StatCard
+                  label={text.editedReports}
+                  value={analytics.edited_reports || 0}
+                />
+                <StatCard
+                  label={text.avgFillTime}
+                  value={formatSeconds(
+                    analytics.average_fill_duration_seconds,
+                  )}
+                />
+                <StatCard
+                  label={text.avgPageLoad}
+                  value={formatMs(analytics.average_page_load_ms)}
+                />
+                <StatCard
+                  label={text.avgQuestions}
+                  value={formatNumber(analytics.average_question_count)}
+                />
+                <StatCard
+                  label={text.contentPages}
+                  value={analytics.content_page_count || 0}
+                />
+                <StatCard
+                  label={text.mediaAssets}
+                  value={analytics.media_asset_count || 0}
+                />
+                <StatCard
+                  label={text.questionnaireCount}
+                  value={analytics.questionnaire_count || 0}
+                />
+                <StatCard
+                  label={text.questionCount}
+                  value={analytics.question_count || 0}
+                />
+                <StatCard
+                  label={text.aiRequests}
+                  value={aiAnalytics.total_requests || 0}
+                />
+                <StatCard
+                  label={text.aiFailures}
+                  value={aiAnalytics.failed_requests || 0}
+                />
+                <StatCard
+                  label={text.aiAvgTime}
+                  value={formatMs(aiAnalytics.average_response_time_ms)}
+                />
+                <StatCard
+                  label={text.apiRequests}
+                  value={apiAnalytics.total_requests || 0}
+                />
+                <StatCard
+                  label={text.apiErrors}
+                  value={apiAnalytics.error_requests || 0}
+                />
+                <StatCard
+                  label={text.apiAvgTime}
+                  value={formatMs(apiAnalytics.average_response_time_ms)}
+                />
               </section>
 
               <section className="admin-panel">
                 <h2>{text.formTypeStats}</h2>
 
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>{text.indication}</th>
-                        <th>{text.submitted}</th>
-                        <th>{text.aiGenerated}</th>
-                        <th>{text.aiEdited}</th>
-                        <th>{text.avgFillTime}</th>
-                        <th>{text.avgPageLoad}</th>
-                        <th>{text.avgQuestions}</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {(analytics.form_type_stats || []).map((row) => (
-                        <tr key={row.indication}>
-                          <td>{row.label}</td>
-                          <td>{row.submitted_cases}</td>
-                          <td>{row.generated_reports}</td>
-                          <td>{row.edited_reports}</td>
-                          <td>{formatSeconds(row.average_fill_duration_seconds)}</td>
-                          <td>{formatMs(row.average_page_load_ms)}</td>
-                          <td>{formatNumber(row.average_question_count)}</td>
+                {(analytics.form_type_stats || []).length ? (
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>{text.indication}</th>
+                          <th>{text.submitted}</th>
+                          <th>{text.aiGenerated}</th>
+                          <th>{text.aiEdited}</th>
+                          <th>{text.avgFillTime}</th>
+                          <th>{text.avgPageLoad}</th>
+                          <th>{text.avgQuestions}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+
+                      <tbody>
+                        {(analytics.form_type_stats || []).map((row) => (
+                          <tr key={row.indication}>
+                            <td>{row.label}</td>
+                            <td>{row.submitted_cases}</td>
+                            <td>{row.generated_reports}</td>
+                            <td>{row.edited_reports}</td>
+                            <td>
+                              {formatSeconds(
+                                row.average_fill_duration_seconds,
+                              )}
+                            </td>
+                            <td>{formatMs(row.average_page_load_ms)}</td>
+                            <td>{formatNumber(row.average_question_count)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="muted-text">{text.noData}</p>
+                )}
               </section>
 
               <section className="admin-panel">
@@ -812,49 +876,81 @@ export default function AdminDashboardPage() {
               <section className="admin-panel">
                 <h2>{text.recentCases}</h2>
 
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                    <tr>
-                      <th>{text.caseReference}</th>
-                      <th>{text.indication}</th>
-                      <th>{text.version}</th>
-                      <th>{text.status}</th>
-                      <th>{text.created}</th>
-                    </tr>
-                    </thead>
+                {(analytics.recent_cases || []).length ? (
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>{text.patient}</th>
+                          <th>{text.insuranceId}</th>
+                          <th>{text.email}</th>
+                          <th>{text.caseId}</th>
+                          <th>{text.indication}</th>
+                          <th>{text.version}</th>
+                          <th>{text.created}</th>
+                          <th>{text.status}</th>
+                        </tr>
+                      </thead>
 
-                    <tbody>
-                    {(analytics.recent_cases || []).map((patientCase) => (
-                        <tr key={patientCase.case_id}>
-                          <td className="mono">{patientCase.case_id?.slice(0, 8)}</td>
-                          <td>{getIndicationLabel(patientCase.indication, language)}</td>
-                          <td>
-                            {patientCase.questionnaire_version
+                      <tbody>
+                        {(analytics.recent_cases || []).map((patientCase) => (
+                          <tr key={patientCase.case_id}>
+                            <td>
+                              <strong>{patientDisplayName(patientCase)}</strong>
+                            </td>
+
+                            <td className="mono">
+                              {patientCase.insurance_id || "—"}
+                            </td>
+
+                            <td>{patientCase.patient_email || "—"}</td>
+
+                            <td className="mono">
+                              {patientCase.case_id
+                                ? patientCase.case_id.slice(0, 8)
+                                : "—"}
+                            </td>
+
+                            <td>
+                              {getIndicationLabel(
+                                patientCase.indication,
+                                language,
+                              )}
+                            </td>
+
+                            <td>
+                              {patientCase.questionnaire_version
                                 ? `v${patientCase.questionnaire_version}`
                                 : "—"}
-                          </td>
-                          <td>{patientCase.status || "—"}</td>
-                          <td>{formatDate(patientCase.created_at, language)}</td>
-                        </tr>
-                    ))}
-                    </tbody>
-                  </table>
-                </div>
+                            </td>
+
+                            <td>
+                              {formatDate(patientCase.created_at, language)}
+                            </td>
+
+                            <td>{patientCase.status || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="muted-text">{text.noData}</p>
+                )}
               </section>
             </div>
           ) : null}
 
           {activeTab === "cms" ? (
-              <div className="admin-layout">
-                <JsonEditor
-                    title={text.siteSettings}
-                    hint={text.jsonHint}
-                    value={siteJson}
-                    onChange={setSiteJson}
-                    onSave={saveSiteSettings}
-                    saveLabel={text.save}
-                    saving={actionStatus === "saving"}
+            <div className="admin-layout">
+              <JsonEditor
+                title={text.siteSettings}
+                hint={text.jsonHint}
+                value={siteJson}
+                onChange={setSiteJson}
+                onSave={saveSiteSettings}
+                saveLabel={text.save}
+                saving={actionStatus === "saving"}
                 error={error}
                 notice={notice}
               />
@@ -880,7 +976,11 @@ export default function AdminDashboardPage() {
                     <article key={page.slug} className="admin-list-card">
                       <div>
                         <strong>{page.slug}</strong>
-                        <span>{page.is_published ? text.published : text.unpublished}</span>
+                        <span>
+                          {page.is_published
+                            ? text.published
+                            : text.unpublished}
+                        </span>
                       </div>
 
                       <button
@@ -911,8 +1011,8 @@ export default function AdminDashboardPage() {
                       <button
                         className="secondary-button danger-button"
                         type="button"
-                        onClick={deletePage}
                         disabled={actionStatus === "saving"}
+                        onClick={deletePage}
                       >
                         {text.delete}
                       </button>
@@ -929,7 +1029,7 @@ export default function AdminDashboardPage() {
                 <h2>{text.mediaEditor}</h2>
 
                 {error ? <p className="form-error">{error}</p> : null}
-                {notice ? <p className="form-success">{notice}</p> : null}
+                {notice ? <p className="form-notice">{notice}</p> : null}
 
                 <div className="admin-form-grid">
                   <label>
@@ -948,8 +1048,8 @@ export default function AdminDashboardPage() {
                   <label>
                     <span>{text.mediaPath}</span>
                     <input
-                      value={mediaForm.path}
                       placeholder="/static/images/example.png"
+                      value={mediaForm.path}
                       onChange={(event) =>
                         setMediaForm((current) => ({
                           ...current,
@@ -1006,9 +1106,9 @@ export default function AdminDashboardPage() {
 
                 <button
                   className="primary-button"
+                  disabled={actionStatus === "saving"}
                   type="button"
                   onClick={saveMedia}
-                  disabled={actionStatus === "saving"}
                 >
                   {text.addOrUpdateMedia}
                 </button>
@@ -1017,37 +1117,41 @@ export default function AdminDashboardPage() {
               <section className="admin-panel">
                 <h2>{text.media}</h2>
 
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>{text.mediaKey}</th>
-                        <th>{text.mediaPath}</th>
-                        <th>{text.mediaKind}</th>
-                        <th>{text.edit}</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {(config.media || []).map((asset) => (
-                        <tr key={asset.key}>
-                          <td>{asset.key}</td>
-                          <td className="mono">{asset.path}</td>
-                          <td>{asset.kind}</td>
-                          <td>
-                            <button
-                              className="small-button"
-                              type="button"
-                              onClick={() => startEditMedia(asset)}
-                            >
-                              {text.edit}
-                            </button>
-                          </td>
+                {(config.media || []).length ? (
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>{text.mediaKey}</th>
+                          <th>{text.mediaPath}</th>
+                          <th>{text.mediaKind}</th>
+                          <th>{text.edit}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+
+                      <tbody>
+                        {(config.media || []).map((asset) => (
+                          <tr key={asset.key}>
+                            <td>{asset.key}</td>
+                            <td className="mono">{asset.path}</td>
+                            <td>{asset.kind}</td>
+                            <td>
+                              <button
+                                className="small-button"
+                                type="button"
+                                onClick={() => startEditMedia(asset)}
+                              >
+                                {text.edit}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="muted-text">{text.noData}</p>
+                )}
               </section>
             </div>
           ) : null}
@@ -1070,7 +1174,10 @@ export default function AdminDashboardPage() {
                     >
                       <div>
                         <strong>
-                          {getIndicationLabel(questionnaire.indication, language)}
+                          {getIndicationLabel(
+                            questionnaire.indication,
+                            language,
+                          )}
                         </strong>
                         <span>
                           {questionnaire.is_published
@@ -1084,7 +1191,9 @@ export default function AdminDashboardPage() {
                       <button
                         className="small-button"
                         type="button"
-                        onClick={() => loadQuestionnaire(questionnaire.indication)}
+                        onClick={() =>
+                          loadQuestionnaire(questionnaire.indication)
+                        }
                       >
                         {text.edit}
                       </button>
@@ -1109,8 +1218,10 @@ export default function AdminDashboardPage() {
                       <button
                         className="secondary-button"
                         type="button"
-                        onClick={() => saveQuestionnaire({ increaseVersion: true })}
                         disabled={actionStatus === "saving"}
+                        onClick={() =>
+                          saveQuestionnaire({ increaseVersion: true })
+                        }
                       >
                         {text.increaseVersion}
                       </button>
@@ -1118,12 +1229,10 @@ export default function AdminDashboardPage() {
                       <button
                         className="secondary-button"
                         type="button"
-                        onClick={toggleQuestionnairePublish}
                         disabled={actionStatus === "saving"}
+                        onClick={toggleQuestionnairePublish}
                       >
-                        {safeJsonParse(questionnaireJson).data?.is_published === false
-                          ? text.publish
-                          : text.unpublish}
+                        {questionnairePublishLabel}
                       </button>
                     </>
                   }
@@ -1151,9 +1260,15 @@ export default function AdminDashboardPage() {
                         <p>{log.message}</p>
 
                         <div className="admin-log-meta">
-                          <span>{text.response}: {log.status_code || "—"}</span>
-                          <span>{text.duration}: {formatMs(log.duration_ms)}</span>
-                          <span>{text.level}: {log.level}</span>
+                          <span>
+                            {text.response}: {log.status_code || "—"}
+                          </span>
+                          <span>
+                            {text.duration}: {formatMs(log.duration_ms)}
+                          </span>
+                          <span>
+                            {text.level}: {log.level}
+                          </span>
                         </div>
 
                         <details>
@@ -1171,65 +1286,79 @@ export default function AdminDashboardPage() {
               <section className="admin-panel">
                 <h2>{text.apiLogs}</h2>
 
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>{text.created}</th>
-                        <th>{text.level}</th>
-                        <th>{text.method}</th>
-                        <th>{text.path}</th>
-                        <th>{text.response}</th>
-                        <th>{text.duration}</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {(config.apiLogs || []).map((log) => (
-                        <tr key={log.id}>
-                          <td>{formatDate(log.created_at, language)}</td>
-                          <td>{log.level}</td>
-                          <td>{log.method || "—"}</td>
-                          <td className="mono">{log.path || "—"}</td>
-                          <td>{log.status_code || "—"}</td>
-                          <td>{formatMs(log.duration_ms)}</td>
+                {(config.apiLogs || []).length ? (
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>{text.created}</th>
+                          <th>{text.level}</th>
+                          <th>{text.method}</th>
+                          <th>{text.path}</th>
+                          <th>{text.response}</th>
+                          <th>{text.duration}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+
+                      <tbody>
+                        {(config.apiLogs || []).map((log) => (
+                          <tr key={log.id}>
+                            <td>{formatDate(log.created_at, language)}</td>
+                            <td>{log.level}</td>
+                            <td>{log.method || "—"}</td>
+                            <td className="mono">{log.path || "—"}</td>
+                            <td>{log.status_code || "—"}</td>
+                            <td>{formatMs(log.duration_ms)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="muted-text">{text.noData}</p>
+                )}
               </section>
 
               <section className="admin-panel">
                 <h2>{text.aiLogs}</h2>
 
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>{text.created}</th>
-                        <th>{text.status}</th>
-                        <th>{text.indication}</th>
-                        <th>{text.model}</th>
-                        <th>{text.duration}</th>
-                        <th>{text.errorMessage}</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {(config.aiLogs || []).map((log) => (
-                        <tr key={log.id}>
-                          <td>{formatDate(log.created_at, language)}</td>
-                          <td>{log.status === "success" ? text.success : text.failed}</td>
-                          <td>{getIndicationLabel(log.indication, language)}</td>
-                          <td>{log.model || "—"}</td>
-                          <td>{formatMs(log.duration_ms)}</td>
-                          <td>{log.error_message || "—"}</td>
+                {(config.aiLogs || []).length ? (
+                  <div className="admin-table-wrap">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>{text.created}</th>
+                          <th>{text.status}</th>
+                          <th>{text.indication}</th>
+                          <th>{text.model}</th>
+                          <th>{text.duration}</th>
+                          <th>{text.errorMessage}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+
+                      <tbody>
+                        {(config.aiLogs || []).map((log) => (
+                          <tr key={log.id}>
+                            <td>{formatDate(log.created_at, language)}</td>
+                            <td>
+                              {log.status === "success"
+                                ? text.success
+                                : text.failed}
+                            </td>
+                            <td>
+                              {getIndicationLabel(log.indication, language)}
+                            </td>
+                            <td>{log.model || "—"}</td>
+                            <td>{formatMs(log.duration_ms)}</td>
+                            <td>{log.error_message || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="muted-text">{text.noData}</p>
+                )}
               </section>
             </div>
           ) : null}

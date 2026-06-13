@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import random
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 
 from app import cms_store
+from app.config import get_settings
+from app.email_service import (
+    send_patient_resume_code_email,
+    send_patient_submission_confirmation_email,
+)
 from app.schemas import (
     ContentPageDetail,
     ContentPageListResponse,
@@ -13,7 +19,12 @@ from app.schemas import (
     QuestionnaireConfigResponse,
     QuestionnaireListResponse,
     QuestionnaireTemplateDetail,
+    ResumePatientQuestionnaireRequest,
+    ResumePatientQuestionnaireResponse,
+    SavePatientQuestionnaireProgressRequest,
     SiteSettings,
+    StartPatientQuestionnaireRequest,
+    StartPatientQuestionnaireResponse,
 )
 from app.storage import storage
 
@@ -32,6 +43,33 @@ def to_plain_data(value: Any) -> dict[str, Any]:
         return value.dict()
 
     return dict(value)
+
+
+def generate_resume_code() -> str:
+    return f"{random.randint(0, 9999):04d}"
+
+
+def build_resume_url() -> str:
+    settings = get_settings()
+    public_url = settings.app_public_url.rstrip("/")
+
+    return f"{public_url}/patient/resume"
+
+
+def session_to_resume_response(session) -> ResumePatientQuestionnaireResponse:
+    return ResumePatientQuestionnaireResponse(
+        session_id=session.session_id,
+        indication=session.indication,
+        patient_name=session.patient_name,
+        patient_last_name=session.patient_last_name,
+        patient_email=session.patient_email,
+        insurance_id=session.insurance_id,
+        questionnaire_template_id=session.questionnaire_template_id,
+        questionnaire_version=session.questionnaire_version,
+        answers=session.answers,
+        metadata=session.metadata,
+        current_question_id=session.current_question_id,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -99,6 +137,97 @@ def get_patient_config() -> QuestionnaireConfigResponse:
 
 
 # ---------------------------------------------------------------------------
+# Patient pause / resume session flow
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/questionnaire-sessions/start",
+    response_model=StartPatientQuestionnaireResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def start_patient_questionnaire_session(
+    request: StartPatientQuestionnaireRequest,
+) -> StartPatientQuestionnaireResponse:
+    resume_code = generate_resume_code()
+
+    session = storage.create_questionnaire_session(
+        indication=request.indication,
+        patient_name=request.patient_name,
+        patient_last_name=request.patient_last_name,
+        patient_email=request.patient_email,
+        insurance_id=request.insurance_id,
+        resume_code=resume_code,
+    )
+
+    resume_code_sent = send_patient_resume_code_email(
+        to_email=request.patient_email,
+        patient_name=request.patient_name,
+        resume_code=resume_code,
+        resume_url=build_resume_url(),
+    )
+
+    return StartPatientQuestionnaireResponse(
+        session_id=session.session_id,
+        resume_code_sent=resume_code_sent,
+        resume_code=None if resume_code_sent else resume_code,
+    )
+
+
+@router.put(
+    "/questionnaire-sessions/progress",
+    response_model=ResumePatientQuestionnaireResponse,
+)
+def save_patient_questionnaire_progress(
+    request: SavePatientQuestionnaireProgressRequest,
+) -> ResumePatientQuestionnaireResponse:
+    answers = [to_plain_data(answer) for answer in request.answers]
+    metadata = to_plain_data(request.metadata)
+
+    session = storage.save_questionnaire_session_progress(
+        session_id=request.session_id,
+        indication=request.indication,
+        patient_name=request.patient_name,
+        patient_last_name=request.patient_last_name,
+        patient_email=request.patient_email,
+        insurance_id=request.insurance_id,
+        questionnaire_template_id=request.questionnaire_template_id,
+        questionnaire_version=request.questionnaire_version,
+        answers=answers,
+        metadata=metadata,
+        current_question_id=request.current_question_id,
+    )
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Questionnaire session not found.",
+        )
+
+    return session_to_resume_response(session)
+
+
+@router.post(
+    "/questionnaire-sessions/resume",
+    response_model=ResumePatientQuestionnaireResponse,
+)
+def resume_patient_questionnaire_session(
+    request: ResumePatientQuestionnaireRequest,
+) -> ResumePatientQuestionnaireResponse:
+    session = storage.resume_questionnaire_session(
+        patient_last_name=request.patient_last_name,
+        resume_code=request.resume_code,
+    )
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active questionnaire session found for this last name and code.",
+        )
+
+    return session_to_resume_response(session)
+
+
+# ---------------------------------------------------------------------------
 # Patient case submission
 # ---------------------------------------------------------------------------
 
@@ -113,15 +242,34 @@ def create_patient_case(
     answers = [to_plain_data(answer) for answer in request.answers]
     metadata = to_plain_data(request.metadata)
 
+    session = None
+
+    if request.session_id:
+        session = storage.get_questionnaire_session(request.session_id)
+
     created_case = storage.create_case(
         indication=request.indication,
-        patient_name=request.patient_name,
-        insurance_id=request.insurance_id,
+        patient_name=request.patient_name or getattr(session, "patient_name", None),
+        patient_last_name=request.patient_last_name
+        or getattr(session, "patient_last_name", None),
+        patient_email=request.patient_email or getattr(session, "patient_email", None),
+        insurance_id=request.insurance_id or getattr(session, "insurance_id", None),
+        session_id=request.session_id,
         questionnaire_template_id=request.questionnaire_template_id,
         questionnaire_version=request.questionnaire_version,
         answers=answers,
         metadata=metadata,
     )
+
+    patient_email = created_case.patient_email
+
+    if patient_email:
+        send_patient_submission_confirmation_email(
+            to_email=patient_email,
+            patient_name=created_case.patient_name or "Patient",
+            case_id=created_case.case_id,
+        )
+
     return CreatePatientCaseResponse(
         case_id=created_case.case_id,
         status="completed",

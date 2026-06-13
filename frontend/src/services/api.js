@@ -126,7 +126,10 @@ export const api = {
     body: {
       indication,
       patient_name: questionnaireInfo.patient_name || null,
+      patient_last_name: questionnaireInfo.patient_last_name || null,
+      patient_email: questionnaireInfo.patient_email || null,
       insurance_id: questionnaireInfo.insurance_id || null,
+      session_id: questionnaireInfo.session_id || null,
       questionnaire_template_id:
         questionnaireInfo.questionnaire_template_id ||
         questionnaireInfo.id ||
@@ -268,10 +271,117 @@ export const api = {
       auth: "admin",
     }),
 
-  saveAdminQuestionnaire: (identifier, payload) =>
+   saveAdminQuestionnaire: (identifier, payload) =>
     request(`/admin/questionnaires/${encodeURIComponent(identifier)}`, {
       method: "PUT",
       auth: "admin",
       body: payload,
+    }),
+
+  startPatientQuestionnaireSession: ({
+    patient_name,
+    patient_last_name,
+    patient_email,
+    insurance_id,
+    indication,
+  }) =>
+    request("/patient/questionnaire-sessions/start", {
+      method: "POST",
+      body: {
+        patient_name,
+        patient_last_name,
+        patient_email,
+        insurance_id,
+        indication,
+      },
+    }),
+
+  saveQuestionnaireProgress: ({
+    session_id,
+    indication,
+    patient_name,
+    patient_last_name,
+    patient_email,
+    insurance_id,
+    questionnaire_template_id,
+    questionnaire_version,
+    answers,
+    metadata,
+    current_question_id,
+  }) =>
+    request("/patient/questionnaire-sessions/progress", {
+      method: "PUT",
+      body: {
+        session_id,
+        indication,
+        patient_name,
+        patient_last_name,
+        patient_email,
+        insurance_id,
+        questionnaire_template_id,
+        questionnaire_version,
+        answers,
+        metadata,
+        current_question_id,
+      },
+    }),
+
+  resumePatientQuestionnaireSession: ({ patient_last_name, resume_code }) =>
+    request("/patient/questionnaire-sessions/resume", {
+      method: "POST",
+      body: {
+        patient_last_name,
+        resume_code,
+      },
+    }),
+
+  updateSiteSettings: (payload) =>
+    request("/admin/site-settings", {
+      method: "PUT",
+      auth: "admin",
+      body: payload,
+    }),
+
+  createPage: (payload) =>
+    request("/admin/pages", {
+      method: "POST",
+      auth: "admin",
+      body: payload,
+    }),
+
+  updatePage: (slug, payload) =>
+    request(`/admin/pages/${encodeURIComponent(slug)}`, {
+      method: "PUT",
+      auth: "admin",
+      body: payload,
+    }),
+
+  deletePage: (slug) =>
+    request(`/admin/pages/${encodeURIComponent(slug)}`, {
+      method: "DELETE",
+      auth: "admin",
+    }),
+
+  upsertMedia: (payload) =>
+    request("/admin/media", {
+      method: "POST",
+      auth: "admin",
+      body: payload,
+    }),
+
+  updateQuestionnaire: (identifier, payload) =>
+    request(`/admin/questionnaires/${encodeURIComponent(identifier)}`, {
+      method: "PUT",
+      auth: "admin",
+      body: payload,
+    }),
+
+  publishQuestionnaire: (identifier, isPublished) =>
+    request(`/admin/questionnaires/${encodeURIComponent(identifier)}/publish`, {
+      method: "PATCH",
+      auth: "admin",
+      body: {
+        is_published: isPublished,
+      },
     }),
 };

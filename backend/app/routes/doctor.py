@@ -22,39 +22,21 @@ def get_case_metadata(case) -> dict:
     return {}
 
 
-def get_case_patient_name(case) -> str | None:
-    # Privacy decision:
-    # Do not expose patient names in the doctor API for the current version.
-    # The requirement document only mentions last name for a future pause/resume flow.
+def get_case_value(case, field_name: str, *metadata_keys: str):
+    direct_value = getattr(case, field_name, None)
+
+    if direct_value:
+        return direct_value
+
+    metadata = get_case_metadata(case)
+
+    for key in metadata_keys:
+        value = metadata.get(key)
+
+        if value:
+            return value
+
     return None
-
-def get_case_insurance_id(case) -> str | None:
-    direct_insurance_id = getattr(case, "insurance_id", None)
-
-    if direct_insurance_id:
-        return direct_insurance_id
-
-    metadata = get_case_metadata(case)
-
-    return (
-        metadata.get("insurance_id")
-        or metadata.get("insuranceId")
-        or metadata.get("insurance_number")
-        or metadata.get("insuranceNumber")
-    )
-
-def get_case_questionnaire_template_id(case) -> str | None:
-    direct_template_id = getattr(case, "questionnaire_template_id", None)
-
-    if direct_template_id:
-        return direct_template_id
-
-    metadata = get_case_metadata(case)
-
-    return (
-        metadata.get("questionnaire_template_id")
-        or metadata.get("questionnaireTemplateId")
-    )
 
 
 def get_case_questionnaire_version(case) -> int | None:
@@ -93,15 +75,66 @@ def get_case_report_json(case) -> dict | None:
     return None
 
 
+def generate_case_flags(case):
+    try:
+        return generate_documentation_flags(case.answers, case.indication)
+    except TypeError:
+        return generate_documentation_flags(case.answers)
+
+
+def calculate_case_bmi(case):
+    try:
+        return calculate_bmi(case.answers, case.indication)
+    except TypeError:
+        return calculate_bmi(case.answers)
+
+
 def build_case_summary(case) -> PatientCaseSummary:
     return PatientCaseSummary(
         case_id=case.case_id,
         created_at=case.created_at,
         updated_at=case.updated_at,
-        patient_name=get_case_patient_name(case),
-        insurance_id=get_case_insurance_id(case),
         indication=case.indication,
-        questionnaire_template_id=get_case_questionnaire_template_id(case),
+        patient_name=get_case_value(
+            case,
+            "patient_name",
+            "patient_name",
+            "patientName",
+            "name",
+        ),
+        patient_last_name=get_case_value(
+            case,
+            "patient_last_name",
+            "patient_last_name",
+            "patientLastName",
+            "last_name",
+            "lastName",
+        ),
+        patient_email=get_case_value(
+            case,
+            "patient_email",
+            "patient_email",
+            "patientEmail",
+            "email",
+        ),
+        insurance_id=get_case_value(
+            case,
+            "insurance_id",
+            "insurance_id",
+            "insuranceId",
+        ),
+        session_id=get_case_value(
+            case,
+            "session_id",
+            "session_id",
+            "sessionId",
+        ),
+        questionnaire_template_id=get_case_value(
+            case,
+            "questionnaire_template_id",
+            "questionnaire_template_id",
+            "questionnaireTemplateId",
+        ),
         questionnaire_version=get_case_questionnaire_version(case),
         status=case.status,
         report_status=case.report_status,
@@ -113,10 +146,7 @@ def build_case_summary(case) -> PatientCaseSummary:
 def list_cases(
     _: str = Depends(get_current_doctor),
 ) -> list[PatientCaseSummary]:
-    return [
-        build_case_summary(case)
-        for case in storage.list_cases()
-    ]
+    return [build_case_summary(case) for case in storage.list_cases()]
 
 
 @router.get("/cases/{case_id}", response_model=PatientCaseDetail)
@@ -132,23 +162,28 @@ def get_case(
             detail="Case not found.",
         )
 
+    summary = build_case_summary(case)
+
     return PatientCaseDetail(
-        case_id=case.case_id,
-        created_at=case.created_at,
-        updated_at=case.updated_at,
-        patient_name=get_case_patient_name(case),
-        insurance_id=get_case_insurance_id(case),
-        indication=case.indication,
-        questionnaire_template_id=get_case_questionnaire_template_id(case),
-        questionnaire_version=get_case_questionnaire_version(case),
-        status=case.status,
-        report_status=case.report_status,
-        report_generated_at=case.report_generated_at,
+        case_id=summary.case_id,
+        created_at=summary.created_at,
+        updated_at=summary.updated_at,
+        indication=summary.indication,
+        patient_name=summary.patient_name,
+        patient_last_name=summary.patient_last_name,
+        patient_email=summary.patient_email,
+        insurance_id=summary.insurance_id,
+        session_id=summary.session_id,
+        questionnaire_template_id=summary.questionnaire_template_id,
+        questionnaire_version=summary.questionnaire_version,
+        status=summary.status,
+        report_status=summary.report_status,
+        report_generated_at=summary.report_generated_at,
         answer_groups=group_answers(case.answers),
-        flags=generate_documentation_flags(case.answers, case.indication),
+        flags=generate_case_flags(case),
         report_text=case.report_text,
         report_json=get_case_report_json(case),
-        bmi=calculate_bmi(case.answers, case.indication),
+        bmi=calculate_case_bmi(case),
     )
 
 

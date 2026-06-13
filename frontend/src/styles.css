@@ -1379,6 +1379,125 @@ textarea {
 }
 
 
+  /* -------------------------------------------------------------------------- */
+/* Patient identity + resume code flow */
+/* -------------------------------------------------------------------------- */
+
+.patient-identity-panel {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--brand-border);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-sm);
+}
+
+.patient-identity-heading {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.patient-identity-heading h2 {
+  margin: 0;
+  color: var(--brand-navy-dark);
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+}
+
+.patient-identity-heading p {
+  margin: 0;
+  color: var(--brand-muted);
+  line-height: 1.65;
+}
+
+.patient-identity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.patient-identity-grid label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--brand-navy-dark);
+  font-weight: 700;
+}
+
+.patient-identity-grid input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--brand-border);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--brand-ink);
+  font-weight: 500;
+}
+
+.patient-identity-grid input:focus {
+  border-color: rgba(22, 166, 182, 0.75);
+}
+
+.patient-resume-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid rgba(22, 166, 182, 0.22);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at top right, rgba(22, 166, 182, 0.1), transparent 14rem),
+    rgba(232, 248, 247, 0.72);
+}
+
+.patient-resume-strip strong {
+  display: block;
+  color: var(--brand-navy-dark);
+}
+
+.patient-resume-strip p {
+  margin: 0.25rem 0 0;
+  color: var(--brand-muted);
+  line-height: 1.55;
+}
+
+.form-error {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(185, 28, 28, 0.24);
+  border-radius: 14px;
+  background: rgba(254, 226, 226, 0.72);
+  color: var(--red);
+  font-weight: 700;
+}
+
+.form-notice {
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(180, 83, 9, 0.24);
+  border-radius: 14px;
+  background: rgba(255, 247, 237, 0.86);
+  color: var(--orange);
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .patient-identity-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-resume-strip {
+    display: grid;
+  }
+
+  .patient-resume-strip .secondary-button {
+    width: 100%;
+  }
+}
+
 
   body.print-doctor-letter .editable-report-field {
     background: transparent !important;

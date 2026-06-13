@@ -13,7 +13,7 @@ from app.cms_store import (
     loads,
     upsert_language as cms_upsert_language,
 )
-from app.models import PatientCase, utc_now
+from app.models import PatientCase, PatientQuestionnaireSession, utc_now
 from app.schemas import AdminQuestion, LanguageDefinition
 
 
@@ -44,9 +44,12 @@ class SQLiteCaseStorage:
                 """
                 CREATE TABLE IF NOT EXISTS patient_cases (
                     case_id TEXT PRIMARY KEY,
-                   patient_name TEXT,
-insurance_id TEXT,
-indication TEXT NOT NULL,
+                    patient_name TEXT,
+                    patient_last_name TEXT,
+                    patient_email TEXT,
+                    insurance_id TEXT,
+                    session_id TEXT,
+                    indication TEXT NOT NULL,
                     questionnaire_template_id TEXT,
                     questionnaire_version INTEGER,
                     answers_json TEXT NOT NULL,
@@ -59,6 +62,34 @@ indication TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     report_generated_at TEXT
                 );
+
+                CREATE TABLE IF NOT EXISTS patient_questionnaire_sessions (
+                    session_id TEXT PRIMARY KEY,
+                    resume_code TEXT NOT NULL,
+                    indication TEXT NOT NULL,
+                    patient_name TEXT NOT NULL,
+                    patient_last_name TEXT NOT NULL,
+                    patient_email TEXT NOT NULL,
+                    insurance_id TEXT NOT NULL,
+                    questionnaire_template_id TEXT,
+                    questionnaire_version INTEGER,
+                    answers_json TEXT NOT NULL,
+                    metadata_json TEXT NOT NULL,
+                    current_question_id TEXT,
+                    status TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    completed_at TEXT
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_patient_sessions_resume
+                ON patient_questionnaire_sessions(patient_last_name, resume_code);
+
+                CREATE INDEX IF NOT EXISTS idx_patient_sessions_status
+                ON patient_questionnaire_sessions(status);
+
+                CREATE INDEX IF NOT EXISTS idx_patient_sessions_updated
+                ON patient_questionnaire_sessions(updated_at);
                 """
             )
 
@@ -66,7 +97,10 @@ indication TEXT NOT NULL,
 
             migrations = {
                 "patient_name": "ALTER TABLE patient_cases ADD COLUMN patient_name TEXT",
+                "patient_last_name": "ALTER TABLE patient_cases ADD COLUMN patient_last_name TEXT",
+                "patient_email": "ALTER TABLE patient_cases ADD COLUMN patient_email TEXT",
                 "insurance_id": "ALTER TABLE patient_cases ADD COLUMN insurance_id TEXT",
+                "session_id": "ALTER TABLE patient_cases ADD COLUMN session_id TEXT",
                 "questionnaire_template_id": "ALTER TABLE patient_cases ADD COLUMN questionnaire_template_id TEXT",
                 "questionnaire_version": "ALTER TABLE patient_cases ADD COLUMN questionnaire_version INTEGER",
                 "metadata_json": "ALTER TABLE patient_cases ADD COLUMN metadata_json TEXT NOT NULL DEFAULT '{}'",
@@ -103,7 +137,10 @@ indication TEXT NOT NULL,
         return PatientCase(
             case_id=row["case_id"],
             patient_name=row["patient_name"],
+            patient_last_name=row["patient_last_name"],
+            patient_email=row["patient_email"],
             insurance_id=row["insurance_id"],
+            session_id=row["session_id"],
             indication=row["indication"],
             questionnaire_template_id=row["questionnaire_template_id"],
             questionnaire_version=row["questionnaire_version"],
@@ -118,15 +155,275 @@ indication TEXT NOT NULL,
             report_generated_at=parse_datetime(row["report_generated_at"]),
         )
 
+    def _row_to_session(self, row: sqlite3.Row) -> PatientQuestionnaireSession:
+        metadata = loads(row["metadata_json"], {})
+        answers = loads(row["answers_json"], [])
+
+        return PatientQuestionnaireSession(
+            session_id=row["session_id"],
+            resume_code=row["resume_code"],
+            indication=row["indication"],
+            patient_name=row["patient_name"],
+            patient_last_name=row["patient_last_name"],
+            patient_email=row["patient_email"],
+            insurance_id=row["insurance_id"],
+            questionnaire_template_id=row["questionnaire_template_id"],
+            questionnaire_version=row["questionnaire_version"],
+            answers=answers if isinstance(answers, list) else [],
+            metadata=metadata if isinstance(metadata, dict) else {},
+            current_question_id=row["current_question_id"],
+            status=row["status"] or "in_progress",
+            created_at=parse_datetime(row["created_at"]) or utc_now(),
+            updated_at=parse_datetime(row["updated_at"]) or utc_now(),
+            completed_at=parse_datetime(row["completed_at"]),
+        )
+
+    # -----------------------------------------------------------------------
+    # Patient questionnaire sessions: pause / resume flow
+    # -----------------------------------------------------------------------
+
+    def create_questionnaire_session(
+        self,
+        *,
+        indication: str,
+        patient_name: str,
+        patient_last_name: str,
+        patient_email: str,
+        insurance_id: str,
+        resume_code: str,
+    ) -> PatientQuestionnaireSession:
+        now = utc_now()
+
+        session = PatientQuestionnaireSession(
+            session_id=str(uuid4()),
+            resume_code=resume_code,
+            indication=indication,
+            patient_name=patient_name.strip(),
+            patient_last_name=patient_last_name.strip(),
+            patient_email=patient_email.strip(),
+            insurance_id=insurance_id.strip(),
+            answers=[],
+            metadata={},
+            questionnaire_template_id=None,
+            questionnaire_version=None,
+            current_question_id=None,
+            status="in_progress",
+            created_at=now,
+            updated_at=now,
+            completed_at=None,
+        )
+
+        with self._lock:
+            with connect() as connection:
+                connection.execute(
+                    """
+                    INSERT INTO patient_questionnaire_sessions (
+                        session_id,
+                        resume_code,
+                        indication,
+                        patient_name,
+                        patient_last_name,
+                        patient_email,
+                        insurance_id,
+                        questionnaire_template_id,
+                        questionnaire_version,
+                        answers_json,
+                        metadata_json,
+                        current_question_id,
+                        status,
+                        created_at,
+                        updated_at,
+                        completed_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        session.session_id,
+                        session.resume_code,
+                        session.indication,
+                        session.patient_name,
+                        session.patient_last_name,
+                        session.patient_email,
+                        session.insurance_id,
+                        session.questionnaire_template_id,
+                        session.questionnaire_version,
+                        dumps(session.answers),
+                        dumps(session.metadata),
+                        session.current_question_id,
+                        session.status,
+                        session.created_at.isoformat(),
+                        session.updated_at.isoformat(),
+                        None,
+                    ),
+                )
+
+        return session
+
+    def get_questionnaire_session(
+        self,
+        session_id: str,
+    ) -> PatientQuestionnaireSession | None:
+        with connect() as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM patient_questionnaire_sessions
+                WHERE session_id = ?
+                """,
+                (session_id,),
+            ).fetchone()
+
+        return self._row_to_session(row) if row else None
+
+    def resume_questionnaire_session(
+        self,
+        *,
+        patient_last_name: str,
+        resume_code: str,
+    ) -> PatientQuestionnaireSession | None:
+        with connect() as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM patient_questionnaire_sessions
+                WHERE lower(patient_last_name) = lower(?)
+                  AND resume_code = ?
+                  AND status = 'in_progress'
+                ORDER BY updated_at DESC
+                LIMIT 1
+                """,
+                (patient_last_name.strip(), resume_code.strip()),
+            ).fetchone()
+
+        return self._row_to_session(row) if row else None
+
+    def save_questionnaire_session_progress(
+        self,
+        *,
+        session_id: str,
+        indication: str,
+        answers: list[dict[str, Any]],
+        metadata: dict[str, Any] | None = None,
+        patient_name: str | None = None,
+        patient_last_name: str | None = None,
+        patient_email: str | None = None,
+        insurance_id: str | None = None,
+        questionnaire_template_id: str | None = None,
+        questionnaire_version: int | None = None,
+        current_question_id: str | None = None,
+    ) -> PatientQuestionnaireSession | None:
+        existing_session = self.get_questionnaire_session(session_id)
+
+        if not existing_session:
+            return None
+
+        now = utc_now()
+
+        next_patient_name = (
+            patient_name.strip()
+            if patient_name
+            else existing_session.patient_name
+        )
+        next_patient_last_name = (
+            patient_last_name.strip()
+            if patient_last_name
+            else existing_session.patient_last_name
+        )
+        next_patient_email = (
+            patient_email.strip()
+            if patient_email
+            else existing_session.patient_email
+        )
+        next_insurance_id = (
+            insurance_id.strip()
+            if insurance_id
+            else existing_session.insurance_id
+        )
+
+        with self._lock:
+            with connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE patient_questionnaire_sessions
+                    SET
+                        indication = ?,
+                        patient_name = ?,
+                        patient_last_name = ?,
+                        patient_email = ?,
+                        insurance_id = ?,
+                        questionnaire_template_id = ?,
+                        questionnaire_version = ?,
+                        answers_json = ?,
+                        metadata_json = ?,
+                        current_question_id = ?,
+                        updated_at = ?
+                    WHERE session_id = ?
+                    """,
+                    (
+                        indication,
+                        next_patient_name,
+                        next_patient_last_name,
+                        next_patient_email,
+                        next_insurance_id,
+                        questionnaire_template_id,
+                        questionnaire_version,
+                        dumps(answers),
+                        dumps(metadata or {}),
+                        current_question_id,
+                        now.isoformat(),
+                        session_id,
+                    ),
+                )
+
+        return self.get_questionnaire_session(session_id)
+
+    def complete_questionnaire_session(
+        self,
+        session_id: str,
+    ) -> PatientQuestionnaireSession | None:
+        existing_session = self.get_questionnaire_session(session_id)
+
+        if not existing_session:
+            return None
+
+        now = utc_now()
+
+        with self._lock:
+            with connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE patient_questionnaire_sessions
+                    SET
+                        status = 'completed',
+                        updated_at = ?,
+                        completed_at = ?
+                    WHERE session_id = ?
+                    """,
+                    (
+                        now.isoformat(),
+                        now.isoformat(),
+                        session_id,
+                    ),
+                )
+
+        return self.get_questionnaire_session(session_id)
+
+    # -----------------------------------------------------------------------
+    # Completed patient cases
+    # -----------------------------------------------------------------------
+
     def create_case(
-            self,
-            indication: str,
-            answers: list[dict[str, Any]],
-            metadata: dict[str, Any] | None = None,
-            patient_name: str | None = None,
-            insurance_id: str | None = None,
-            questionnaire_template_id: str | None = None,
-            questionnaire_version: int | None = None,
+        self,
+        indication: str,
+        answers: list[dict[str, Any]],
+        metadata: dict[str, Any] | None = None,
+        patient_name: str | None = None,
+        patient_last_name: str | None = None,
+        patient_email: str | None = None,
+        insurance_id: str | None = None,
+        session_id: str | None = None,
+        questionnaire_template_id: str | None = None,
+        questionnaire_version: int | None = None,
     ) -> PatientCase:
         now = utc_now()
 
@@ -135,7 +432,12 @@ indication TEXT NOT NULL,
         case = PatientCase(
             case_id=str(uuid4()),
             patient_name=patient_name.strip() if patient_name else None,
+            patient_last_name=patient_last_name.strip()
+            if patient_last_name
+            else None,
+            patient_email=patient_email.strip() if patient_email else None,
             insurance_id=insurance_id.strip() if insurance_id else None,
+            session_id=session_id.strip() if session_id else None,
             indication=indication,
             questionnaire_template_id=questionnaire_template_id,
             questionnaire_version=questionnaire_version,
@@ -154,10 +456,13 @@ indication TEXT NOT NULL,
             with connect() as connection:
                 connection.execute(
                     """
-                   INSERT INTO patient_cases (
-                         case_id,
-                         patient_name,
-                         insurance_id,
+                    INSERT INTO patient_cases (
+                        case_id,
+                        patient_name,
+                        patient_last_name,
+                        patient_email,
+                        insurance_id,
+                        session_id,
                         indication,
                         questionnaire_template_id,
                         questionnaire_version,
@@ -171,14 +476,16 @@ indication TEXT NOT NULL,
                         updated_at,
                         report_generated_at
                     )
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
-                        (
-                            case.case_id,
-                            case.patient_name,
-                            case.insurance_id,
-                            case.indication,
+                        case.case_id,
+                        case.patient_name,
+                        case.patient_last_name,
+                        case.patient_email,
+                        case.insurance_id,
+                        case.session_id,
+                        case.indication,
                         case.questionnaire_template_id,
                         case.questionnaire_version,
                         dumps(case.answers),
@@ -192,6 +499,9 @@ indication TEXT NOT NULL,
                         None,
                     ),
                 )
+
+        if session_id:
+            self.complete_questionnaire_session(session_id)
 
         return case
 

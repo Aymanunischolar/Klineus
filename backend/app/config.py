@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "Klineus Prototype"
+    app_public_url: str = "http://localhost:5173"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     doctor_email: str = "doctor@klineus.local"
@@ -20,6 +21,16 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.5-flash-lite"
     gemini_fallback_models: str = "gemini-2.5-flash,gemini-2.0-flash"
+
+    # Email sending.
+    # Use these through .env only. Do not hardcode private passwords in source code.
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_from_email: str | None = None
+    smtp_from_name: str = "Klineus"
+    smtp_use_tls: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -42,6 +53,15 @@ class Settings(BaseSettings):
             for model in self.gemini_fallback_models.split(",")
             if model.strip()
         ]
+
+    @property
+    def email_enabled(self) -> bool:
+        return bool(
+            self.smtp_host
+            and self.smtp_username
+            and self.smtp_password
+            and self.smtp_from_email
+        )
 
 
 @lru_cache

@@ -32,6 +32,17 @@ function indicationLabel(indication) {
   return "Knie-TEP";
 }
 
+function patientDisplayName(patientCase) {
+  const fullName = patientCase?.patient_name || "";
+  const lastName = patientCase?.patient_last_name || "";
+
+  if (fullName && lastName && !fullName.includes(lastName)) {
+    return `${fullName} ${lastName}`;
+  }
+
+  return fullName || lastName || "-";
+}
+
 function getCaseIdFromParams(params) {
   return (
     params.caseId ||
@@ -41,67 +52,6 @@ function getCaseIdFromParams(params) {
     ""
   );
 }
-
-function normalizeAnswer(answer) {
-  if (answer === null || answer === undefined || answer === "") {
-    return "Keine Angabe";
-  }
-
-  if (Array.isArray(answer)) {
-    return answer.length ? answer.join(", ") : "Keine Angabe";
-  }
-
-  if (typeof answer === "object") {
-    if (
-      Object.prototype.hasOwnProperty.call(answer, "packs_per_day") ||
-      Object.prototype.hasOwnProperty.call(answer, "smoking_years") ||
-      Object.prototype.hasOwnProperty.call(answer, "pack_years") ||
-      Object.prototype.hasOwnProperty.call(answer, "stopped_since")
-    ) {
-      const parts = [];
-
-      if (answer.value) {
-        parts.push(answer.value);
-      }
-
-      if (answer.packs_per_day) {
-        parts.push(`${answer.packs_per_day} Packungen/Tag`);
-      }
-
-      if (answer.smoking_years) {
-        parts.push(`${answer.smoking_years} Raucherjahre`);
-      }
-
-      if (answer.pack_years !== "" && answer.pack_years !== undefined) {
-        parts.push(`${answer.pack_years} Pack Years`);
-      }
-
-      if (answer.stopped_since) {
-        parts.push(`Aufgehört seit: ${answer.stopped_since}`);
-      }
-
-      return parts.length ? parts.join(" · ") : "Keine Angabe";
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(answer, "height_cm") ||
-      Object.prototype.hasOwnProperty.call(answer, "weight_kg")
-    ) {
-      return `Größe: ${answer.height_cm || "-"} cm, Gewicht: ${
-        answer.weight_kg || "-"
-      } kg`;
-    }
-
-    if (Object.prototype.hasOwnProperty.call(answer, "value")) {
-      return answer.detail ? `${answer.value}: ${answer.detail}` : answer.value;
-    }
-
-    return JSON.stringify(answer, null, 2);
-  }
-
-  return String(answer);
-}
-
 
 function getQuestionText(answer) {
   return (
@@ -161,11 +111,19 @@ function groupAnswers(answers) {
   return groups;
 }
 
-function normaliseAnswerGroups(patientCase) {
-  if (Array.isArray(patientCase?.answer_groups)) {
-    return patientCase.answer_groups.map((group) => ({
-      blockId: group.block_id || group.blockId || "Weitere Angaben",
-      blockTitle: group.block_title || group.blockTitle || "Weitere Angaben",
+function normalizeAnswerGroups(patientCase) {
+  const backendGroups = Array.isArray(patientCase?.answer_groups)
+    ? patientCase.answer_groups
+    : [];
+
+  if (backendGroups.length > 0) {
+    return backendGroups.map((group, index) => ({
+      blockId: group.blockId || group.block_id || `group-${index}`,
+      blockTitle:
+        group.blockTitle ||
+        group.block_title ||
+        group.block_id ||
+        `Abschnitt ${index + 1}`,
       answers: Array.isArray(group.answers) ? group.answers : [],
     }));
   }
@@ -175,6 +133,66 @@ function normaliseAnswerGroups(patientCase) {
     : [];
 
   return groupAnswers(rawAnswers);
+}
+
+function normalizeAnswer(answer) {
+  if (answer === null || answer === undefined || answer === "") {
+    return "Keine Angabe";
+  }
+
+  if (Array.isArray(answer)) {
+    return answer.length ? answer.join(", ") : "Keine Angabe";
+  }
+
+  if (typeof answer === "object") {
+    if (
+      Object.prototype.hasOwnProperty.call(answer, "packs_per_day") ||
+      Object.prototype.hasOwnProperty.call(answer, "smoking_years") ||
+      Object.prototype.hasOwnProperty.call(answer, "pack_years") ||
+      Object.prototype.hasOwnProperty.call(answer, "stopped_since")
+    ) {
+      const parts = [];
+
+      if (answer.value) {
+        parts.push(String(answer.value));
+      }
+
+      if (answer.packs_per_day) {
+        parts.push(`${answer.packs_per_day} Packungen/Tag`);
+      }
+
+      if (answer.smoking_years) {
+        parts.push(`${answer.smoking_years} Jahre`);
+      }
+
+      if (answer.pack_years) {
+        parts.push(`${answer.pack_years} Pack-Years`);
+      }
+
+      if (answer.stopped_since) {
+        parts.push(`Rauchstopp seit: ${answer.stopped_since}`);
+      }
+
+      return parts.length ? parts.join(" · ") : "Keine Angabe";
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(answer, "height_cm") ||
+      Object.prototype.hasOwnProperty.call(answer, "weight_kg")
+    ) {
+      return `Größe: ${answer.height_cm || "-"} cm, Gewicht: ${
+        answer.weight_kg || "-"
+      } kg`;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(answer, "value")) {
+      return answer.detail ? `${answer.value}: ${answer.detail}` : answer.value;
+    }
+
+    return JSON.stringify(answer, null, 2);
+  }
+
+  return String(answer);
 }
 
 function extractReportText(data) {
@@ -450,12 +468,16 @@ export default function DoctorCasePage() {
   }, [caseId, language]);
 
   const answerGroups = useMemo(
-    () => normaliseAnswerGroups(patientCase),
+    () => normalizeAnswerGroups(patientCase),
     [patientCase],
   );
 
-  const answers = useMemo(
-    () => answerGroups.flatMap((group) => group.answers || []),
+  const answerCount = useMemo(
+    () =>
+      answerGroups.reduce(
+        (total, group) => total + (group.answers?.length || 0),
+        0,
+      ),
     [answerGroups],
   );
 
@@ -529,35 +551,31 @@ export default function DoctorCasePage() {
   }
 
   function handleExportPdf() {
-  if (!reportText) {
-    setNotice(
-      localText(
-        language,
-        "Bitte erstellen Sie zuerst einen KI-Entwurf.",
-        "Please generate an AI draft first.",
-      ),
-    );
-    return;
-  }
+    if (!reportText) {
+      setNotice(
+        localText(
+          language,
+          "Bitte erstellen Sie zuerst einen KI-Entwurf.",
+          "Please generate an AI draft first.",
+        ),
+      );
+      return;
+    }
 
-  /*
-    If the doctor is currently editing inside the template,
-    force the active editable field to save its onBlur change before printing.
-  */
-  if (document.activeElement instanceof HTMLElement) {
-    document.activeElement.blur();
-  }
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
 
-  document.body.classList.add("print-doctor-letter");
-
-  window.setTimeout(() => {
-    window.print();
+    document.body.classList.add("print-doctor-letter");
 
     window.setTimeout(() => {
-      document.body.classList.remove("print-doctor-letter");
-    }, 500);
-  }, 100);
-}
+      window.print();
+
+      window.setTimeout(() => {
+        document.body.classList.remove("print-doctor-letter");
+      }, 500);
+    }, 100);
+  }
 
   if (isLoading) {
     return (
@@ -583,294 +601,310 @@ export default function DoctorCasePage() {
 
   return (
     <AppShell>
-<div className="doctor-case-shell">
-  <Link className="text-link case-back-link" to="/doctor/dashboard">
-    ← {localText(language, "Zurück zum Dashboard", "Back to dashboard")}
-  </Link>
+      <div className="doctor-case-shell">
+        <Link className="text-link case-back-link" to="/doctor/dashboard">
+          ← {localText(language, "Zurück zum Dashboard", "Back to dashboard")}
+        </Link>
 
-  <section className="case-header case-header-enhanced">
-    <div>
-      <p className="eyebrow">
-        {localText(language, "Patientenfall", "Patient case")}
-      </p>
-
-      <h1>
-        {localText(language, "Auswertung", "Evaluation")}{" "}
-        {caseId ? caseId.slice(0, 8) : ""}
-      </h1>
-
-      <p className="case-subtitle">
-        {localText(
-            language,
-            "Fragen und Antworten werden für die ärztliche Prüfung immer in deutscher Originalfassung angezeigt.",
-            "Questions and answers are always shown in the German source version for medical review.",
-        )}
-      </p>
-    </div>
-  </section>
-
-<section className="case-summary-grid">
-  <article className="case-summary-card">
-    <span>{localText(language, "Patient", "Patient")}</span>
-    <strong>{patientCase?.patient_name || "-"}</strong>
-  </article>
-
-  <article className="case-summary-card">
-    <span>
-      {localText(language, "Versicherungsnummer", "Insurance ID")}
-    </span>
-    <strong className="mono">{patientCase?.insurance_id || "-"}</strong>
-  </article>
-
-  <article className="case-summary-card">
-    <span>{localText(language, "Fall-ID", "Case ID")}</span>
-    <strong className="mono">{patientCase?.case_id || caseId}</strong>
-  </article>
-
-  <article className="case-summary-card">
-    <span>{localText(language, "Erstellt", "Created")}</span>
-    <strong>{formatDate(patientCase?.created_at, language)}</strong>
-  </article>
-
-  <article className="case-summary-card">
-    <span>{localText(language, "Indikation", "Indication")}</span>
-    <strong>{indicationLabel(patientCase?.indication)}</strong>
-  </article>
-
-  <article className="case-summary-card">
-    <span>{localText(language, "Status", "Status")}</span>
-    <strong>{patientCase?.status || "-"}</strong>
-  </article>
-
-  <article className="case-summary-card">
-    <span>{localText(language, "Antworten", "Answers")}</span>
-    <strong>{answers.length}</strong>
-  </article>
-</section>
-  {error ? <p className="form-error">{error}</p> : null}
-  {notice ? <p className="form-notice">{notice}</p> : null}
-
-  <section className="doctor-workspace-grid">
-    <main className="doctor-main-column">
-      <section className="doctor-notes-panel-left">
-        <div className="doctor-section-heading">
+        <section className="case-header case-header-enhanced">
           <div>
             <p className="eyebrow">
-              {localText(language, "Offene Punkte", "Open points")}
+              {localText(language, "Patientenfall", "Patient case")}
             </p>
 
-            <h2>
+            <h1>
+              {localText(language, "Auswertung", "Evaluation")}{" "}
+              {caseId ? caseId.slice(0, 8) : ""}
+            </h1>
+
+            <p className="case-subtitle">
               {localText(
-                  language,
-                  "Wichtige Hinweise für das Arztgespräch",
-                  "Important notes for the consultation",
+                language,
+                "Fragen und Antworten werden für die ärztliche Prüfung immer in deutscher Originalfassung angezeigt.",
+                "Questions and answers are always shown in the German source version for medical review.",
               )}
-            </h2>
+            </p>
           </div>
+        </section>
 
-          <span className="doctor-count-pill">{flags.length}</span>
-        </div>
+        <section className="case-summary-grid">
+          <article className="case-summary-card">
+            <span>{localText(language, "Patient", "Patient")}</span>
+            <strong>{patientDisplayName(patientCase)}</strong>
+          </article>
 
-        {flags.length === 0 ? (
-            <p className="muted">
-              {localText(
-                  language,
-                  "Keine Hinweise vorhanden.",
-                  "No notes available.",
-              )}
-            </p>
-        ) : (
-            <div className="doctor-notes-grid">
-              {flags.map((flag, index) => (
-                  <article className={flagLevelClass(flag)} key={index}>
-                    <strong>
-                      {flag.title ||
+          <article className="case-summary-card">
+            <span>{localText(language, "Nachname", "Last name")}</span>
+            <strong>{patientCase?.patient_last_name || "-"}</strong>
+          </article>
+
+          <article className="case-summary-card">
+            <span>{localText(language, "E-Mail", "Email")}</span>
+            <strong>{patientCase?.patient_email || "-"}</strong>
+          </article>
+
+          <article className="case-summary-card">
+            <span>
+              {localText(language, "Versicherungsnummer", "Insurance ID")}
+            </span>
+            <strong className="mono">{patientCase?.insurance_id || "-"}</strong>
+          </article>
+
+          <article className="case-summary-card">
+            <span>{localText(language, "Fall-ID", "Case ID")}</span>
+            <strong className="mono">{patientCase?.case_id || caseId}</strong>
+          </article>
+
+          <article className="case-summary-card">
+            <span>{localText(language, "Erstellt", "Created")}</span>
+            <strong>{formatDate(patientCase?.created_at, language)}</strong>
+          </article>
+
+          <article className="case-summary-card">
+            <span>{localText(language, "Indikation", "Indication")}</span>
+            <strong>{indicationLabel(patientCase?.indication)}</strong>
+          </article>
+
+          <article className="case-summary-card">
+            <span>{localText(language, "Status", "Status")}</span>
+            <strong>{patientCase?.status || "-"}</strong>
+          </article>
+
+          <article className="case-summary-card">
+            <span>{localText(language, "Antworten", "Answers")}</span>
+            <strong>{answerCount}</strong>
+          </article>
+        </section>
+
+        {error ? <p className="form-error">{error}</p> : null}
+        {notice ? <p className="form-notice">{notice}</p> : null}
+
+        <section className="doctor-workspace-grid">
+          <main className="doctor-main-column">
+            <section className="doctor-notes-panel-left">
+              <div className="doctor-section-heading">
+                <div>
+                  <p className="eyebrow">
+                    {localText(language, "Offene Punkte", "Open points")}
+                  </p>
+
+                  <h2>
+                    {localText(
+                      language,
+                      "Wichtige Hinweise für das Arztgespräch",
+                      "Important notes for the consultation",
+                    )}
+                  </h2>
+                </div>
+
+                <span className="doctor-count-pill">{flags.length}</span>
+              </div>
+
+              {flags.length === 0 ? (
+                <p className="muted">
+                  {localText(
+                    language,
+                    "Keine Hinweise vorhanden.",
+                    "No notes available.",
+                  )}
+                </p>
+              ) : (
+                <div className="doctor-notes-grid">
+                  {flags.map((flag, index) => (
+                    <article className={flagLevelClass(flag)} key={index}>
+                      <strong>
+                        {flag.title ||
                           flag.label ||
                           flag.message ||
                           localText(language, "Hinweis", "Note")}
-                    </strong>
+                      </strong>
 
-                    {flag.description || flag.text || flag.reason ? (
+                      {flag.description || flag.text || flag.reason ? (
                         <p>{flag.description || flag.text || flag.reason}</p>
-                    ) : null}
-                  </article>
-              ))}
-            </div>
-        )}
-      </section>
-
-      <section className="answer-group answer-group-enhanced">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">
-              {localText(
-                  language,
-                  "Originalfragebogen",
-                  "Original questionnaire",
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
               )}
-            </p>
+            </section>
 
-            <h2>
-              {localText(
-                  language,
-                  "Patientenantworten",
-                  "Patient answers",
-              )}
-            </h2>
-          </div>
-        </div>
+            <section className="answer-group answer-group-enhanced">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">
+                    {localText(
+                      language,
+                      "Originalfragebogen",
+                      "Original questionnaire",
+                    )}
+                  </p>
 
-        {answerGroups.length === 0 ? (
-            <p className="muted">
-              {localText(
-                  language,
-                  "Für diesen Fall wurden keine Antworten gefunden.",
-                  "No answers were found for this case.",
-              )}
-            </p>
-        ) : (
-            <div className="answer-group-list">
-              {answerGroups.map((group) => (
-                  <article className="answer-group" key={group.blockId}>
-                    <h3>{group.blockTitle}</h3>
+                  <h2>
+                    {localText(
+                      language,
+                      "Patientenantworten",
+                      "Patient answers",
+                    )}
+                  </h2>
+                </div>
+              </div>
 
-                    <div className="answer-list">
-                      {group.answers.map((answer, index) => (
+              {answerGroups.length === 0 ? (
+                <p className="muted">
+                  {localText(
+                    language,
+                    "Für diesen Fall wurden keine Antworten gefunden.",
+                    "No answers were found for this case.",
+                  )}
+                </p>
+              ) : (
+                <div className="answer-group-list">
+                  {answerGroups.map((group) => (
+                    <article className="answer-group" key={group.blockId}>
+                      <h3>{group.blockTitle}</h3>
+
+                      <div className="answer-list">
+                        {group.answers.map((answer, index) => (
                           <div
-                              className="answer-row"
-                              key={`${getQuestionId(answer)}-${index}`}
+                            className="answer-row"
+                            key={`${getQuestionId(answer)}-${index}`}
                           >
                             <div>
-                        <span className="question-code">
-                          {getQuestionId(answer)}
-                        </span>
+                              <span className="question-code">
+                                {getQuestionId(answer)}
+                              </span>
 
                               <p>{getQuestionText(answer)}</p>
                             </div>
 
                             <strong>{normalizeAnswer(answer.answer)}</strong>
                           </div>
-                      ))}
-                    </div>
-                  </article>
-              ))}
-            </div>
-        )}
-      </section>
-    </main>
+                        ))}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          </main>
 
-    <aside className="doctor-ai-sidebar">
-      <section className="doctor-ai-panel">
-        <div className="doctor-section-heading">
-          <div>
-            <p className="eyebrow">
-              {localText(language, "KI-Entwurf", "AI draft")}
-            </p>
+          <aside className="doctor-ai-sidebar">
+            <section className="doctor-ai-panel">
+              <div className="doctor-section-heading">
+                <div>
+                  <p className="eyebrow">
+                    {localText(language, "KI-Entwurf", "AI draft")}
+                  </p>
 
-            <h2>{localText(language, "Arztbrief", "Doctor letter")}</h2>
-          </div>
-        </div>
+                  <h2>{localText(language, "Arztbrief", "Doctor letter")}</h2>
+                </div>
+              </div>
 
-        <p className="report-helper">
-          {localText(
-              language,
-              "Der Entwurf kann direkt im Dokument bearbeitet werden. Änderungen werden beim Speichern übernommen.",
-              "The draft can be edited directly inside the document. Changes are saved when you click Save.",
-          )}
-        </p>
-
-        <div className="doctor-letter-actions">
-          <button
-              className="primary-button"
-              disabled={isGenerating}
-              type="button"
-              onClick={handleGenerateReport}
-          >
-            {isGenerating
-                ? localText(language, "Wird erstellt…", "Generating…")
-                : localText(
-                    language,
-                    "KI-Entwurf erstellen",
-                    "Generate AI draft",
+              <p className="report-helper">
+                {localText(
+                  language,
+                  "Der Entwurf kann direkt im Dokument bearbeitet werden. Änderungen werden beim Speichern übernommen.",
+                  "The draft can be edited directly inside the document. Changes are saved when you click Save.",
                 )}
-          </button>
+              </p>
 
-          <button
-              className="secondary-button"
-              disabled={isSaving || !reportText}
-              type="button"
-              onClick={handleSaveReport}
-          >
-            {isSaving
-                ? localText(language, "Speichert…", "Saving…")
-                : localText(language, "Speichern", "Save")}
-          </button>
+              <div className="doctor-letter-actions">
+                <button
+                  className="primary-button"
+                  disabled={isGenerating}
+                  type="button"
+                  onClick={handleGenerateReport}
+                >
+                  {isGenerating
+                    ? localText(language, "Wird erstellt…", "Generating…")
+                    : localText(
+                        language,
+                        "KI-Entwurf erstellen",
+                        "Generate AI draft",
+                      )}
+                </button>
 
-          <button
-              className="secondary-button"
-              disabled={!reportText}
-              type="button"
-              onClick={handleExportPdf}
-          >
-            {localText(language, "Als PDF exportieren", "Export as PDF")}
-          </button>
-        </div>
+                <button
+                  className="secondary-button"
+                  disabled={isSaving || !reportText}
+                  type="button"
+                  onClick={handleSaveReport}
+                >
+                  {isSaving
+                    ? localText(language, "Speichert…", "Saving…")
+                    : localText(language, "Speichern", "Save")}
+                </button>
 
-        <div className="doctor-letter-scroll">
-          <EditableReportTemplate
+                <button
+                  className="secondary-button"
+                  disabled={!reportText}
+                  type="button"
+                  onClick={handleExportPdf}
+                >
+                  {localText(language, "Als PDF exportieren", "Export as PDF")}
+                </button>
+              </div>
+
+              <div className="doctor-letter-scroll">
+                <EditableReportTemplate
+                  text={reportText}
+                  language={language}
+                  onChange={setReportText}
+                />
+              </div>
+            </section>
+          </aside>
+        </section>
+
+        <section className="doctor-print-document">
+          <header className="doctor-print-header">
+            <div>
+              <p>KLINEUS</p>
+              <h1>Ärztlicher Dokumentationsentwurf</h1>
+            </div>
+
+            <div className="doctor-print-case-meta">
+              <span>Fall-ID</span>
+              <strong>{patientCase?.case_id || caseId}</strong>
+            </div>
+          </header>
+
+          <div className="doctor-print-patient-grid">
+            <div>
+              <span>Patient</span>
+              <strong>{patientDisplayName(patientCase)}</strong>
+            </div>
+
+            <div>
+              <span>E-Mail</span>
+              <strong>{patientCase?.patient_email || "-"}</strong>
+            </div>
+
+            <div>
+              <span>Versicherungsnummer</span>
+              <strong>{patientCase?.insurance_id || "-"}</strong>
+            </div>
+
+            <div>
+              <span>Indikation</span>
+              <strong>{indicationLabel(patientCase?.indication)}</strong>
+            </div>
+
+            <div>
+              <span>Erstellt</span>
+              <strong>{formatDate(patientCase?.created_at, language)}</strong>
+            </div>
+          </div>
+
+          <main className="doctor-print-body">
+            <EditableReportTemplate
               text={reportText}
               language={language}
               onChange={setReportText}
-          />
-        </div>
-      </section>
-    </aside>
-  </section>
-
-<section className="doctor-print-document">
-  <header className="doctor-print-header">
-    <div>
-      <p>KLINEUS</p>
-      <h1>Ärztlicher Dokumentationsentwurf</h1>
-    </div>
-
-    <div className="doctor-print-case-meta">
-      <span>Fall-ID</span>
-      <strong>{patientCase?.case_id || caseId}</strong>
-    </div>
-  </header>
-
-  <div className="doctor-print-patient-grid">
-    <div>
-      <span>Patient</span>
-      <strong>{patientCase?.patient_name || "-"}</strong>
-    </div>
-
-    <div>
-      <span>Versicherungsnummer</span>
-      <strong>{patientCase?.insurance_id || "-"}</strong>
-    </div>
-
-    <div>
-      <span>Indikation</span>
-      <strong>{indicationLabel(patientCase?.indication)}</strong>
-    </div>
-
-    <div>
-      <span>Erstellt</span>
-      <strong>{formatDate(patientCase?.created_at, language)}</strong>
-    </div>
-  </div>
-
-  <main className="doctor-print-body">
-    <EditableReportTemplate
-        text={reportText}
-        language={language}
-        onChange={setReportText}
-    />
-  </main>
-</section>
-</div>
+            />
+          </main>
+        </section>
+      </div>
     </AppShell>
   );
 }

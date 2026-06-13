@@ -9,6 +9,7 @@ import DoctorLoginPage from "./pages/DoctorLoginPage.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
 import LegalPage from "./pages/LegalPage.jsx";
 import PatientDonePage from "./pages/PatientDonePage.jsx";
+import PatientResumePage from "./pages/PatientResumePage.jsx";
 import PatientStartPage from "./pages/PatientStartPage.jsx";
 import ProductPage from "./pages/ProductPage.jsx";
 import QuestionnairePage from "./pages/QuestionnairePage.jsx";
@@ -46,11 +47,11 @@ export default function App() {
       <Route path="/legal" element={<LegalPage />} />
 
       <Route path="/patient/start" element={<PatientStartPage />} />
-      <Route path="/patient/questionnaire" element={<QuestionnairePage />} />
-      <Route
-        path="/patient/questionnaire/:indication"
-        element={<QuestionnairePage />}
-      />
+<Route path="/patient/resume" element={<PatientResumePage />} />
+<Route
+  path="/patient/questionnaire"
+  element={<Navigate to="/patient/start" replace />}
+/>
       <Route path="/patient/done" element={<PatientDonePage />} />
       <Route path="/patient/done/:caseId" element={<PatientDonePage />} />
 
