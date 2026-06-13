@@ -257,6 +257,21 @@ function flagLevelClass(flag) {
   return "flag-card success";
 }
 
+
+function trafficLightClass(trafficLight) {
+  const level = String(trafficLight?.level || "").toLowerCase();
+
+  if (level === "red") {
+    return "traffic-light-card traffic-light-red";
+  }
+
+  if (level === "orange") {
+    return "traffic-light-card traffic-light-orange";
+  }
+
+  return "traffic-light-card traffic-light-green";
+}
+
 function EditableReportTemplate({ text, language, onChange }) {
   if (!text) {
     return (
@@ -626,6 +641,20 @@ export default function DoctorCasePage() {
             </p>
           </div>
         </section>
+
+                {patientCase?.traffic_light ? (
+          <section className={trafficLightClass(patientCase.traffic_light)}>
+            <div>
+              <p className="eyebrow">
+                {localText(language, "Ampellogik", "Traffic light")}
+              </p>
+
+              <h2>{patientCase.traffic_light.label}</h2>
+            </div>
+
+            <p>{patientCase.traffic_light.description}</p>
+          </section>
+        ) : null}
 
         <section className="case-summary-grid">
           <article className="case-summary-card">

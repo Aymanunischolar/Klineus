@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.auth import get_current_doctor
 from app.report_service import (
     calculate_bmi,
+    derive_traffic_light,
     generate_documentation_flags,
     group_answers,
 )
@@ -193,7 +194,6 @@ def get_worklist(
         completed_cases=completed_cases,
     )
 
-
 @router.get("/cases/{case_id}", response_model=PatientCaseDetail)
 def get_case(
     case_id: str,
@@ -208,6 +208,13 @@ def get_case(
         )
 
     summary = build_case_summary(case)
+
+    documentation_flags = generate_documentation_flags(
+        case.answers,
+        case.indication,
+    )
+
+    traffic_light = derive_traffic_light(documentation_flags)
 
     return PatientCaseDetail(
         case_id=summary.case_id,
@@ -224,11 +231,13 @@ def get_case(
         status=summary.status,
         report_status=summary.report_status,
         report_generated_at=summary.report_generated_at,
+        answers=case.answers,
         answer_groups=group_answers(case.answers),
-        flags=generate_case_flags(case),
+        documentation_flags=documentation_flags,
+        traffic_light=traffic_light,
         report_text=case.report_text,
         report_json=get_case_report_json(case),
-        bmi=calculate_case_bmi(case),
+        bmi=calculate_bmi(case.answers, case.indication),
     )
 
 

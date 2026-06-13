@@ -382,7 +382,10 @@ class DocumentationFlag(BaseModel):
     title: str
     description: str
 
-
+class TrafficLightAssessment(BaseModel):
+    level: Literal["green", "orange", "red"]
+    label: str
+    description: str
 class AnswerGroup(BaseModel):
     block_id: str
     block_title: str
@@ -433,11 +436,12 @@ class PatientCaseSummary(BaseModel):
 
 
 class PatientCaseDetail(PatientCaseSummary):
-    answer_groups: list[AnswerGroup]
-    flags: list[DocumentationFlag]
+    answers: list[QuestionnaireAnswer]
+    answer_groups: list[AnswerGroup] = Field(default_factory=list)
+    documentation_flags: list[DocumentationFlag] = Field(default_factory=list)
+    traffic_light: TrafficLightAssessment | None = None
     report_text: str | None = None
     report_json: dict[str, Any] | None = None
-    bmi: float | None = None
 
 
 class GenerateReportResponse(BaseModel):
