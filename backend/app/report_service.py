@@ -783,6 +783,57 @@ def generate_documentation_flags(
 
     return flags
 
+def derive_traffic_light_level(flags: list[DocumentationFlag]) -> str:
+    has_red = any(flag.level == "red" for flag in flags)
+    has_orange = any(flag.level == "orange" for flag in flags)
+
+    if has_red:
+        return "red"
+
+    if has_orange:
+        return "orange"
+
+    return "green"
+
+
+def derive_traffic_light_label(level: str) -> str:
+    if level == "red":
+        return "ROT"
+
+    if level == "orange":
+        return "ORANGE"
+
+    return "GRÜN"
+
+
+def derive_traffic_light_description(level: str) -> str:
+    if level == "red":
+        return (
+            "Kontraindikation oder kritischer Risikofaktor berichtet. "
+            "Sofortige ärztliche Prüfung erforderlich."
+        )
+
+    if level == "orange":
+        return (
+            "Hauptkriterien teilweise unklar oder modifizierbare Risikofaktoren vorhanden. "
+            "Im Arztgespräch gezielt nachfragen."
+        )
+
+    return (
+        "Keine hinterlegten roten oder orangefarbenen Hinweise aus den Patientenangaben. "
+        "Ärztliche Prüfung bleibt erforderlich."
+    )
+
+
+def derive_traffic_light(flags: list[DocumentationFlag]) -> dict[str, str]:
+    level = derive_traffic_light_level(flags)
+
+    return {
+        "level": level,
+        "label": derive_traffic_light_label(level),
+        "description": derive_traffic_light_description(level),
+    }
+
 def _is_direct_identifier(answer: dict[str, Any]) -> bool:
     pii_category = str(answer.get("pii_category") or "none").strip().lower()
 
