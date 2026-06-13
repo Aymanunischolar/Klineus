@@ -365,9 +365,16 @@ class CreatePatientCaseRequest(BaseModel):
     metadata: CaseClientMetadata | None = None
 
 
+class PatientDocumentChecklistItem(BaseModel):
+    id: str
+    title: str
+    description: str
+
+
 class CreatePatientCaseResponse(BaseModel):
     case_id: str
     status: Literal["completed"]
+    documents_to_bring: list[PatientDocumentChecklistItem] = Field(default_factory=list)
 
 
 class DocumentationFlag(BaseModel):

@@ -126,9 +126,40 @@ def send_patient_submission_confirmation_email(
     to_email: str,
     patient_name: str,
     case_id: str,
+    documents_to_bring: list[dict] | None = None,
 ) -> bool:
     safe_patient_name = escape(patient_name)
     safe_case_id = escape(case_id)
+
+    documents = documents_to_bring or []
+
+    if documents:
+        documents_text = "\n".join(
+            f"- {item.get('title', '')}: {item.get('description', '')}"
+            for item in documents
+        )
+
+        documents_html = "".join(
+            f"""
+            <li>
+              <strong>{escape(str(item.get("title", "")))}</strong><br />
+              <span>{escape(str(item.get("description", "")))}</span>
+            </li>
+            """
+            for item in documents
+        )
+    else:
+        documents_text = (
+            "- Falls vorhanden: aktuelle Arztbriefe, Röntgenbilder, Befunde "
+            "oder Laborwerte zum Termin mitbringen."
+        )
+
+        documents_html = """
+        <li>
+          <strong>Falls vorhanden</strong><br />
+          <span>Bitte bringen Sie aktuelle Arztbriefe, Röntgenbilder, Befunde oder Laborwerte zum Termin mit.</span>
+        </li>
+        """
 
     subject = "Klineus Fragebogen übermittelt"
 
@@ -140,6 +171,10 @@ Fall-ID:
 {case_id}
 
 Ihr Arzt kann die Angaben nun im Klineus Dashboard einsehen.
+
+Bitte bringen Sie zum Termin folgende Unterlagen mit:
+
+{documents_text}
 
 Viele Grüße
 Klineus
@@ -159,6 +194,12 @@ Klineus
       </p>
 
       <p>Ihr Arzt kann die Angaben nun im Klineus Dashboard einsehen.</p>
+
+      <h3 style="color: #102033;">Bitte zum Termin mitbringen</h3>
+
+      <ul>
+        {documents_html}
+      </ul>
 
       <p>Viele Grüße<br />Klineus</p>
     </div>

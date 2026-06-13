@@ -55,6 +55,84 @@ def build_resume_url() -> str:
 
     return f"{public_url}/patient/resume"
 
+def answer_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return value.get("value", "")
+
+    return value
+
+
+def answer_starts_with_yes(value: Any) -> bool:
+    return str(answer_value(value) or "").strip().lower().startswith("ja")
+
+
+def answer_by_question_id(
+    answers: list[dict[str, Any]],
+    question_id: str,
+) -> Any:
+    for answer in answers:
+        if answer.get("question_id") == question_id:
+            return answer.get("answer")
+
+    return None
+
+
+def build_documents_to_bring(
+    *,
+    indication: str,
+    answers: list[dict[str, Any]],
+) -> list[dict[str, str]]:
+    documents: list[dict[str, str]] = []
+
+    if indication == "hip_tep":
+        if answer_starts_with_yes(answer_by_question_id(answers, "D2")):
+            documents.append(
+                {
+                    "id": "hip_findings",
+                    "title": "Arztbriefe, Röntgenbilder oder Befunde zur Hüfte",
+                    "description": "Bitte bringen Sie vorhandene Unterlagen zu Ihrer Hüfte zum Termin mit.",
+                }
+            )
+
+        if answer_starts_with_yes(answer_by_question_id(answers, "E6")):
+            documents.append(
+                {
+                    "id": "hip_labs",
+                    "title": "Letzte Laborergebnisse / HbA1c-Wert",
+                    "description": "Bitte bringen Sie vorhandene Laborwerte, insbesondere HbA1c, zum Termin mit.",
+                }
+            )
+
+    else:
+        if answer_starts_with_yes(answer_by_question_id(answers, "D1")):
+            documents.append(
+                {
+                    "id": "knee_findings",
+                    "title": "Arztbriefe, Röntgenbilder oder Befunde zum Knie",
+                    "description": "Bitte bringen Sie vorhandene Unterlagen zu Ihrem Knie zum Termin mit.",
+                }
+            )
+
+        if answer_starts_with_yes(answer_by_question_id(answers, "E3")):
+            documents.append(
+                {
+                    "id": "knee_discharge_letters",
+                    "title": "Entlassungsbriefe zum Herz-Kreislauf-Ereignis",
+                    "description": "Bitte bringen Sie vorhandene Entlassungsbriefe oder Befunde zum Herzinfarkt, Schlaganfall oder schweren Herz-Kreislauf-Ereignis mit.",
+                }
+            )
+
+    if not documents:
+        documents.append(
+            {
+                "id": "general_documents",
+                "title": "Vorhandene medizinische Unterlagen",
+                "description": "Falls vorhanden, bringen Sie bitte aktuelle Arztbriefe, Röntgenbilder, Befunde oder Laborwerte zum Termin mit.",
+            }
+        )
+
+    return documents
+
 
 def session_to_resume_response(session) -> ResumePatientQuestionnaireResponse:
     return ResumePatientQuestionnaireResponse(
@@ -183,6 +261,16 @@ def save_patient_questionnaire_progress(
     answers = [to_plain_data(answer) for answer in request.answers]
     metadata = to_plain_data(request.metadata)
 
+    documents_to_bring = build_documents_to_bring(
+        indication=request.indication,
+        answers=answers,
+    )
+
+    metadata = {
+        **metadata,
+        "documents_to_bring": documents_to_bring,
+    }
+
     session = storage.save_questionnaire_session_progress(
         session_id=request.session_id,
         indication=request.indication,
@@ -242,6 +330,16 @@ def create_patient_case(
     answers = [to_plain_data(answer) for answer in request.answers]
     metadata = to_plain_data(request.metadata)
 
+    documents_to_bring = build_documents_to_bring(
+        indication=request.indication,
+        answers=answers,
+    )
+
+    metadata = {
+        **metadata,
+        "documents_to_bring": documents_to_bring,
+    }
+
     session = None
 
     if request.session_id:
@@ -268,9 +366,11 @@ def create_patient_case(
             to_email=patient_email,
             patient_name=created_case.patient_name or "Patient",
             case_id=created_case.case_id,
+            documents_to_bring=documents_to_bring,
         )
 
     return CreatePatientCaseResponse(
         case_id=created_case.case_id,
         status="completed",
+        documents_to_bring=documents_to_bring,
     )

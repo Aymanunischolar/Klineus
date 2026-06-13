@@ -14,6 +14,9 @@ import {
 } from "../data/questionnaire.js";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 
+const PATIENT_DOCUMENT_CHECKLIST_STORAGE_KEY =
+  "klineus_patient_document_checklist";
+
 const PATIENT_IDENTITY_STORAGE_KEY = "klineus_patient_identity";
 
 function localText(language, de, en) {
@@ -134,6 +137,68 @@ function serialiseAnswer(answer) {
 
   return answer;
 }
+
+function answerStartsWithYes(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return String(value.value || "").trim().toLowerCase().startsWith("ja");
+  }
+
+  return String(value || "").trim().toLowerCase().startsWith("ja");
+}
+
+function buildPatientDocumentChecklist(indication, nextAnswers) {
+  const documents = [];
+
+  if (indication === "hip_tep") {
+    if (answerStartsWithYes(nextAnswers.D2)) {
+      documents.push({
+        id: "hip_findings",
+        title: "Arztbriefe, Röntgenbilder oder Befunde zur Hüfte",
+        description:
+          "Bitte bringen Sie vorhandene Unterlagen zu Ihrer Hüfte zum Termin mit.",
+      });
+    }
+
+    if (answerStartsWithYes(nextAnswers.E6)) {
+      documents.push({
+        id: "hip_labs",
+        title: "Letzte Laborergebnisse / HbA1c-Wert",
+        description:
+          "Bitte bringen Sie vorhandene Laborwerte, insbesondere HbA1c, zum Termin mit.",
+      });
+    }
+  } else {
+    if (answerStartsWithYes(nextAnswers.D1)) {
+      documents.push({
+        id: "knee_findings",
+        title: "Arztbriefe, Röntgenbilder oder Befunde zum Knie",
+        description:
+          "Bitte bringen Sie vorhandene Unterlagen zu Ihrem Knie zum Termin mit.",
+      });
+    }
+
+    if (answerStartsWithYes(nextAnswers.E3)) {
+      documents.push({
+        id: "knee_discharge_letters",
+        title: "Entlassungsbriefe zum Herz-Kreislauf-Ereignis",
+        description:
+          "Bitte bringen Sie vorhandene Entlassungsbriefe oder Befunde zum Herzinfarkt, Schlaganfall oder schweren Herz-Kreislauf-Ereignis mit.",
+      });
+    }
+  }
+
+  if (documents.length === 0) {
+    documents.push({
+      id: "no_specific_documents",
+      title: "Keine speziellen Zusatzunterlagen aus Ihren Antworten abgeleitet",
+      description:
+        "Falls Sie trotzdem aktuelle Arztbriefe, Röntgenbilder, Befunde oder Laborwerte haben, bringen Sie diese bitte zum Termin mit.",
+    });
+  }
+
+  return documents;
+}
+
 
 export default function QuestionnairePage() {
   const navigate = useNavigate();
@@ -366,8 +431,19 @@ export default function QuestionnairePage() {
         },
       );
 
-      window.sessionStorage.removeItem(PATIENT_IDENTITY_STORAGE_KEY);
+      window.sessionStorage.setItem(
+        PATIENT_DOCUMENT_CHECKLIST_STORAGE_KEY,
+        JSON.stringify(
+          buildPatientDocumentChecklist(indication, nextAnswers),
+        ),
+      );
 
+           window.sessionStorage.setItem(
+        PATIENT_DOCUMENT_CHECKLIST_STORAGE_KEY,
+        JSON.stringify(createdCase?.documents_to_bring || []),
+      );
+
+      window.sessionStorage.removeItem(PATIENT_IDENTITY_STORAGE_KEY);
       if (createdCase?.case_id) {
         navigate(`/patient/done/${createdCase.case_id}`);
       } else {
