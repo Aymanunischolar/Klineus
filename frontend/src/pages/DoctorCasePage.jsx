@@ -220,9 +220,11 @@ function extractFlags(patientCase) {
   const reportJson = patientCase?.report_json || {};
 
   const possibleFlags =
+    patientCase?.documentation_flags ||
     patientCase?.flags ||
     patientCase?.risk_flags ||
     patientCase?.ai_flags ||
+    reportJson.documentation_flags ||
     reportJson.flags ||
     reportJson.risk_flags ||
     reportJson.open_points ||
@@ -256,7 +258,6 @@ function flagLevelClass(flag) {
 
   return "flag-card success";
 }
-
 
 function trafficLightClass(trafficLight) {
   const level = String(trafficLight?.level || "").toLowerCase();
@@ -321,6 +322,7 @@ function EditableReportTemplate({ text, language, onChange }) {
           trimmedLine.includes("AI-generated draft") ||
           trimmedLine.includes("KI-generierter Entwurf") ||
           trimmedLine.includes("Ärztliche Prüfung") ||
+          trimmedLine.includes("ärztliche Entscheidung") ||
           trimmedLine.includes("physician")
         ) {
           const cleanLine = trimmedLine.replace(/^[-*]\s*/, "");
@@ -497,6 +499,7 @@ export default function DoctorCasePage() {
   );
 
   const flags = useMemo(() => extractFlags(patientCase), [patientCase]);
+  const trafficLight = patientCase?.traffic_light || null;
 
   async function handleGenerateReport() {
     setIsGenerating(true);
@@ -642,17 +645,17 @@ export default function DoctorCasePage() {
           </div>
         </section>
 
-                {patientCase?.traffic_light ? (
-          <section className={trafficLightClass(patientCase.traffic_light)}>
+        {trafficLight ? (
+          <section className={trafficLightClass(trafficLight)}>
             <div>
               <p className="eyebrow">
                 {localText(language, "Ampellogik", "Traffic light")}
               </p>
 
-              <h2>{patientCase.traffic_light.label}</h2>
+              <h2>{trafficLight.label}</h2>
             </div>
 
-            <p>{patientCase.traffic_light.description}</p>
+            <p>{trafficLight.description}</p>
           </section>
         ) : null}
 
