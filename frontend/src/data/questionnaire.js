@@ -143,24 +143,25 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
           ]),
           showIf: { questionId: "A2", equals: "Ja" },
         },
-        {
-          id: "A6",
-          textDe: "Was beschreibt Ihre Beschwerden am besten?",
-          textEn: "What best describes your symptoms?",
-          type: "multiple",
-          options: options([
-            ["Schmerz", "Pain"],
-            ["Steifigkeit", "Stiffness"],
-            ["Unsicherheit im Knie", "Instability in the knee"],
-            ["Das Knie knickt weg", "The knee gives way"],
-            [
-              "Knie lässt sich nicht richtig beugen oder strecken",
-              "The knee cannot be properly bent or straightened",
-            ],
-            ["Schwellung", "Swelling"],
-            ["Etwas anderes", "Something else"],
-          ]),
-        },
+       {
+  id: "A6",
+  textDe: "Was beschreibt Ihre Beschwerden am besten?",
+  textEn: "What best describes your symptoms?",
+  type: "multiple",
+  options: options([
+    ["Schmerz", "Pain"],
+    ["Steifigkeit", "Stiffness"],
+    ["Unsicherheit im Knie", "Instability in the knee"],
+    ["Das Knie knickt weg", "The knee gives way"],
+    [
+      "Knie lässt sich nicht richtig beugen oder strecken",
+      "The knee cannot be properly bent or straightened",
+    ],
+    ["Schwellung", "Swelling"],
+    ["Etwas anderes", "Something else"],
+  ]),
+  showIf: { questionId: "A2", equals: "Ja" },
+},
         {
           id: "A7",
           textDe: "Was ist heute der Hauptgrund für Ihren Termin?",
@@ -610,20 +611,21 @@ export const hipTepQuestionnaire = makeQuestionnaire({
           ]),
           showIf: { questionId: "A2", equals: "Ja" },
         },
-        {
-          id: "A6",
-          textDe: "Was beschreibt Ihre Beschwerden am besten?",
-          textEn: "What best describes your symptoms?",
-          type: "multiple",
-          options: options([
-            ["Schmerz", "Pain"],
-            ["Steifigkeit", "Stiffness"],
-            ["Die Hüfte ist unbeweglich", "The hip is stiff or difficult to move"],
-            ["Ich humpele", "I limp"],
-            ["Die Hüfte fühlt sich schwach an", "The hip feels weak"],
-            ["Etwas anderes", "Something else"],
-          ]),
-        },
+      {
+  id: "A6",
+  textDe: "Was beschreibt Ihre Beschwerden am besten?",
+  textEn: "What best describes your symptoms?",
+  type: "multiple",
+  options: options([
+    ["Schmerz", "Pain"],
+    ["Steifigkeit", "Stiffness"],
+    ["Die Hüfte ist unbeweglich", "The hip is stiff or difficult to move"],
+    ["Ich humpele", "I limp"],
+    ["Die Hüfte fühlt sich schwach an", "The hip feels weak"],
+    ["Etwas anderes", "Something else"],
+  ]),
+  showIf: { questionId: "A2", equals: "Ja" },
+},
         {
           id: "A7",
           textDe: "Was ist der Hauptgrund für Ihren Termin?",
@@ -907,19 +909,25 @@ export const hipTepQuestionnaire = makeQuestionnaire({
           detailsLabel: "Angabe",
           detailsLabels: label("Angabe", "Details"),
         },
-        {
-          id: "E6",
-          textDe: "Haben Sie Diabetes oder erhöhte Blutzuckerwerte?",
-          textEn: "Do you have diabetes or elevated blood sugar levels?",
-          type: "single_with_text",
-          options: common.yesNoUnknown,
-          detailsIf: ["Ja"],
-          detailsLabel: "Diabetes-Typ und HbA1c Wert",
-          detailsLabels: label(
-            "Diabetes-Typ und HbA1c Wert",
-            "Diabetes type and HbA1c value",
-          ),
-        },
+       {
+  id: "E6",
+  textDe: "Haben Sie Diabetes oder erhöhte Blutzuckerwerte?",
+  textEn: "Do you have diabetes or elevated blood sugar levels?",
+  type: "single_with_text",
+  options: common.yesNoUnknown,
+  detailsIf: ["Ja"],
+  detailsLabel: "Diabetes-Typ und HbA1c Wert",
+  detailsLabels: label(
+    "Diabetes-Typ und HbA1c Wert",
+    "Diabetes type and HbA1c value",
+  ),
+  notesByValue: {
+    Ja: "Bitte bringen Sie falls vorhanden Ihre letzten Laborergebnisse, insbesondere den HbA1c-Wert, zum Termin mit.",
+  },
+  notesByValueEn: {
+    Ja: "Please bring your latest lab results, especially the HbA1c value, to your appointment if available.",
+  },
+},
         {
           id: "E7",
           textDe:
@@ -1219,30 +1227,48 @@ export function isAnswerComplete(question, value) {
     return Number.isFinite(Number(value));
   }
 
- if (question.type === "smoking_details") {
-  const selected = value?.value || "";
+  if (question.type === "single_with_text") {
+    const selected = String(value?.value || "").trim();
 
-  if (!selected) return false;
+    if (!selected) {
+      return false;
+    }
 
-  if (
-    selected === "Ja, mit Angabe Packungen pro Tag und Rauchjahre" ||
-    selected === "Ja, täglich"
-  ) {
-    return (
-      Number(value?.packs_per_day) > 0 &&
-      Number(value?.smoking_years) > 0
-    );
+    const needsDetail =
+      Array.isArray(question.detailsIf) &&
+      question.detailsIf.includes(selected);
+
+    if (needsDetail) {
+      return String(value?.detail || "").trim().length > 0;
+    }
+
+    return true;
   }
 
-  if (
-    selected === "Ich habe aufgehört seit…" ||
-    selected === "Ich habe aufgehört seit …"
-  ) {
-    return String(value?.stopped_since || "").trim().length > 0;
-  }
+  if (question.type === "smoking_details") {
+    const selected = value?.value || "";
 
-  return true;
-}
+    if (!selected) return false;
+
+    if (
+      selected === "Ja, mit Angabe Packungen pro Tag und Rauchjahre" ||
+      selected === "Ja, täglich"
+    ) {
+      return (
+        Number(value?.packs_per_day) > 0 &&
+        Number(value?.smoking_years) > 0
+      );
+    }
+
+    if (
+      selected === "Ich habe aufgehört seit…" ||
+      selected === "Ich habe aufgehört seit …"
+    ) {
+      return String(value?.stopped_since || "").trim().length > 0;
+    }
+
+    return true;
+  }
 
   return String(value || "").trim().length > 0;
 }

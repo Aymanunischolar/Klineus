@@ -56,27 +56,41 @@ def block_title_for_question(question_id: str) -> str:
 
 def group_answers(answers: list[dict[str, Any]]) -> list[AnswerGroup]:
     grouped: dict[str, list[QuestionnaireAnswer]] = defaultdict(list)
+    group_titles: dict[str, str] = {}
 
     for raw_answer in answers:
         answer = QuestionnaireAnswer(**raw_answer)
+
         block_id = answer.block_id or block_id_for_question(answer.question_id)
-        block_title = answer.block_title or BLOCK_TITLES.get(block_id, "Weitere Angaben")
+        block_title = (
+            answer.block_title
+            or BLOCK_TITLES.get(block_id)
+            or "Weitere Angaben"
+        )
+
         answer.block_id = block_id
         answer.block_title = block_title
+
         grouped[block_id].append(answer)
 
+        if block_id not in group_titles:
+            group_titles[block_id] = block_title
+
     ordered_groups: list[AnswerGroup] = []
+
     for block_id in sorted(grouped.keys()):
         ordered_groups.append(
             AnswerGroup(
                 block_id=block_id,
-                block_title=BLOCK_TITLES.get(block_id, "Weitere Angaben"),
+                block_title=group_titles.get(
+                    block_id,
+                    BLOCK_TITLES.get(block_id, "Weitere Angaben"),
+                ),
                 answers=grouped[block_id],
             )
         )
 
     return ordered_groups
-
 
 def _answers_by_id(answers: list[dict[str, Any]]) -> dict[str, Any]:
     return {item.get("question_id", ""): item.get("answer") for item in answers}
@@ -106,7 +120,15 @@ def _is_yes(value: Any) -> bool:
 def _starts_with_yes(value: Any) -> bool:
     return str(_answer_value(value) or "").strip().lower().startswith("ja")
 
+def _is_unknown(value: Any) -> bool:
+    normalized = str(_answer_value(value) or "").strip().lower()
 
+    return normalized in {
+        "weiß ich nicht",
+        "weiss ich nicht",
+        "weiß nicht",
+        "weiss nicht",
+    }
 def _infer_indication(answers: list[dict[str, Any]]) -> str:
     question_ids = {str(item.get("question_id", "")) for item in answers}
 
@@ -298,29 +320,6 @@ def generate_documentation_flags(
             )
         )
 
-    if resolved_indication == "hip_tep":
-        duration_limitation = by_id.get("B2")
-
-        if duration_limitation == "Weniger als 3 Monate":
-            flags.append(
-                _flag(
-                    "orange",
-                    "Kurze Dauer der Alltagseinschraenkung",
-                    "Patient berichtet eine deutliche Alltagseinschraenkung seit weniger als 3 Monaten.",
-                )
-            )
-
-        walking_distance = by_id.get("B4")
-
-        if walking_distance in {"Unter 500 m", "Unter 100 m", "Kaum möglich"}:
-            flags.append(
-                _flag(
-                    "orange",
-                    "Deutliche Gehstreckenlimitierung berichtet",
-                    "Patient berichtet eine Gehstrecke unter 500 m oder kaum moegliche Gehstrecke.",
-                )
-            )
-
     if by_id.get("C1") == "Nein":
         flags.append(
             _flag(
@@ -349,6 +348,28 @@ def generate_documentation_flags(
         )
 
     if resolved_indication == "hip_tep":
+        duration_limitation = by_id.get("B2")
+
+        if duration_limitation == "Weniger als 3 Monate":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kurze Dauer der Alltagseinschraenkung",
+                    "Patient berichtet eine deutliche Alltagseinschraenkung seit weniger als 3 Monaten.",
+                )
+            )
+
+        walking_distance = by_id.get("B4")
+
+        if walking_distance in {"Unter 500 m", "Unter 100 m", "Kaum möglich"}:
+            flags.append(
+                _flag(
+                    "orange",
+                    "Deutliche Gehstreckenlimitierung berichtet",
+                    "Patient berichtet eine Gehstrecke unter 500 m oder kaum moegliche Gehstrecke.",
+                )
+            )
+
         if by_id.get("C5") in {"Nein", "Weiß nicht", "Weiß ich nicht"}:
             flags.append(
                 _flag(
@@ -384,17 +405,25 @@ def generate_documentation_flags(
                     "Patient berichtet keine Arztbriefe, Roentgenbilder oder Befunde zur Huefte.",
                 )
             )
-    else:
-        if by_id.get("D1") == "Nein":
+
+        if _is_unknown(by_id.get("D3")):
             flags.append(
                 _flag(
                     "orange",
-                    "Vorbefunde nicht vorhanden",
-                    "Patient berichtet keine Arztbriefe, Roentgenbilder oder Befunde zum Knie.",
+                    "Fruehere Prothesenempfehlung unklar",
+                    "Patient ist unsicher, ob bereits eine Hueftprothese empfohlen wurde.",
                 )
             )
 
-    if resolved_indication == "hip_tep":
+        if _is_unknown(by_id.get("E1")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Aktive Infektion unklar",
+                    "Patient ist unsicher, ob aktuell eine Entzuendung oder Infektion behandelt wird. Vor OP-Indikation aerztlich klaeren.",
+                )
+            )
+
         if by_id.get("E1") == "Ja":
             flags.append(
                 _flag(
@@ -404,12 +433,30 @@ def generate_documentation_flags(
                 )
             )
 
+        if _is_unknown(by_id.get("E2")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Fruehere Hueftinfektion unklar",
+                    "Patient ist unsicher, ob frueher eine Infektion in dieser Huefte vorlag.",
+                )
+            )
+
         if by_id.get("E2") == "Ja":
             flags.append(
                 _flag(
                     "orange",
                     "Fruehere Hueftinfektion berichtet",
                     "Patient berichtet eine fruehere Infektion in dieser Huefte. Restaktivitaet vor OP aerztlich pruefen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E3")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Operationsrisiko unklar",
+                    "Patient ist unsicher bezueglich schwerer Begleiterkrankungen oder eines erhoehten Operationsrisikos.",
                 )
             )
 
@@ -425,12 +472,30 @@ def generate_documentation_flags(
         _append_bmi_flags(flags, answers, resolved_indication)
         _append_smoking_flag(flags, by_id.get("E5"))
 
+        if _is_unknown(by_id.get("E6")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Diabetesstatus unklar",
+                    "Patient ist unsicher bezueglich Diabetes oder erhoehter Blutzuckerwerte. HbA1c/Laborwerte aerztlich pruefen.",
+                )
+            )
+
         if _starts_with_yes(by_id.get("E6")):
             flags.append(
                 _flag(
                     "orange",
                     "Diabetes oder erhoehte Blutzuckerwerte berichtet",
-                    "Patient berichtet Diabetes oder erhoehte Blutzuckerwerte. HbA1c und praoperative Einstellung aerztlich pruefen.",
+                    "Patient berichtet Diabetes oder erhoehte Blutzuckerwerte. HbA1c und praeoperative Einstellung aerztlich pruefen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E7")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Anaemiestatus unklar",
+                    "Patient ist unsicher bezueglich Blutarmut oder Anaemie. Diagnostik und Optimierung vor OP pruefen.",
                 )
             )
 
@@ -440,6 +505,15 @@ def generate_documentation_flags(
                     "orange",
                     "Blutarmut oder Anaemie berichtet",
                     "Patient berichtet Blutarmut oder Anaemie. Diagnostik und Optimierung vor OP pruefen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E8")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kortison-Injektion unklar",
+                    "Patient ist unsicher bezueglich einer Kortison-Spritze direkt in die Huefte. Im Arztgespraech klaeren.",
                 )
             )
 
@@ -463,6 +537,15 @@ def generate_documentation_flags(
                 )
             )
 
+        if _is_unknown(by_id.get("E10")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Harnwegsinfekt unklar",
+                    "Patient ist unsicher bezueglich Beschwerden beim Wasserlassen oder Harnwegsinfekt.",
+                )
+            )
+
         if _starts_with_yes(by_id.get("E11")):
             flags.append(
                 _flag(
@@ -472,13 +555,76 @@ def generate_documentation_flags(
                 )
             )
 
+        if _is_unknown(by_id.get("E11")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Immunsystem-beeinflussende Medikamente unklar",
+                    "Patient ist unsicher bezueglich dauerhaft immunsystem-beeinflussender Medikamente.",
+                )
+            )
+
     else:
+        if _is_unknown(by_id.get("B3")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Achsfehlstellung unklar",
+                    "Patient ist unsicher, ob Bein oder Knie schief steht. Im Arztgespraech gezielt pruefen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("B4")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kraftminderung unklar",
+                    "Patient ist unsicher, ob das betroffene Bein schwaecher geworden ist. Im Arztgespraech gezielt pruefen.",
+                )
+            )
+
+        if by_id.get("D1") == "Nein":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Vorbefunde nicht vorhanden",
+                    "Patient berichtet keine Arztbriefe, Roentgenbilder oder Befunde zum Knie.",
+                )
+            )
+
+        if _is_unknown(by_id.get("D2")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Fruehere Prothesenempfehlung unklar",
+                    "Patient ist unsicher, ob bereits eine Knieprothese empfohlen wurde.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E1")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Aktive Knieinfektion unklar",
+                    "Patient ist unsicher, ob aktuell eine Entzuendung oder Infektion im Knie behandelt wird. Vor OP-Indikation aerztlich klaeren.",
+                )
+            )
+
         if by_id.get("E1") == "Ja":
             flags.append(
                 _flag(
                     "red",
                     "Aktive Infektion im Knie berichtet",
                     "Patient berichtet eine aktuell behandelte Entzuendung oder Infektion im Knie. Erfordert aerztliche Pruefung.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E2")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Fruehere Knieinfektion unklar",
+                    "Patient ist unsicher, ob frueher eine Infektion in diesem Knie vorlag.",
                 )
             )
 
@@ -491,6 +637,15 @@ def generate_documentation_flags(
                 )
             )
 
+        if _is_unknown(by_id.get("E3")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kuerzliches Herz-Kreislauf-Ereignis unklar",
+                    "Patient ist unsicher, ob in den letzten 3 Monaten ein schweres Herz-Kreislauf-Ereignis vorlag. Im Arztgespraech klaeren.",
+                )
+            )
+
         if by_id.get("E3") == "Ja":
             flags.append(
                 _flag(
@@ -500,18 +655,46 @@ def generate_documentation_flags(
                 )
             )
 
+        if _is_unknown(by_id.get("E4")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Diabetesstatus unklar",
+                    "Patient ist unsicher bezueglich Diabetes oder erhoehter Blutzuckerwerte. HbA1c/Laborwerte aerztlich pruefen.",
+                )
+            )
+
         if by_id.get("E4") == "Ja":
             flags.append(
                 _flag(
                     "orange",
                     "Diabetes oder erhoehte Blutzuckerwerte berichtet",
-                    "Patient berichtet Diabetes oder erhoehte Blutzuckerwerte. HbA1c und praoperative Einstellung aerztlich pruefen.",
+                    "Patient berichtet Diabetes oder erhoehte Blutzuckerwerte. HbA1c und praeoperative Einstellung aerztlich pruefen.",
                 )
             )
 
         _append_bmi_flags(flags, answers, resolved_indication)
         _append_smoking_flag(flags, by_id.get("E6"))
+
+        if _is_unknown(by_id.get("E7")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kortison-Injektion unklar",
+                    "Patient ist unsicher bezueglich einer Kortison-Spritze direkt ins Knie. Im Arztgespraech klaeren.",
+                )
+            )
+
         _append_cortisone_flag(flags, by_id.get("E7"), "das Knie")
+
+        if _is_unknown(by_id.get("E8")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Anaemiestatus unklar",
+                    "Patient ist unsicher bezueglich Blutarmut oder Anaemie. Diagnostik und Optimierung vor OP pruefen.",
+                )
+            )
 
         if by_id.get("E8") == "Ja":
             flags.append(
@@ -531,12 +714,30 @@ def generate_documentation_flags(
                 )
             )
 
+        if _is_unknown(by_id.get("E10")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Rheumatische Erkrankung unklar",
+                    "Patient ist unsicher bezueglich einer rheumatischen Erkrankung.",
+                )
+            )
+
         if _starts_with_yes(by_id.get("E10")):
             flags.append(
                 _flag(
                     "orange",
                     "Rheumatische Erkrankung berichtet",
                     "Patient berichtet eine rheumatische Erkrankung. Krankheitskontrolle aerztlich pruefen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E11")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kortison-Tabletteneinnahme unklar",
+                    "Patient ist unsicher bezueglich aktueller Kortison-Tabletteneinnahme.",
                 )
             )
 
@@ -577,7 +778,6 @@ def generate_documentation_flags(
         )
 
     return flags
-
 
 def _is_direct_identifier(answer: dict[str, Any]) -> bool:
     pii_category = str(answer.get("pii_category") or "none").strip().lower()
