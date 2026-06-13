@@ -275,6 +275,29 @@ class SQLiteCaseStorage:
 
         return self._row_to_session(row) if row else None
 
+    def list_questionnaire_sessions(
+            self,
+            status: str | None = None,
+    ):
+        query = """
+            SELECT *
+            FROM patient_questionnaire_sessions
+        """
+
+        params: list[Any] = []
+
+        if status:
+            query += " WHERE status = ?"
+            params.append(status)
+
+        query += " ORDER BY updated_at DESC"
+
+        with connect() as connection:
+            rows = connection.execute(query, tuple(params)).fetchall()
+
+        return [self._row_to_questionnaire_session(row) for row in rows]
+
+
     def resume_questionnaire_session(
         self,
         *,

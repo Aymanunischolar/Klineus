@@ -389,6 +389,29 @@ class AnswerGroup(BaseModel):
     answers: list[QuestionnaireAnswer]
 
 
+class PatientQuestionnaireSessionSummary(BaseModel):
+    session_id: str
+    created_at: datetime
+    updated_at: datetime
+    indication: Indication
+    patient_name: str | None = None
+    patient_last_name: str | None = None
+    patient_email: str | None = None
+    insurance_id: str | None = None
+    questionnaire_template_id: str | None = None
+    questionnaire_version: int | None = None
+    current_question_id: str | None = None
+    answer_count: int = 0
+    status: str = "in_progress"
+
+
+class DoctorWorklistResponse(BaseModel):
+    pending_sessions: list[PatientQuestionnaireSessionSummary] = Field(
+        default_factory=list
+    )
+    completed_cases: list["PatientCaseSummary"] = Field(default_factory=list)
+
+
 class PatientCaseSummary(BaseModel):
     case_id: str
     created_at: datetime

@@ -6,7 +6,13 @@ from app.report_service import (
     generate_documentation_flags,
     group_answers,
 )
-from app.schemas import DeleteCaseResponse, PatientCaseDetail, PatientCaseSummary
+from app.schemas import (
+    DeleteCaseResponse,
+    DoctorWorklistResponse,
+    PatientCaseDetail,
+    PatientCaseSummary,
+    PatientQuestionnaireSessionSummary,
+)
 from app.storage import storage
 
 
@@ -142,11 +148,50 @@ def build_case_summary(case) -> PatientCaseSummary:
     )
 
 
+def build_session_summary(session) -> PatientQuestionnaireSessionSummary:
+    answers = session.answers if isinstance(session.answers, list) else []
+
+    return PatientQuestionnaireSessionSummary(
+        session_id=session.session_id,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+        indication=session.indication,
+        patient_name=session.patient_name,
+        patient_last_name=session.patient_last_name,
+        patient_email=session.patient_email,
+        insurance_id=session.insurance_id,
+        questionnaire_template_id=session.questionnaire_template_id,
+        questionnaire_version=session.questionnaire_version,
+        current_question_id=session.current_question_id,
+        answer_count=len(answers),
+        status=session.status or "in_progress",
+    )
+
+
 @router.get("/cases", response_model=list[PatientCaseSummary])
 def list_cases(
     _: str = Depends(get_current_doctor),
 ) -> list[PatientCaseSummary]:
     return [build_case_summary(case) for case in storage.list_cases()]
+
+@router.get("/worklist", response_model=DoctorWorklistResponse)
+def get_worklist(
+    _: str = Depends(get_current_doctor),
+) -> DoctorWorklistResponse:
+    pending_sessions = [
+        build_session_summary(session)
+        for session in storage.list_questionnaire_sessions(status="in_progress")
+    ]
+
+    completed_cases = [
+        build_case_summary(case)
+        for case in storage.list_cases()
+    ]
+
+    return DoctorWorklistResponse(
+        pending_sessions=pending_sessions,
+        completed_cases=completed_cases,
+    )
 
 
 @router.get("/cases/{case_id}", response_model=PatientCaseDetail)

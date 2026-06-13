@@ -5,6 +5,10 @@ import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
 
+function localText(language, de, en) {
+  return language === "en" ? en : de;
+}
+
 function formatDate(value, language) {
   if (!value) {
     return "-";
@@ -24,38 +28,43 @@ function indicationLabel(indication) {
   return "Knie-TEP";
 }
 
-function statusLabel(status, t) {
-  if (!status) {
-    return "-";
+function patientDisplayName(item) {
+  const firstName = item?.patient_name || "";
+  const lastName = item?.patient_last_name || "";
+
+  if (firstName && lastName && !firstName.includes(lastName)) {
+    return `${firstName} ${lastName}`;
   }
 
-  return t(status) || status;
+  return firstName || lastName || "-";
 }
 
-function reportStatusLabel(status, t) {
+function statusLabel(status, language) {
+  if (status === "completed") {
+    return localText(language, "Ausgefüllt", "Completed");
+  }
+
+  if (status === "in_progress") {
+    return localText(language, "Ausstehend", "Pending");
+  }
+
+  return status || "-";
+}
+
+function reportStatusLabel(status, language) {
   if (!status || status === "not_generated") {
-    return t("notGenerated") || "Nicht erstellt";
+    return localText(language, "Nicht erstellt", "Not generated");
   }
 
-  return t(status) || status;
-}
-
-function patientDisplayName(patientCase) {
-  const fullName = patientCase.patient_name || "";
-  const lastName = patientCase.patient_last_name || "";
-
-  if (fullName && lastName && !fullName.includes(lastName)) {
-    return `${fullName} ${lastName}`;
-  }
-
-  return fullName || lastName || "-";
+  return status;
 }
 
 export default function DoctorDashboardPage() {
   const navigate = useNavigate();
   const { language, t } = useLanguage();
 
-  const [cases, setCases] = useState([]);
+  const [pendingSessions, setPendingSessions] = useState([]);
+  const [completedCases, setCompletedCases] = useState([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -63,11 +72,23 @@ export default function DoctorDashboardPage() {
     let mounted = true;
 
     api
-      .listCases()
+      .getDoctorWorklist()
       .then((data) => {
-        if (mounted) {
-          setCases(Array.isArray(data) ? data : []);
+        if (!mounted) {
+          return;
         }
+
+        setPendingSessions(
+          Array.isArray(data?.pending_sessions)
+            ? data.pending_sessions
+            : [],
+        );
+
+        setCompletedCases(
+          Array.isArray(data?.completed_cases)
+            ? data.completed_cases
+            : [],
+        );
       })
       .catch((loadError) => {
         if (mounted) {
@@ -90,6 +111,9 @@ export default function DoctorDashboardPage() {
     navigate("/doctor/login");
   }
 
+  const hasAnyItems =
+    pendingSessions.length > 0 || completedCases.length > 0;
+
   return (
     <AppShell>
       <section className="dashboard-header">
@@ -99,8 +123,11 @@ export default function DoctorDashboardPage() {
           <h1>{t("patientCases")}</h1>
 
           <p className="dashboard-subtitle">
-            Eingereichte Fragebögen werden hier mit Patientendaten,
-            Indikation, Status und Öffnen-Link angezeigt.
+            {localText(
+              language,
+              "Aktuelle Patienten werden mit Status angezeigt: ausstehend oder ausgefüllt.",
+              "Current patients are shown with status: pending or completed.",
+            )}
           </p>
         </div>
 
@@ -115,74 +142,172 @@ export default function DoctorDashboardPage() {
 
       {isLoading ? <p className="muted">{t("loadingCases")}</p> : null}
 
-      {!isLoading && cases.length === 0 ? (
+      {!isLoading && !hasAnyItems ? (
         <section className="empty-state">
           <h2>{t("emptyCasesTitle")}</h2>
           <p>{t("emptyCasesText")}</p>
         </section>
       ) : null}
 
-      {!isLoading && cases.length > 0 ? (
-        <div className="case-table-wrap">
-          <table className="case-table">
-            <thead>
-              <tr>
-                <th>Patient</th>
-                <th>Versicherung</th>
-                <th>E-Mail</th>
-                <th>{t("created") || "Erstellt"}</th>
-                <th>{t("indication") || "Indikation"}</th>
-                <th>{t("report") || "Arztbrief"}</th>
-                <th>Aktion</th>
-              </tr>
-            </thead>
+      {!isLoading && pendingSessions.length > 0 ? (
+        <section className="dashboard-section">
+          <div className="section-heading-row">
+            <div>
+              <p className="eyebrow">
+                {localText(language, "Ausstehend", "Pending")}
+              </p>
 
-            <tbody>
-              {cases.map((patientCase) => (
-                <tr key={patientCase.case_id}>
-                  <td>
-                    <strong>{patientDisplayName(patientCase)}</strong>
+              <h2>
+                {localText(
+                  language,
+                  "Gestartete Fragebögen",
+                  "Started questionnaires",
+                )}
+              </h2>
+            </div>
+          </div>
 
-                    <div className="muted mono">
+          <div className="case-table-wrap">
+            <table className="case-table">
+              <thead>
+                <tr>
+                  <th>{localText(language, "Patient", "Patient")}</th>
+                  <th>{localText(language, "E-Mail", "Email")}</th>
+                  <th>
+                    {localText(
+                      language,
+                      "Versicherungsnummer",
+                      "Insurance ID",
+                    )}
+                  </th>
+                  <th>{t("indication") || "Indikation"}</th>
+                  <th>{t("status") || "Status"}</th>
+                  <th>{localText(language, "Antworten", "Answers")}</th>
+                  <th>
+                    {localText(language, "Zuletzt aktualisiert", "Updated")}
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {pendingSessions.map((session) => (
+                  <tr key={session.session_id}>
+                    <td>{patientDisplayName(session)}</td>
+
+                    <td>{session.patient_email || "-"}</td>
+
+                    <td>{session.insurance_id || "-"}</td>
+
+                    <td>
+                      <span className="indication-pill">
+                        {indicationLabel(session.indication)}
+                      </span>
+                    </td>
+
+                    <td>
+                      <span className="status-pill status-pending">
+                        {statusLabel(session.status, language)}
+                      </span>
+                    </td>
+
+                    <td>{session.answer_count || 0}</td>
+
+                    <td>{formatDate(session.updated_at, language)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {!isLoading && completedCases.length > 0 ? (
+        <section className="dashboard-section">
+          <div className="section-heading-row">
+            <div>
+              <p className="eyebrow">
+                {localText(language, "Ausgefüllt", "Completed")}
+              </p>
+
+              <h2>
+                {localText(
+                  language,
+                  "Übermittelte Fragebögen",
+                  "Submitted questionnaires",
+                )}
+              </h2>
+            </div>
+          </div>
+
+          <div className="case-table-wrap">
+            <table className="case-table">
+              <thead>
+                <tr>
+                  <th>{localText(language, "Patient", "Patient")}</th>
+                  <th>
+                    {localText(
+                      language,
+                      "Versicherungsnummer",
+                      "Insurance ID",
+                    )}
+                  </th>
+                  <th>{t("caseId")}</th>
+                  <th>{t("created")}</th>
+                  <th>{t("indication")}</th>
+                  <th>{t("status")}</th>
+                  <th>{t("report")}</th>
+                  <th>{localText(language, "Aktion", "Action")}</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {completedCases.map((patientCase) => (
+                  <tr key={patientCase.case_id}>
+                    <td>{patientDisplayName(patientCase)}</td>
+
+                    <td>{patientCase.insurance_id || "-"}</td>
+
+                    <td className="mono">
                       {patientCase.case_id
                         ? patientCase.case_id.slice(0, 8)
                         : "-"}
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="mono">
-                    {patientCase.insurance_id || "-"}
-                  </td>
+                    <td>{formatDate(patientCase.created_at, language)}</td>
 
-                  <td>{patientCase.patient_email || "-"}</td>
+                    <td>
+                      <span className="indication-pill">
+                        {indicationLabel(patientCase.indication)}
+                      </span>
+                    </td>
 
-                  <td>{formatDate(patientCase.created_at, language)}</td>
+                    <td>{statusLabel(patientCase.status, language)}</td>
 
-                  <td>
-                    <span className="indication-pill">
-                      {indicationLabel(patientCase.indication)}
-                    </span>
-                  </td>
+                    <td>
+                      {reportStatusLabel(
+                        patientCase.report_status,
+                        language,
+                      )}
+                    </td>
 
-                  <td>{reportStatusLabel(patientCase.report_status, t)}</td>
-
-                  <td>
-                    {patientCase.case_id ? (
-                      <Link
-                        className="small-button"
-                        to={`/doctor/cases/${patientCase.case_id}`}
-                      >
-                        {t("openCase") || "Öffnen"}
-                      </Link>
-                    ) : (
-                      <span className="muted">Keine Fall-ID</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    <td>
+                      {patientCase.case_id ? (
+                        <Link
+                          className="small-button"
+                          to={`/doctor/cases/${patientCase.case_id}`}
+                        >
+                          {t("openCase") || "Öffnen"}
+                        </Link>
+                      ) : (
+                        <span className="muted">Keine Fall-ID</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       ) : null}
     </AppShell>
   );

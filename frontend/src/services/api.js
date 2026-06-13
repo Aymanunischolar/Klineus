@@ -157,6 +157,12 @@ export const api = {
 
   getPage: (slug) => request(`/patient/pages/${encodeURIComponent(slug)}`),
 
+
+      getDoctorWorklist: () =>
+    request("/doctor/worklist", {
+      auth: true,
+    }),
+
   listCases: () => request("/doctor/cases", { auth: true }),
 
   getCase: (caseId) =>
