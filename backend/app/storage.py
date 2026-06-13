@@ -278,7 +278,7 @@ class SQLiteCaseStorage:
     def list_questionnaire_sessions(
             self,
             status: str | None = None,
-    ):
+    ) -> list[PatientQuestionnaireSession]:
         query = """
             SELECT *
             FROM patient_questionnaire_sessions
@@ -295,8 +295,7 @@ class SQLiteCaseStorage:
         with connect() as connection:
             rows = connection.execute(query, tuple(params)).fetchall()
 
-        return [self._row_to_questionnaire_session(row) for row in rows]
-
+        return [self._row_to_session(row) for row in rows]
 
     def resume_questionnaire_session(
         self,
