@@ -5,13 +5,37 @@ import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
 
+const FALLBACK_PATIENT_VALUE = "not-provided";
+const FALLBACK_PATIENT_EMAIL = "not-provided@klineus.local";
+
 function localText(language, de, en) {
   return language === "en" ? en : de;
 }
 
+function cleanPatientValue(value, { isEmail = false } = {}) {
+  const cleaned = String(value || "").trim();
+
+  if (!cleaned) return "";
+
+  const normalized = cleaned.toLowerCase();
+
+  if (
+    normalized === FALLBACK_PATIENT_VALUE ||
+    normalized === FALLBACK_PATIENT_EMAIL
+  ) {
+    return "";
+  }
+
+  if (isEmail && normalized.endsWith("@klineus.local")) {
+    return "";
+  }
+
+  return cleaned;
+}
+
 function formatDate(value, language) {
   if (!value) {
-    return "-";
+    return "—";
   }
 
   try {
@@ -20,7 +44,7 @@ function formatDate(value, language) {
       timeStyle: "short",
     }).format(new Date(value));
   } catch {
-    return "-";
+    return "—";
   }
 }
 
@@ -33,38 +57,22 @@ function indicationLabel(indication) {
     return "Knie-TEP";
   }
 
-  return indication || "-";
-}
-
-function displayValue(value) {
-  if (
-    !value ||
-    value === "not-provided" ||
-    value === "not-provided@klineus.local"
-  ) {
-    return "-";
-  }
-
-  return value;
+  return indication || "—";
 }
 
 function patientDisplayName(item) {
-  const firstName = displayValue(item?.patient_name);
-  const lastName = displayValue(item?.patient_last_name);
+  const patientName = cleanPatientValue(item?.patient_name);
+  const patientLastName = cleanPatientValue(item?.patient_last_name);
 
-  if (firstName !== "-" && lastName !== "-" && !firstName.includes(lastName)) {
-    return `${firstName} ${lastName}`;
+  if (patientName) {
+    return patientName;
   }
 
-  if (firstName !== "-") {
-    return firstName;
+  if (patientLastName) {
+    return patientLastName;
   }
 
-  if (lastName !== "-") {
-    return lastName;
-  }
-
-  return "-";
+  return "—";
 }
 
 function statusLabel(status, language) {
@@ -76,7 +84,11 @@ function statusLabel(status, language) {
     return localText(language, "Ausstehend", "Pending");
   }
 
-  return status || "-";
+  if (status === "abandoned") {
+    return localText(language, "Abgebrochen", "Abandoned");
+  }
+
+  return status || "—";
 }
 
 function reportStatusLabel(status, language) {
@@ -84,7 +96,27 @@ function reportStatusLabel(status, language) {
     return localText(language, "Nicht erstellt", "Not generated");
   }
 
+  if (status === "generated") {
+    return localText(language, "Erstellt", "Generated");
+  }
+
+  if (status === "edited") {
+    return localText(language, "Bearbeitet", "Edited");
+  }
+
   return status;
+}
+
+function statusPillClass(status) {
+  if (status === "completed") {
+    return "status-pill status-completed";
+  }
+
+  if (status === "abandoned") {
+    return "status-pill status-warning";
+  }
+
+  return "status-pill status-pending";
 }
 
 export default function DoctorDashboardPage() {
@@ -99,29 +131,41 @@ export default function DoctorDashboardPage() {
   useEffect(() => {
     let mounted = true;
 
+    setIsLoading(true);
+    setError("");
+
     api
       .getDoctorWorklist()
       .then((data) => {
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
 
         setPendingSessions(
           Array.isArray(data?.pending_sessions)
-            ? data.pending_sessions
+            ? data.pending_sessions.filter(
+                (session) => patientDisplayName(session) !== "—",
+              )
             : [],
         );
 
         setCompletedCases(
           Array.isArray(data?.completed_cases)
-            ? data.completed_cases
+            ? data.completed_cases.filter(
+                (patientCase) => patientDisplayName(patientCase) !== "—",
+              )
             : [],
         );
       })
       .catch((loadError) => {
-        if (mounted) {
-          setError(loadError.message);
-        }
+        if (!mounted) return;
+
+        setError(
+          loadError?.message ||
+            localText(
+              language,
+              "Die Fälle konnten nicht geladen werden.",
+              "The cases could not be loaded.",
+            ),
+        );
       })
       .finally(() => {
         if (mounted) {
@@ -132,7 +176,7 @@ export default function DoctorDashboardPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [language]);
 
   function logout() {
     window.localStorage.removeItem("klineus_doctor_token");
@@ -145,9 +189,15 @@ export default function DoctorDashboardPage() {
     <AppShell>
       <section className="dashboard-header">
         <div>
-          <p className="eyebrow">{t("dashboardEyebrow")}</p>
+          <p className="eyebrow">
+            {t("dashboardEyebrow") ||
+              localText(language, "Arzt-Dashboard", "Doctor dashboard")}
+          </p>
 
-          <h1>{t("patientCases")}</h1>
+          <h1>
+            {t("patientCases") ||
+              localText(language, "Patientenfälle", "Patient cases")}
+          </h1>
 
           <p className="dashboard-subtitle">
             {localText(
@@ -160,19 +210,35 @@ export default function DoctorDashboardPage() {
 
         <div className="case-header-actions">
           <button className="secondary-button" type="button" onClick={logout}>
-            {t("logout")}
+            {t("logout") || localText(language, "Abmelden", "Logout")}
           </button>
         </div>
       </section>
 
       {error ? <p className="form-error">{error}</p> : null}
 
-      {isLoading ? <p className="muted">{t("loadingCases")}</p> : null}
+      {isLoading ? (
+        <p className="muted">
+          {t("loadingCases") ||
+            localText(language, "Fälle werden geladen…", "Loading cases…")}
+        </p>
+      ) : null}
 
       {!isLoading && !hasAnyItems ? (
         <section className="empty-state">
-          <h2>{t("emptyCasesTitle")}</h2>
-          <p>{t("emptyCasesText")}</p>
+          <h2>
+            {t("emptyCasesTitle") ||
+              localText(language, "Noch keine Fälle vorhanden", "No cases yet")}
+          </h2>
+
+          <p>
+            {t("emptyCasesText") ||
+              localText(
+                language,
+                "Sobald Patientinnen oder Patienten einen Fragebogen starten oder absenden, erscheinen sie hier.",
+                "Once patients start or submit a questionnaire, they will appear here.",
+              )}
+          </p>
         </section>
       ) : null}
 
@@ -199,31 +265,30 @@ export default function DoctorDashboardPage() {
               <thead>
                 <tr>
                   <th>{localText(language, "Patient", "Patient")}</th>
-                  <th>{localText(language, "E-Mail", "Email")}</th>
+                  <th>
+                    {t("indication") ||
+                      localText(language, "Indikation", "Indication")}
+                  </th>
+                  <th>
+                    {t("status") || localText(language, "Status", "Status")}
+                  </th>
+                  <th>{localText(language, "Antworten", "Answers")}</th>
                   <th>
                     {localText(
                       language,
-                      "Versicherungsnummer",
-                      "Insurance ID",
+                      "Zuletzt aktualisiert",
+                      "Updated",
                     )}
-                  </th>
-                  <th>{t("indication") || "Indikation"}</th>
-                  <th>{t("status") || "Status"}</th>
-                  <th>{localText(language, "Antworten", "Answers")}</th>
-                  <th>
-                    {localText(language, "Zuletzt aktualisiert", "Updated")}
                   </th>
                 </tr>
               </thead>
 
               <tbody>
                 {pendingSessions.map((session) => (
-                  <tr key={session.session_id}>
-                    <td>{patientDisplayName(session)}</td>
-
-                    <td>{displayValue(session.patient_email)}</td>
-
-                    <td>{displayValue(session.insurance_id)}</td>
+                  <tr key={session.session_id || `${session.patient_name}-${session.updated_at}`}>
+                    <td>
+                      <strong>{patientDisplayName(session)}</strong>
+                    </td>
 
                     <td>
                       <span className="indication-pill">
@@ -232,7 +297,7 @@ export default function DoctorDashboardPage() {
                     </td>
 
                     <td>
-                      <span className="status-pill status-pending">
+                      <span className={statusPillClass(session.status)}>
                         {statusLabel(session.status, language)}
                       </span>
                     </td>
@@ -272,17 +337,21 @@ export default function DoctorDashboardPage() {
                 <tr>
                   <th>{localText(language, "Patient", "Patient")}</th>
                   <th>
-                    {localText(
-                      language,
-                      "Versicherungsnummer",
-                      "Insurance ID",
-                    )}
+                    {t("caseId") || localText(language, "Fall-ID", "Case ID")}
                   </th>
-                  <th>{t("caseId")}</th>
-                  <th>{t("created")}</th>
-                  <th>{t("indication")}</th>
-                  <th>{t("status")}</th>
-                  <th>{t("report")}</th>
+                  <th>
+                    {t("created") || localText(language, "Erstellt", "Created")}
+                  </th>
+                  <th>
+                    {t("indication") ||
+                      localText(language, "Indikation", "Indication")}
+                  </th>
+                  <th>
+                    {t("status") || localText(language, "Status", "Status")}
+                  </th>
+                  <th>
+                    {t("report") || localText(language, "Bericht", "Report")}
+                  </th>
                   <th>{localText(language, "Aktion", "Action")}</th>
                 </tr>
               </thead>
@@ -290,14 +359,14 @@ export default function DoctorDashboardPage() {
               <tbody>
                 {completedCases.map((patientCase) => (
                   <tr key={patientCase.case_id}>
-                    <td>{patientDisplayName(patientCase)}</td>
-
-                    <td>{displayValue(patientCase.insurance_id)}</td>
+                    <td>
+                      <strong>{patientDisplayName(patientCase)}</strong>
+                    </td>
 
                     <td className="mono">
                       {patientCase.case_id
                         ? patientCase.case_id.slice(0, 8)
-                        : "-"}
+                        : "—"}
                     </td>
 
                     <td>{formatDate(patientCase.created_at, language)}</td>
@@ -308,13 +377,14 @@ export default function DoctorDashboardPage() {
                       </span>
                     </td>
 
-                    <td>{statusLabel(patientCase.status, language)}</td>
+                    <td>
+                      <span className={statusPillClass(patientCase.status)}>
+                        {statusLabel(patientCase.status, language)}
+                      </span>
+                    </td>
 
                     <td>
-                      {reportStatusLabel(
-                        patientCase.report_status,
-                        language,
-                      )}
+                      {reportStatusLabel(patientCase.report_status, language)}
                     </td>
 
                     <td>
@@ -323,7 +393,8 @@ export default function DoctorDashboardPage() {
                           className="small-button"
                           to={`/doctor/cases/${patientCase.case_id}`}
                         >
-                          {t("openCase") || "Öffnen"}
+                          {t("openCase") ||
+                            localText(language, "Öffnen", "Open")}
                         </Link>
                       ) : (
                         <span className="muted">

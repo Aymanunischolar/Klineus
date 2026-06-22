@@ -5,6 +5,9 @@ import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
 
+const FALLBACK_PATIENT_VALUE = "not-provided";
+const FALLBACK_PATIENT_EMAIL = "not-provided@klineus.local";
+
 const copy = {
   de: {
     eyebrow: "Admin-Dashboard",
@@ -47,8 +50,6 @@ const copy = {
     noData: "Keine Daten vorhanden.",
     caseReference: "Fall",
     patient: "Patient",
-    email: "E-Mail",
-    insuranceId: "Versicherungsnummer",
     indication: "Fragebogen",
     version: "Version",
     created: "Erstellt",
@@ -135,8 +136,6 @@ const copy = {
     noData: "No data available.",
     caseReference: "Case",
     patient: "Patient",
-    email: "Email",
-    insuranceId: "Insurance ID",
     indication: "Questionnaire",
     version: "Version",
     created: "Created",
@@ -183,6 +182,27 @@ const copy = {
     details: "Details",
   },
 };
+
+function cleanPatientValue(value, { isEmail = false } = {}) {
+  const cleaned = String(value || "").trim();
+
+  if (!cleaned) return "";
+
+  const normalized = cleaned.toLowerCase();
+
+  if (
+    normalized === FALLBACK_PATIENT_VALUE ||
+    normalized === FALLBACK_PATIENT_EMAIL
+  ) {
+    return "";
+  }
+
+  if (isEmail && normalized.endsWith("@klineus.local")) {
+    return "";
+  }
+
+  return cleaned;
+}
 
 function formatDate(value, language) {
   if (!value) {
@@ -241,31 +261,15 @@ function getIndicationLabel(indication, language) {
   return indication || "—";
 }
 
-function displayValue(value) {
-  if (
-    !value ||
-    value === "not-provided" ||
-    value === "not-provided@klineus.local"
-  ) {
-    return "—";
-  }
-
-  return value;
-}
-
 function patientDisplayName(patientCase) {
-  const fullName = displayValue(patientCase?.patient_name);
-  const lastName = displayValue(patientCase?.patient_last_name);
+  const fullName = cleanPatientValue(patientCase?.patient_name);
+  const lastName = cleanPatientValue(patientCase?.patient_last_name);
 
-  if (fullName !== "—" && lastName !== "—" && !fullName.includes(lastName)) {
-    return `${fullName} ${lastName}`;
-  }
-
-  if (fullName !== "—") {
+  if (fullName) {
     return fullName;
   }
 
-  if (lastName !== "—") {
+  if (lastName) {
     return lastName;
   }
 
@@ -902,8 +906,6 @@ export default function AdminDashboardPage() {
                       <thead>
                         <tr>
                           <th>{text.patient}</th>
-                          <th>{text.insuranceId}</th>
-                          <th>{text.email}</th>
                           <th>{text.caseId}</th>
                           <th>{text.indication}</th>
                           <th>{text.version}</th>
@@ -918,12 +920,6 @@ export default function AdminDashboardPage() {
                             <td>
                               <strong>{patientDisplayName(patientCase)}</strong>
                             </td>
-
-                            <td className="mono">
-                              {displayValue(patientCase.insurance_id)}
-                            </td>
-
-                            <td>{displayValue(patientCase.patient_email)}</td>
 
                             <td className="mono">
                               {patientCase.case_id
@@ -948,7 +944,7 @@ export default function AdminDashboardPage() {
                               {formatDate(patientCase.created_at, language)}
                             </td>
 
-                            <td>{displayValue(patientCase.status)}</td>
+                            <td>{patientCase.status || "—"}</td>
                           </tr>
                         ))}
                       </tbody>

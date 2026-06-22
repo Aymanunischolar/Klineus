@@ -1,12 +1,78 @@
 export const DISCLAIMER =
-  "AI-generated draft. Must be reviewed and approved by a physician.";
+  "KI-generierter Entwurf. Muss von einer Ärztin oder einem Arzt geprüft und freigegeben werden.";
 
-const label = (de, en = de) => ({ de, en });
+function cleanBlockPrefix(value) {
+  return String(value || "")
+    .replace(/^\s*Block\s+[A-Z]:\s*/i, "")
+    .trim();
+}
 
-const option = (de, en = de) => ({
-  value: de,
-  labels: label(de, en),
+export function cleanQuestionnaireText(value) {
+  let text = cleanBlockPrefix(value);
+
+  const replacements = {
+    aerztliche: "ärztliche",
+    aerztlicher: "ärztlicher",
+    aerztlich: "ärztlich",
+    Aerztliche: "Ärztliche",
+    Aerztlicher: "Ärztlicher",
+    Aerztlich: "Ärztlich",
+    Pruefung: "Prüfung",
+    pruefung: "prüfung",
+    pruefen: "prüfen",
+    geprueft: "geprüft",
+    Kuerzliches: "Kürzliches",
+    kuerzliches: "kürzliches",
+    Kuerzliche: "Kürzliche",
+    kuerzliche: "kürzliche",
+    Huefte: "Hüfte",
+    Hueft: "Hüft",
+    fuer: "für",
+    moeglich: "möglich",
+    moegliche: "mögliche",
+    Regelmaessig: "Regelmäßig",
+    regelmaessig: "regelmäßig",
+    Vollstaendig: "Vollständig",
+    vollstaendig: "vollständig",
+    unvollstaendig: "unvollständig",
+    Einschraenkung: "Einschränkung",
+    einschraenkung: "einschränkung",
+    Alltagseinschraenkung: "Alltagseinschränkung",
+    Roentgen: "Röntgen",
+    Entzuendung: "Entzündung",
+    Klaerung: "Klärung",
+    klaeren: "klären",
+    Arztgespraech: "Arztgespräch",
+    Gespraech: "Gespräch",
+    Anaemie: "Anämie",
+    anaemie: "Anämie",
+    bezueglich: "bezüglich",
+    Fruehere: "Frühere",
+    fruehere: "frühere",
+    Gelenkverschleiss: "Gelenkverschleiß",
+    Aufklaerung: "Aufklärung",
+  };
+
+  Object.entries(replacements).forEach(([oldValue, newValue]) => {
+    text = text.replaceAll(oldValue, newValue);
+  });
+
+  return text.trim();
+}
+
+const label = (de, en = de) => ({
+  de: cleanQuestionnaireText(de),
+  en: cleanBlockPrefix(en),
 });
+
+const option = (de, en = de) => {
+  const cleanValue = cleanQuestionnaireText(de);
+
+  return {
+    value: cleanValue,
+    labels: label(cleanValue, en),
+  };
+};
 
 const options = (items) =>
   items.map((item) => {
@@ -58,26 +124,49 @@ function makeQuestionnaire({
     labels: label(labelDe, labelEn),
     description: label(descriptionDe, descriptionEn),
     version,
-    blocks: blocks.map((block, blockIndex) => ({
-      ...block,
-      order: blockIndex + 1,
-      title: block.titleDe,
-      labels: label(block.titleDe, block.titleEn),
-      questions: block.questions.map((question, questionIndex) => ({
-        required: true,
-        includeInAi: true,
-        piiCategory: "none",
-        min: question.type === "slider" ? 0 : question.min,
-        max: question.type === "slider" ? 10 : question.max,
-        ...question,
-        text: question.textDe,
-        labels: label(question.textDe, question.textEn),
-        blockId: block.id,
-        blockTitle: block.titleDe,
-        blockLabels: label(block.titleDe, block.titleEn),
-        order: questionIndex + 1,
-      })),
-    })),
+    blocks: blocks.map((block, blockIndex) => {
+      const blockTitleDe = cleanQuestionnaireText(block.titleDe);
+      const blockTitleEn = cleanBlockPrefix(block.titleEn);
+
+      return {
+        ...block,
+        order: blockIndex + 1,
+        titleDe: blockTitleDe,
+        titleEn: blockTitleEn,
+        title: blockTitleDe,
+        labels: label(blockTitleDe, blockTitleEn),
+        questions: block.questions.map((question, questionIndex) => {
+          const {
+            notesByValue,
+            notesByValueEn,
+            textDe,
+            textEn,
+            ...questionData
+          } = question;
+
+          const questionTextDe = cleanQuestionnaireText(textDe);
+          const questionTextEn = cleanBlockPrefix(textEn || textDe);
+          const questionType = questionData.type;
+
+          return {
+            required: true,
+            includeInAi: true,
+            piiCategory: "none",
+            min: questionType === "slider" ? 0 : questionData.min,
+            max: questionType === "slider" ? 10 : questionData.max,
+            ...questionData,
+            textDe: questionTextDe,
+            textEn: questionTextEn,
+            text: questionTextDe,
+            labels: label(questionTextDe, questionTextEn),
+            blockId: block.id,
+            blockTitle: blockTitleDe,
+            blockLabels: label(blockTitleDe, blockTitleEn),
+            order: questionIndex + 1,
+          };
+        }),
+      };
+    }),
   };
 }
 
@@ -95,8 +184,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
   blocks: [
     {
       id: "A",
-      titleDe: "Ihr Knieproblem",
-      titleEn: "Your knee problem",
+      titleDe: "Block A: Ihr Knieproblem",
+      titleEn: "Block A: Your knee problem",
       questions: [
         {
           id: "A1",
@@ -182,8 +271,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "B",
-      titleDe: "Auswirkungen im Alltag",
-      titleEn: "Effects on everyday life",
+      titleDe: "Block B: Auswirkungen im Alltag",
+      titleEn: "Block B: Effects on everyday life",
       questions: [
         {
           id: "B1",
@@ -243,8 +332,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "C",
-      titleDe: "Bisherige Behandlung",
-      titleEn: "Previous treatment",
+      titleDe: "Block C: Bisherige Behandlung",
+      titleEn: "Block C: Previous treatment",
       questions: [
         {
           id: "C1",
@@ -310,8 +399,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "D",
-      titleDe: "Vorbefunde und ärztliche Aussagen",
-      titleEn: "Previous findings and medical statements",
+      titleDe: "Block D: Vorbefunde und ärztliche Aussagen",
+      titleEn: "Block D: Previous findings and medical statements",
       questions: [
         {
           id: "D1",
@@ -344,8 +433,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "E",
-      titleDe: "Gesundheit und Risiken",
-      titleEn: "Health and risks",
+      titleDe: "Block E: Gesundheit und Risiken",
+      titleEn: "Block E: Health and risks",
       questions: [
         {
           id: "E1",
@@ -500,8 +589,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "F",
-      titleDe: "Ziele, Erwartungen und Ergänzungen",
-      titleEn: "Goals, expectations and additional information",
+      titleDe: "Block F: Ziele, Erwartungen und Ergänzungen",
+      titleEn: "Block F: Goals, expectations and additional information",
       questions: [
         {
           id: "F1",
@@ -517,10 +606,7 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
               "Wieder besser Treppen steigen",
               "Being able to climb stairs better again",
             ],
-            [
-              "Wieder besser schlafen",
-              "Being able to sleep better again",
-            ],
+            ["Wieder besser schlafen", "Being able to sleep better again"],
             [
               "Im Alltag unabhängiger sein",
               "Being more independent in everyday life",
@@ -575,8 +661,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
   blocks: [
     {
       id: "A",
-      titleDe: "Ihr Hüftproblem",
-      titleEn: "Your hip problem",
+      titleDe: "Block A: Ihr Hüftproblem",
+      titleEn: "Block A: Your hip problem",
       questions: [
         {
           id: "A1",
@@ -634,10 +720,7 @@ export const hipTepQuestionnaire = makeQuestionnaire({
           options: options([
             ["Schmerz", "Pain"],
             ["Steifigkeit", "Stiffness"],
-            [
-              "Die Hüfte ist unbeweglich",
-              "The hip is stiff or difficult to move",
-            ],
+            ["Die Hüfte ist unbeweglich", "The hip is stiff or difficult to move"],
             ["Ich humpele", "I limp"],
             ["Die Hüfte fühlt sich schwach an", "The hip feels weak"],
             ["Etwas anderes", "Something else"],
@@ -664,8 +747,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "B",
-      titleDe: "Auswirkungen im Alltag",
-      titleEn: "Effects on everyday life",
+      titleDe: "Block B: Auswirkungen im Alltag",
+      titleEn: "Block B: Effects on everyday life",
       questions: [
         {
           id: "B1",
@@ -734,8 +817,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "C",
-      titleDe: "Bisherige Behandlung",
-      titleEn: "Previous treatment",
+      titleDe: "Block C: Bisherige Behandlung",
+      titleEn: "Block C: Previous treatment",
       questions: [
         {
           id: "C1",
@@ -820,8 +903,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "D",
-      titleDe: "Vorbefunde und ärztliche Aussagen",
-      titleEn: "Previous findings and medical statements",
+      titleDe: "Block D: Vorbefunde und ärztliche Aussagen",
+      titleEn: "Block D: Previous findings and medical statements",
       questions: [
         {
           id: "D1",
@@ -870,8 +953,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "E",
-      titleDe: "Gesundheit und Risiken",
-      titleEn: "Health and risks",
+      titleDe: "Block E: Gesundheit und Risiken",
+      titleEn: "Block E: Health and risks",
       questions: [
         {
           id: "E1",
@@ -1017,8 +1100,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "F",
-      titleDe: "Ziele, Erwartungen und gemeinsame Entscheidung",
-      titleEn: "Goals, expectations and shared decision-making",
+      titleDe: "Block F: Ziele, Erwartungen und gemeinsame Entscheidung",
+      titleEn: "Block F: Goals, expectations and shared decision-making",
       questions: [
         {
           id: "F1",
@@ -1183,21 +1266,44 @@ export function getAnswerLabel(answer, language = "de", noAnswer = "keine Angabe
 }
 
 export function normalizeAdminQuestion(question) {
+  const blockTitleDe = cleanQuestionnaireText(
+    question.block_title?.de || question.block_title_de || question.block_id,
+  );
+
+  const blockTitleEn = cleanBlockPrefix(
+    question.block_title?.en ||
+      question.block_title_en ||
+      question.block_title?.de ||
+      question.block_title_de ||
+      question.block_id,
+  );
+
+  const questionTextDe = cleanQuestionnaireText(
+    question.labels?.de || question.question_de || question.id,
+  );
+
+  const questionTextEn = cleanBlockPrefix(
+    question.labels?.en ||
+      question.question_en ||
+      question.labels?.de ||
+      question.question_de ||
+      question.id,
+  );
+
   return {
     id: question.id || question.question_id,
     blockId: question.block_id,
-    blockTitle:
-      question.block_title?.de || question.block_title_de || question.block_id,
-    blockLabels: question.block_title || {
-      de: question.block_title_de || question.block_id,
-      en: question.block_title_en || question.block_title_de || question.block_id,
+    blockTitle: blockTitleDe,
+    blockLabels: {
+      de: blockTitleDe,
+      en: blockTitleEn,
     },
     type: question.type,
-    labels: question.labels || {
-      de: question.question_de || question.id,
-      en: question.question_en || question.question_de || question.id,
+    labels: {
+      de: questionTextDe,
+      en: questionTextEn,
     },
-    text: question.labels?.de || question.question_de || question.id,
+    text: questionTextDe,
     options: question.options || [],
     min: question.min ?? 0,
     max: question.max ?? 10,

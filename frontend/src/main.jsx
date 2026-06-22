@@ -6,12 +6,18 @@ import App from "./App.jsx";
 import { LanguageProvider } from "./i18n/LanguageContext.jsx";
 import "./styles.css";
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error("Root element #root was not found.");
+}
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <LanguageProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <LanguageProvider>
         <App />
-      </BrowserRouter>
-    </LanguageProvider>
-  </React.StrictMode>
+      </LanguageProvider>
+    </BrowserRouter>
+  </React.StrictMode>,
 );

@@ -3,6 +3,47 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
 
+const BLOCKED_INTERNAL_PREFIXES = [
+  "/patient",
+  "/doctor",
+  "/admin",
+  "/questionnaire",
+  "/login",
+];
+
+const SAFE_INTERNAL_PREFIXES = ["/home", "/product", "/team", "/contact", "/legal"];
+
+const BLOCKED_SECTION_TEXT = [
+  "orthopädische dokumentations",
+  "orthopaedische dokumentations",
+  "entscheidungsunterstützung",
+  "entscheidungsunterstuetzung",
+  "prototype",
+  "prototyp",
+  "start questionnaire",
+  "fragebogen starten",
+  "patientenfragebogen starten",
+  "doctor login",
+  "arzt-login",
+  "arztbereich",
+];
+
+function cleanCmsText(value) {
+  return String(value || "")
+    .replace(/^\s*Block\s+[A-Z]:\s*/i, "")
+    .replaceAll("aerztlich", "ärztlich")
+    .replaceAll("Aerztlich", "Ärztlich")
+    .replaceAll("Pruefung", "Prüfung")
+    .replaceAll("pruefung", "prüfung")
+    .replaceAll("Huefte", "Hüfte")
+    .replaceAll("fuer", "für")
+    .replaceAll("moeglich", "möglich")
+    .replaceAll("vollstaendig", "vollständig")
+    .replaceAll("Roentgen", "Röntgen")
+    .replaceAll("Klaerung", "Klärung")
+    .replaceAll("Aufklaerung", "Aufklärung")
+    .trim();
+}
 
 function getText(value, language = "de", fallback = "") {
   if (!value) {
@@ -10,12 +51,11 @@ function getText(value, language = "de", fallback = "") {
   }
 
   if (typeof value === "string") {
-    return value;
+    return cleanCmsText(value);
   }
 
-  return value[language] || value.de || value.en || fallback;
+  return cleanCmsText(value[language] || value.de || value.en || fallback);
 }
-
 
 function isExternalLink(href = "") {
   return (
@@ -26,11 +66,136 @@ function isExternalLink(href = "") {
   );
 }
 
+function normalizeHref(href = "") {
+  const value = String(href || "").trim();
+
+  if (!value) {
+    return "";
+  }
+
+  if (isExternalLink(value)) {
+    return value;
+  }
+
+  try {
+    return new URL(value, window.location.origin).pathname;
+  } catch {
+    return value;
+  }
+}
+
+function isBlockedInternalLink(href = "") {
+  const normalizedHref = normalizeHref(href);
+
+  if (!normalizedHref || isExternalLink(normalizedHref)) {
+    return false;
+  }
+
+  if (SAFE_INTERNAL_PREFIXES.some((prefix) => normalizedHref === prefix)) {
+    return false;
+  }
+
+  return BLOCKED_INTERNAL_PREFIXES.some(
+    (prefix) =>
+      normalizedHref === prefix || normalizedHref.startsWith(`${prefix}/`),
+  );
+}
+
+function collectText(value) {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(collectText).join(" ");
+  }
+
+  if (typeof value === "object") {
+    return Object.values(value).map(collectText).join(" ");
+  }
+
+  return String(value);
+}
+
+function containsBlockedSectionText(value) {
+  const text = collectText(value).toLowerCase();
+
+  return BLOCKED_SECTION_TEXT.some((blockedText) =>
+    text.includes(blockedText),
+  );
+}
+
+function safeLinks(links = []) {
+  if (!Array.isArray(links)) {
+    return [];
+  }
+
+  return links.filter((link) => link?.href && !isBlockedInternalLink(link.href));
+}
+
+function safeItems(items = []) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.filter((item) => {
+    if (!item) {
+      return false;
+    }
+
+    if (item.href && isBlockedInternalLink(item.href)) {
+      return false;
+    }
+
+    if (containsBlockedSectionText(item)) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function shouldHideSection(section) {
+  if (!section) {
+    return true;
+  }
+
+  const sectionId = String(section.id || "").toLowerCase();
+  const sectionType = String(section.type || "").toLowerCase();
+
+  if (
+    sectionId.includes("prototype") ||
+    sectionId.includes("patient-start") ||
+    sectionId.includes("questionnaire-access") ||
+    sectionId.includes("doctor-access")
+  ) {
+    return true;
+  }
+
+  if (containsBlockedSectionText(section)) {
+    return true;
+  }
+
+  if (sectionType === "cta") {
+    const links = safeLinks(section.links);
+    const items = safeItems(section.items);
+
+    if (!links.length && !items.length) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 function CmsLink({ link }) {
   const { language } = useLanguage();
 
-  if (!link?.href) {
+  if (!link?.href || isBlockedInternalLink(link.href)) {
     return null;
   }
 
@@ -47,12 +212,11 @@ function CmsLink({ link }) {
   }
 
   return (
-    <Link className={className} to={link.href}>
+    <Link className={className} to={normalizeHref(link.href)}>
       {label}
     </Link>
   );
 }
-
 
 function CmsImage({ path, alt }) {
   const { language } = useLanguage();
@@ -72,9 +236,16 @@ function CmsImage({ path, alt }) {
   );
 }
 
-
 function CmsItemCard({ item }) {
   const { language } = useLanguage();
+
+  if (!item || containsBlockedSectionText(item)) {
+    return null;
+  }
+
+  if (item.href && isBlockedInternalLink(item.href)) {
+    return null;
+  }
 
   const title = getText(item.title, language);
   const text = getText(item.text, language);
@@ -95,9 +266,7 @@ function CmsItemCard({ item }) {
       ) : null}
 
       {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-
       {title ? <h3>{title}</h3> : null}
-
       {text ? <p>{text}</p> : null}
     </>
   );
@@ -112,7 +281,7 @@ function CmsItemCard({ item }) {
     }
 
     return (
-      <Link className="cms-item-card" to={item.href}>
+      <Link className="cms-item-card" to={normalizeHref(item.href)}>
         {content}
       </Link>
     );
@@ -121,18 +290,23 @@ function CmsItemCard({ item }) {
   return <article className="cms-item-card">{content}</article>;
 }
 
-
 function CmsSection({ section }) {
   const { language } = useLanguage();
+
+  if (shouldHideSection(section)) {
+    return null;
+  }
 
   const eyebrow = getText(section.eyebrow, language);
   const title = getText(section.title, language);
   const subtitle = getText(section.subtitle, language);
   const body = getText(section.body, language);
   const sectionType = section.type || "standard";
+  const links = safeLinks(section.links);
+  const items = safeItems(section.items);
   const hasImage = Boolean(section.image_path);
-  const hasItems = Array.isArray(section.items) && section.items.length > 0;
-  const hasLinks = Array.isArray(section.links) && section.links.length > 0;
+  const hasItems = items.length > 0;
+  const hasLinks = links.length > 0;
 
   if (sectionType === "hero") {
     return (
@@ -144,11 +318,14 @@ function CmsSection({ section }) {
           {body ? <p>{body}</p> : null}
 
           {hasLinks ? (
-            <div className="hero-actions">
-              {section.links.map((link) => (
-                <CmsLink key={`${link.href}-${getText(link.label, language)}`} link={link} />
-              ))}
-            </div>
+              <div className="cms-link-row">
+                {links.map((link) => (
+                    <CmsLink
+                        key={`${link.href}-${getText(link.label, language)}`}
+                        link={link}
+                    />
+                ))}
+              </div>
           ) : null}
         </div>
 
@@ -167,11 +344,14 @@ function CmsSection({ section }) {
         {body ? <p>{body}</p> : null}
 
         {hasLinks ? (
-          <div className="hero-actions centered-actions">
-            {section.links.map((link) => (
-              <CmsLink key={`${link.href}-${getText(link.label, language)}`} link={link} />
-            ))}
-          </div>
+            <div className="cms-link-row cms-link-row-centered">
+              {links.map((link) => (
+                  <CmsLink
+                      key={`${link.href}-${getText(link.label, language)}`}
+                      link={link}
+                  />
+              ))}
+            </div>
         ) : null}
       </section>
     );
@@ -192,23 +372,25 @@ function CmsSection({ section }) {
 
       {hasItems ? (
         <div className="cms-card-grid">
-          {section.items.map((item) => (
+          {items.map((item) => (
             <CmsItemCard key={item.id} item={item} />
           ))}
         </div>
       ) : null}
 
       {hasLinks ? (
-        <div className="hero-actions centered-actions">
-          {section.links.map((link) => (
-            <CmsLink key={`${link.href}-${getText(link.label, language)}`} link={link} />
-          ))}
-        </div>
+          <div className="cms-link-row cms-link-row-centered">
+            {links.map((link) => (
+                <CmsLink
+                    key={`${link.href}-${getText(link.label, language)}`}
+                    link={link}
+                />
+            ))}
+          </div>
       ) : null}
     </section>
   );
 }
-
 
 export default function CmsPageRenderer({ page }) {
   const { language } = useLanguage();
@@ -217,9 +399,9 @@ export default function CmsPageRenderer({ page }) {
     return null;
   }
 
-  const sections = [...(page.sections || [])].sort(
-    (a, b) => (a.order || 0) - (b.order || 0)
-  );
+  const sections = [...(page.sections || [])]
+    .filter((section) => !shouldHideSection(section))
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (
     <div className="cms-page">

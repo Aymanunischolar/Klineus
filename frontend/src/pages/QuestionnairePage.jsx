@@ -3,7 +3,6 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
 import QuestionInput from "../components/QuestionInput.jsx";
-import { api } from "../services/api.js";
 import {
   defaultAnswer,
   getQuestionnaire,
@@ -13,6 +12,7 @@ import {
   isAnswerComplete,
 } from "../data/questionnaire.js";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
+import { api } from "../services/api.js";
 
 const PATIENT_IDENTITY_STORAGE_KEY = "klineus_patient_identity";
 
@@ -33,22 +33,6 @@ function normalizeIndication(value) {
   return "knee_tep";
 }
 
-function emptyPatientIdentity() {
-  return {
-    session_id: "",
-    patient_name: "",
-    patient_last_name: "",
-    patient_email: "",
-    insurance_id: "",
-    indication: "",
-    questionnaire_template_id: "",
-    questionnaire_version: null,
-    answers: {},
-    metadata: {},
-    current_question_id: "",
-  };
-}
-
 function readPatientIdentity() {
   try {
     const rawValue = window.sessionStorage.getItem(
@@ -56,7 +40,16 @@ function readPatientIdentity() {
     );
 
     if (!rawValue) {
-      return emptyPatientIdentity();
+      return {
+        session_id: "",
+        patient_name: "",
+        patient_last_name: "",
+        patient_email: "",
+        insurance_id: "",
+        indication: "",
+        answers: {},
+        current_question_id: "",
+      };
     }
 
     const parsedValue = JSON.parse(rawValue);
@@ -64,18 +57,25 @@ function readPatientIdentity() {
     return {
       session_id: parsedValue.session_id || "",
       patient_name: parsedValue.patient_name || "",
-      patient_last_name: parsedValue.patient_last_name || "",
+      patient_last_name:
+        parsedValue.patient_last_name || parsedValue.patient_name || "",
       patient_email: parsedValue.patient_email || "",
       insurance_id: parsedValue.insurance_id || "",
       indication: parsedValue.indication || "",
-      questionnaire_template_id: parsedValue.questionnaire_template_id || "",
-      questionnaire_version: parsedValue.questionnaire_version || null,
       answers: parsedValue.answers || {},
-      metadata: parsedValue.metadata || {},
       current_question_id: parsedValue.current_question_id || "",
     };
   } catch {
-    return emptyPatientIdentity();
+    return {
+      session_id: "",
+      patient_name: "",
+      patient_last_name: "",
+      patient_email: "",
+      insurance_id: "",
+      indication: "",
+      answers: {},
+      current_question_id: "",
+    };
   }
 }
 
@@ -118,10 +118,6 @@ function serialiseAnswer(answer) {
       };
     }
 
-    if (Object.prototype.hasOwnProperty.call(answer, "value")) {
-      return answer.detail ? `${answer.value}: ${answer.detail}` : answer.value;
-    }
-
     if (
       Object.prototype.hasOwnProperty.call(answer, "height_cm") ||
       Object.prototype.hasOwnProperty.call(answer, "weight_kg")
@@ -130,6 +126,10 @@ function serialiseAnswer(answer) {
         height_cm: answer.height_cm || "",
         weight_kg: answer.weight_kg || "",
       };
+    }
+
+    if (Object.prototype.hasOwnProperty.call(answer, "value")) {
+      return answer.detail ? `${answer.value}: ${answer.detail}` : answer.value;
     }
   }
 
@@ -226,24 +226,8 @@ export default function QuestionnairePage() {
     ? Math.round(((currentIndex + 1) / visibleQuestions.length) * 100)
     : 0;
 
-  function getPatientPayload() {
-    return {
-      session_id: patientIdentity.session_id || "",
-      patient_name: patientIdentity.patient_name || "",
-      patient_last_name: patientIdentity.patient_last_name || "",
-      patient_email: patientIdentity.patient_email || "",
-      insurance_id: patientIdentity.insurance_id || "",
-      questionnaire_template_id:
-        patientIdentity.questionnaire_template_id || questionnaire.id || "",
-      questionnaire_version:
-        patientIdentity.questionnaire_version || questionnaire.version || null,
-    };
-  }
-
   function updateAnswer(nextValue) {
-    if (!currentQuestion) {
-      return;
-    }
+    if (!currentQuestion) return;
 
     setAnswers((previous) => ({
       ...previous,
@@ -296,7 +280,6 @@ export default function QuestionnairePage() {
       return;
     }
 
-    const patientPayload = getPatientPayload();
     const nextVisibleQuestions = getVisibleQuestions(allQuestions, nextAnswers);
     const payloadAnswers = buildPayload(nextAnswers, nextVisibleQuestions);
 
@@ -304,8 +287,15 @@ export default function QuestionnairePage() {
       setIsSavingProgress(true);
 
       await api.saveQuestionnaireProgress({
-        ...patientPayload,
+        session_id: patientIdentity.session_id,
         indication,
+        patient_name: patientIdentity.patient_name,
+        patient_last_name:
+          patientIdentity.patient_last_name || patientIdentity.patient_name,
+        patient_email: patientIdentity.patient_email,
+        insurance_id: patientIdentity.insurance_id,
+        questionnaire_template_id: questionnaire.id,
+        questionnaire_version: questionnaire.version,
         answers: payloadAnswers,
         metadata: buildMetadata(nextVisibleQuestions.length),
         current_question_id: nextQuestionId,
@@ -315,7 +305,6 @@ export default function QuestionnairePage() {
         PATIENT_IDENTITY_STORAGE_KEY,
         JSON.stringify({
           ...patientIdentity,
-          ...patientPayload,
           indication,
           answers: nextAnswers,
           current_question_id: nextQuestionId,
@@ -344,16 +333,16 @@ export default function QuestionnairePage() {
       setError(
         localText(
           language,
-          "Bitte starten Sie den Fragebogen erneut über die Patientenseite.",
-          "Please restart the questionnaire from the patient page.",
+          "Patientenname fehlt. Bitte starten Sie den Fragebogen erneut.",
+          "Patient name is missing. Please restart the questionnaire.",
         ),
       );
+
       return;
     }
 
     setIsSubmitting(true);
 
-    const patientPayload = getPatientPayload();
     const finalVisibleQuestions = getVisibleQuestions(allQuestions, nextAnswers);
     const payloadAnswers = buildPayload(nextAnswers, finalVisibleQuestions);
 
@@ -362,7 +351,16 @@ export default function QuestionnairePage() {
         payloadAnswers,
         buildMetadata(finalVisibleQuestions.length),
         indication,
-        patientPayload,
+        {
+          session_id: patientIdentity.session_id,
+          patient_name: patientIdentity.patient_name,
+          patient_last_name:
+            patientIdentity.patient_last_name || patientIdentity.patient_name,
+          patient_email: patientIdentity.patient_email,
+          insurance_id: patientIdentity.insurance_id,
+          questionnaire_template_id: questionnaire.id,
+          questionnaire_version: questionnaire.version,
+        },
       );
 
       window.sessionStorage.removeItem(PATIENT_IDENTITY_STORAGE_KEY);
@@ -387,9 +385,7 @@ export default function QuestionnairePage() {
   }
 
   async function handleForward() {
-    if (!currentQuestion) {
-      return;
-    }
+    if (!currentQuestion) return;
 
     setError("");
     setNotice("");
@@ -408,6 +404,7 @@ export default function QuestionnairePage() {
             "Please answer this question.",
           ),
       );
+
       return;
     }
 
@@ -462,11 +459,11 @@ export default function QuestionnairePage() {
     <AppShell compact hideNav>
       <section className="questionnaire-card questionnaire-card-pro">
         <div className="questionnaire-progress-panel">
-          <div className="questionnaire-progress-topline">
-            <strong>
+          <div className="questionnaire-progress-topline questionnaire-progress-topline-clean">
+            <span>
               {localText(language, "Frage", "Question")} {currentIndex + 1}{" "}
               {localText(language, "von", "of")} {visibleQuestions.length}
-            </strong>
+            </span>
           </div>
 
           <div
@@ -486,9 +483,15 @@ export default function QuestionnairePage() {
           <div className="questionnaire-progress-footer">
             <span>{progress}%</span>
 
-            {isSavingProgress ? (
-              <span>{localText(language, "Speichert…", "Saving…")}</span>
-            ) : null}
+            <span>
+              {isSavingProgress
+                ? localText(language, "Speichert…", "Saving…")
+                : localText(
+                    language,
+                    "Eine Frage pro Bildschirm",
+                    "One question per screen",
+                  )}
+            </span>
           </div>
         </div>
 

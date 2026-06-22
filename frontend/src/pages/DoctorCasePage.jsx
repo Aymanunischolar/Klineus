@@ -2,57 +2,60 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
-import { api } from "../services/api.js";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
+import { api } from "../services/api.js";
+
+const FALLBACK_PATIENT_VALUE = "not-provided";
+const FALLBACK_PATIENT_EMAIL = "not-provided@klineus.local";
 
 function localText(language, de, en) {
   return language === "en" ? en : de;
 }
 
-function cleanGermanMedicalText(value) {
+function cleanText(value) {
   return String(value || "")
+    .replace(/^\s*Block\s+[A-Z]:\s*/i, "")
     .replaceAll("aerztlich", "ärztlich")
     .replaceAll("Aerztlich", "Ärztlich")
-    .replaceAll("aerztliche", "ärztliche")
-    .replaceAll("Aerztliche", "Ärztliche")
-    .replaceAll("aerztlicher", "ärztlicher")
-    .replaceAll("Aerztlicher", "Ärztlicher")
-    .replaceAll("aerztlich", "ärztlich")
     .replaceAll("Pruefung", "Prüfung")
     .replaceAll("pruefung", "prüfung")
-    .replaceAll("pruefen", "prüfen")
-    .replaceAll("Pruefen", "Prüfen")
-    .replaceAll("erhoeht", "erhöht")
-    .replaceAll("Erhoeht", "Erhöht")
-    .replaceAll("erhoehte", "erhöhte")
-    .replaceAll("Erhoehte", "Erhöhte")
-    .replaceAll("erhoehten", "erhöhten")
-    .replaceAll("Erhoehten", "Erhöhten")
     .replaceAll("Huefte", "Hüfte")
-    .replaceAll("huefte", "hüfte")
-    .replaceAll("Hufte", "Hüfte")
-    .replaceAll("hufte", "hüfte")
     .replaceAll("Hueft", "Hüft")
-    .replaceAll("hueft", "hüft")
-    .replaceAll("moeglich", "möglich")
-    .replaceAll("Moeglich", "Möglich")
-    .replaceAll("frueher", "früher")
-    .replaceAll("Frueher", "Früher")
     .replaceAll("fuer", "für")
-    .replaceAll("Fuer", "Für")
-    .replaceAll("ueber", "über")
-    .replaceAll("Ueber", "Über")
-    .replaceAll("koennen", "können")
-    .replaceAll("Koennen", "Können")
-    .replaceAll("muessen", "müssen")
-    .replaceAll("Muessen", "Müssen")
-    .replaceAll("Roe", "Rö")
-    .replaceAll("roentgen", "röntgen")
+    .replaceAll("moeglich", "möglich")
+    .replaceAll("vollstaendig", "vollständig")
+    .replaceAll("Vollstaendig", "Vollständig")
+    .replaceAll("unvollstaendig", "unvollständig")
     .replaceAll("Roentgen", "Röntgen")
-    .replaceAll("Arztgespraech", "Arztgespräch")
-    .replaceAll("arztgespraech", "arztgespräch")
+    .replaceAll("Entzuendung", "Entzündung")
+    .replaceAll("Klaerung", "Klärung")
+    .replaceAll("Aufklaerung", "Aufklärung")
     .replaceAll("Gespraech", "Gespräch")
-    .replaceAll("gespraech", "gespräch");
+    .replaceAll("Arztgespraech", "Arztgespräch")
+    .replaceAll("Anaemie", "Anämie")
+    .replaceAll("Gelenkverschleiss", "Gelenkverschleiß")
+    .trim();
+}
+
+function cleanPatientValue(value, { isEmail = false } = {}) {
+  const cleaned = String(value || "").trim();
+
+  if (!cleaned) return "";
+
+  const normalized = cleaned.toLowerCase();
+
+  if (
+    normalized === FALLBACK_PATIENT_VALUE ||
+    normalized === FALLBACK_PATIENT_EMAIL
+  ) {
+    return "";
+  }
+
+  if (isEmail && normalized.endsWith("@klineus.local")) {
+    return "";
+  }
+
+  return cleaned;
 }
 
 function formatDate(value, language) {
@@ -78,32 +81,19 @@ function indicationLabel(indication) {
   return "Knie-TEP";
 }
 
-function displayValue(value) {
-  if (
-    !value ||
-    value === "not-provided" ||
-    value === "not-provided@klineus.local"
-  ) {
-    return "-";
-  }
-
-  return cleanGermanMedicalText(value);
-}
-
 function patientDisplayName(patientCase) {
-  const fullName = patientCase?.patient_name || "";
-  const lastName = patientCase?.patient_last_name || "";
+  const fullName = cleanPatientValue(patientCase?.patient_name);
+  const lastName = cleanPatientValue(patientCase?.patient_last_name);
 
-  if (
-    lastName &&
-    lastName !== "not-provided" &&
-    fullName &&
-    !fullName.includes(lastName)
-  ) {
-    return cleanGermanMedicalText(`${fullName} ${lastName}`);
+  if (fullName) {
+    return fullName;
   }
 
-  return cleanGermanMedicalText(fullName || lastName || "-");
+  if (lastName) {
+    return lastName;
+  }
+
+  return "-";
 }
 
 function getCaseIdFromParams(params) {
@@ -117,36 +107,26 @@ function getCaseIdFromParams(params) {
 }
 
 function getQuestionText(answer) {
-  return cleanGermanMedicalText(
+  const text =
     answer.question ||
-      answer.question_de ||
-      answer.question_text_de ||
-      answer.question_text ||
-      answer.label_de ||
-      answer.label ||
-      answer.text_de ||
-      answer.text ||
-      answer.question_id ||
-      "-",
-  );
+    answer.question_de ||
+    answer.question_text_de ||
+    answer.question_text ||
+    answer.label_de ||
+    answer.label ||
+    answer.text_de ||
+    answer.text ||
+    "";
+
+  return cleanText(text) || "Frage";
 }
 
 function getQuestionId(answer) {
-  return answer.question_id || answer.id || "-";
+  return answer.question_id || answer.id || crypto.randomUUID();
 }
 
 function getBlockId(answer) {
-  return answer.block_id || answer.blockId || "Weitere Angaben";
-}
-
-function getBlockTitle(answer) {
-  return cleanGermanMedicalText(
-    answer.block_title ||
-      answer.block_title_de ||
-      answer.blockTitle ||
-      answer.block ||
-      getBlockId(answer),
-  );
+  return answer.block_id || answer.blockId || "answers";
 }
 
 function groupAnswers(answers) {
@@ -154,14 +134,11 @@ function groupAnswers(answers) {
 
   answers.forEach((answer) => {
     const blockId = getBlockId(answer);
-    const blockTitle = getBlockTitle(answer);
-
     let group = groups.find((item) => item.blockId === blockId);
 
     if (!group) {
       group = {
         blockId,
-        blockTitle,
         answers: [],
       };
 
@@ -182,12 +159,6 @@ function normalizeAnswerGroups(patientCase) {
   if (backendGroups.length > 0) {
     return backendGroups.map((group, index) => ({
       blockId: group.blockId || group.block_id || `group-${index}`,
-      blockTitle: cleanGermanMedicalText(
-        group.blockTitle ||
-          group.block_title ||
-          group.block_id ||
-          `Abschnitt ${index + 1}`,
-      ),
       answers: Array.isArray(group.answers) ? group.answers : [],
     }));
   }
@@ -205,22 +176,19 @@ function normalizeAnswer(answer) {
   }
 
   if (Array.isArray(answer)) {
-    return answer.length
-      ? cleanGermanMedicalText(answer.join(", "))
-      : "Keine Angabe";
+    return answer.length ? answer.map(cleanText).join(", ") : "Keine Angabe";
   }
 
   if (typeof answer === "object") {
     if (
       Object.prototype.hasOwnProperty.call(answer, "packs_per_day") ||
       Object.prototype.hasOwnProperty.call(answer, "smoking_years") ||
-      Object.prototype.hasOwnProperty.call(answer, "pack_years") ||
       Object.prototype.hasOwnProperty.call(answer, "stopped_since")
     ) {
       const parts = [];
 
       if (answer.value) {
-        parts.push(String(answer.value));
+        parts.push(cleanText(answer.value));
       }
 
       if (answer.packs_per_day) {
@@ -231,17 +199,11 @@ function normalizeAnswer(answer) {
         parts.push(`${answer.smoking_years} Jahre`);
       }
 
-      if (answer.pack_years) {
-        parts.push(`${answer.pack_years} Pack-Years`);
-      }
-
       if (answer.stopped_since) {
         parts.push(`Rauchstopp seit: ${answer.stopped_since}`);
       }
 
-      return parts.length
-        ? cleanGermanMedicalText(parts.join(" · "))
-        : "Keine Angabe";
+      return parts.length ? parts.join(" · ") : "Keine Angabe";
     }
 
     if (
@@ -254,17 +216,14 @@ function normalizeAnswer(answer) {
     }
 
     if (Object.prototype.hasOwnProperty.call(answer, "value")) {
-      const answerValue = answer.detail
-        ? `${answer.value}: ${answer.detail}`
-        : answer.value;
-
-      return cleanGermanMedicalText(answerValue);
+      const main = cleanText(answer.value) || "Keine Angabe";
+      return answer.detail ? `${main}: ${cleanText(answer.detail)}` : main;
     }
 
-    return cleanGermanMedicalText(JSON.stringify(answer, null, 2));
+    return JSON.stringify(answer, null, 2);
   }
 
-  return cleanGermanMedicalText(String(answer));
+  return cleanText(answer);
 }
 
 function extractReportText(data) {
@@ -273,10 +232,10 @@ function extractReportText(data) {
   }
 
   if (typeof data === "string") {
-    return cleanGermanMedicalText(data);
+    return cleanText(data);
   }
 
-  return cleanGermanMedicalText(
+  return cleanText(
     data.report_text ||
       data.report ||
       data.markdown ||
@@ -368,10 +327,10 @@ function EditableReportTemplate({ text, language, onChange }) {
     );
   }
 
-  const lines = cleanGermanMedicalText(text).split("\n");
+  const lines = text.split("\n");
 
   function updateLine(index, nextContent, prefix = "") {
-    const cleanContent = cleanGermanMedicalText(nextContent)
+    const cleanContent = String(nextContent || "")
       .replace(/\n+/g, " ")
       .trim();
 
@@ -384,17 +343,17 @@ function EditableReportTemplate({ text, language, onChange }) {
   return (
     <article className="doctor-report-preview doctor-report-preview-editable">
       {lines.map((line, index) => {
-        const trimmedLine = line.trim();
+        const trimmedLine = cleanText(line);
 
         if (!trimmedLine) {
           return <div className="doctor-report-spacer" key={index} />;
         }
 
         if (
-          trimmedLine.includes("AI-generated draft") ||
           trimmedLine.includes("KI-generierter Entwurf") ||
           trimmedLine.includes("Ärztliche Prüfung") ||
           trimmedLine.includes("ärztliche Entscheidung") ||
+          trimmedLine.includes("AI-generated draft") ||
           trimmedLine.includes("physician")
         ) {
           const cleanLine = trimmedLine.replace(/^[-*]\s*/, "");
@@ -493,7 +452,9 @@ function EditableReportTemplate({ text, language, onChange }) {
             suppressContentEditableWarning
             spellCheck="true"
             key={index}
-            onBlur={(event) => updateLine(index, event.currentTarget.innerText)}
+            onBlur={(event) =>
+              updateLine(index, event.currentTarget.innerText)
+            }
           >
             {trimmedLine}
           </p>
@@ -559,15 +520,12 @@ export default function DoctorCasePage() {
     [patientCase],
   );
 
-  const answerCount = useMemo(
-    () =>
-      answerGroups.reduce(
-        (total, group) => total + (group.answers?.length || 0),
-        0,
-      ),
+  const allAnswers = useMemo(
+    () => answerGroups.flatMap((group) => group.answers || []),
     [answerGroups],
   );
 
+  const answerCount = allAnswers.length;
   const flags = useMemo(() => extractFlags(patientCase), [patientCase]);
   const trafficLight = patientCase?.traffic_light || null;
 
@@ -615,7 +573,7 @@ export default function DoctorCasePage() {
     setNotice("");
 
     try {
-      await api.saveReport(caseId, cleanGermanMedicalText(reportText));
+      await api.saveReport(caseId, reportText);
 
       setNotice(
         localText(
@@ -708,8 +666,8 @@ export default function DoctorCasePage() {
             <p className="case-subtitle">
               {localText(
                 language,
-                "Fragen und Antworten werden für die ärztliche Prüfung immer in deutscher Originalfassung angezeigt.",
-                "Questions and answers are always shown in the German source version for medical review.",
+                "Fragen und Antworten werden für die ärztliche Prüfung angezeigt.",
+                "Questions and answers are shown for physician review.",
               )}
             </p>
           </div>
@@ -719,13 +677,13 @@ export default function DoctorCasePage() {
           <section className={trafficLightClass(trafficLight)}>
             <div>
               <p className="eyebrow">
-                {localText(language, "Ampellogik", "Traffic light")}
+                {localText(language, "Einschätzung", "Assessment")}
               </p>
 
-              <h2>{cleanGermanMedicalText(trafficLight.label)}</h2>
+              <h2>{cleanText(trafficLight.label)}</h2>
             </div>
 
-            <p>{cleanGermanMedicalText(trafficLight.description)}</p>
+            <p>{cleanText(trafficLight.description)}</p>
           </section>
         ) : null}
 
@@ -733,25 +691,6 @@ export default function DoctorCasePage() {
           <article className="case-summary-card">
             <span>{localText(language, "Patient", "Patient")}</span>
             <strong>{patientDisplayName(patientCase)}</strong>
-          </article>
-
-          <article className="case-summary-card">
-            <span>{localText(language, "Nachname", "Last name")}</span>
-            <strong>{displayValue(patientCase?.patient_last_name)}</strong>
-          </article>
-
-          <article className="case-summary-card">
-            <span>{localText(language, "E-Mail", "Email")}</span>
-            <strong>{displayValue(patientCase?.patient_email)}</strong>
-          </article>
-
-          <article className="case-summary-card">
-            <span>
-              {localText(language, "Versicherungsnummer", "Insurance ID")}
-            </span>
-            <strong className="mono">
-              {displayValue(patientCase?.insurance_id)}
-            </strong>
           </article>
 
           <article className="case-summary-card">
@@ -771,7 +710,7 @@ export default function DoctorCasePage() {
 
           <article className="case-summary-card">
             <span>{localText(language, "Status", "Status")}</span>
-            <strong>{displayValue(patientCase?.status)}</strong>
+            <strong>{cleanText(patientCase?.status) || "-"}</strong>
           </article>
 
           <article className="case-summary-card">
@@ -817,7 +756,7 @@ export default function DoctorCasePage() {
                   {flags.map((flag, index) => (
                     <article className={flagLevelClass(flag)} key={index}>
                       <strong>
-                        {cleanGermanMedicalText(
+                        {cleanText(
                           flag.title ||
                             flag.label ||
                             flag.message ||
@@ -827,7 +766,7 @@ export default function DoctorCasePage() {
 
                       {flag.description || flag.text || flag.reason ? (
                         <p>
-                          {cleanGermanMedicalText(
+                          {cleanText(
                             flag.description || flag.text || flag.reason,
                           )}
                         </p>
@@ -859,7 +798,7 @@ export default function DoctorCasePage() {
                 </div>
               </div>
 
-              {answerGroups.length === 0 ? (
+              {allAnswers.length === 0 ? (
                 <p className="muted">
                   {localText(
                     language,
@@ -868,30 +807,18 @@ export default function DoctorCasePage() {
                   )}
                 </p>
               ) : (
-                <div className="answer-group-list">
-                  {answerGroups.map((group) => (
-                    <article className="answer-group" key={group.blockId}>
-                      <h3>{cleanGermanMedicalText(group.blockTitle)}</h3>
-
-                      <div className="answer-list">
-                        {group.answers.map((answer, index) => (
-                          <div
-                            className="answer-row"
-                            key={`${getQuestionId(answer)}-${index}`}
-                          >
-                            <div>
-                              <span className="question-code">
-                                {getQuestionId(answer)}
-                              </span>
-
-                              <p>{getQuestionText(answer)}</p>
-                            </div>
-
-                            <strong>{normalizeAnswer(answer.answer)}</strong>
-                          </div>
-                        ))}
+                <div className="answer-list">
+                  {allAnswers.map((answer, index) => (
+                    <div
+                      className="answer-row"
+                      key={`${getQuestionId(answer)}-${index}`}
+                    >
+                      <div>
+                        <p>{getQuestionText(answer)}</p>
                       </div>
-                    </article>
+
+                      <strong>{normalizeAnswer(answer.answer)}</strong>
+                    </div>
                   ))}
                 </div>
               )}
@@ -983,16 +910,6 @@ export default function DoctorCasePage() {
             <div>
               <span>Patient</span>
               <strong>{patientDisplayName(patientCase)}</strong>
-            </div>
-
-            <div>
-              <span>E-Mail</span>
-              <strong>{displayValue(patientCase?.patient_email)}</strong>
-            </div>
-
-            <div>
-              <span>Versicherungsnummer</span>
-              <strong>{displayValue(patientCase?.insurance_id)}</strong>
             </div>
 
             <div>

@@ -21,6 +21,14 @@ DEFAULT_SITE_SETTINGS = {
             "href": "/team",
             "variant": "nav",
         },
+        {
+            "label": {
+                "de": "Kontakt",
+                "en": "Contact",
+            },
+            "href": "/contact",
+            "variant": "nav",
+        },
     ],
     "footer_links": [
         {

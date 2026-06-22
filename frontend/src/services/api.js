@@ -2,7 +2,10 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
 ).replace(/\/$/, "");
 
-function getToken() {
+const FALLBACK_PATIENT_VALUE = "not-provided";
+const FALLBACK_PATIENT_EMAIL = "not-provided@klineus.local";
+
+function getDoctorToken() {
   return window.localStorage.getItem("klineus_doctor_token");
 }
 
@@ -10,25 +13,30 @@ function getAdminToken() {
   return window.localStorage.getItem("klineus_admin_token");
 }
 
-const FALLBACK_PATIENT_EMAIL = "not-provided@klineus.local";
-const FALLBACK_PATIENT_VALUE = "not-provided";
-
 function cleanString(value) {
   return String(value || "").trim();
 }
 
-function normalizePatientPayload(payload = {}) {
-  const patientName = cleanString(payload.patient_name);
-  const patientLastName = cleanString(payload.patient_last_name);
-  const patientEmail = cleanString(payload.patient_email);
-  const insuranceId = cleanString(payload.insurance_id);
+function cleanPatientPayloadValue(value) {
+  const cleaned = cleanString(value);
 
-  return {
-    patient_name: patientName || FALLBACK_PATIENT_VALUE,
-    patient_last_name: patientLastName || patientName || FALLBACK_PATIENT_VALUE,
-    patient_email: patientEmail || FALLBACK_PATIENT_EMAIL,
-    insurance_id: insuranceId || FALLBACK_PATIENT_VALUE,
-  };
+  if (!cleaned) {
+    return null;
+  }
+
+  if (cleaned === FALLBACK_PATIENT_VALUE) {
+    return null;
+  }
+
+  if (cleaned.toLowerCase() === FALLBACK_PATIENT_EMAIL) {
+    return null;
+  }
+
+  if (cleaned.toLowerCase().endsWith("@klineus.local")) {
+    return null;
+  }
+
+  return cleaned;
 }
 
 export function assetUrl(path, fallback = "") {
@@ -68,7 +76,8 @@ async function request(path, options = {}) {
   };
 
   if (options.auth) {
-    const token = options.auth === "admin" ? getAdminToken() : getToken();
+    const token =
+      options.auth === "admin" ? getAdminToken() : getDoctorToken();
 
     if (token) {
       headers.Authorization = `Bearer ${token}`;
@@ -79,6 +88,8 @@ async function request(path, options = {}) {
     ...options,
     headers,
   };
+
+  delete fetchOptions.auth;
 
   if (Object.prototype.hasOwnProperty.call(options, "body")) {
     fetchOptions.body = JSON.stringify(options.body);
@@ -129,10 +140,104 @@ async function requestWithFallback(primaryPath, fallbackPath, options = {}) {
 }
 
 export const api = {
+  // -------------------------------------------------------------------------
+  // Auth
+  // -------------------------------------------------------------------------
+
   login: (email, password) =>
     request("/auth/login", {
       method: "POST",
-      body: { email, password },
+      body: {
+        email,
+        password,
+      },
+    }),
+
+  // -------------------------------------------------------------------------
+  // Public CMS pages/settings
+  // -------------------------------------------------------------------------
+
+  getSiteSettings: () => request("/patient/site-settings"),
+
+  listPages: () => request("/patient/pages"),
+
+  getPage: (slug) =>
+    request(`/patient/pages/${encodeURIComponent(slug)}`),
+
+  // -------------------------------------------------------------------------
+  // Public questionnaire config
+  // Used only by the patient questionnaire flow, not by marketing pages.
+  // -------------------------------------------------------------------------
+
+  getQuestionnaireConfig: () =>
+    requestWithFallback("/patient/config", "/patient/questionnaire-config"),
+
+  listQuestionnaires: () => request("/patient/questionnaires"),
+
+  getQuestionnaire: (identifier) =>
+    request(`/patient/questionnaires/${encodeURIComponent(identifier)}`),
+
+  // -------------------------------------------------------------------------
+  // Patient questionnaire session flow
+  // -------------------------------------------------------------------------
+
+  startPatientQuestionnaireSession: ({ patient_name, indication }) =>
+    request("/patient/questionnaire-sessions/start", {
+      method: "POST",
+      body: {
+        patient_name: cleanString(patient_name),
+        indication,
+      },
+    }),
+
+  saveQuestionnaireProgress: ({
+    session_id,
+    indication,
+    patient_name,
+    patient_last_name,
+    patient_email,
+    insurance_id,
+    questionnaire_template_id,
+    questionnaire_version,
+    answers,
+    metadata,
+    current_question_id,
+  }) =>
+    request("/patient/questionnaire-sessions/progress", {
+      method: "PUT",
+      body: {
+        session_id,
+        indication,
+        patient_name: cleanPatientPayloadValue(patient_name),
+        patient_last_name:
+          cleanPatientPayloadValue(patient_last_name) ||
+          cleanPatientPayloadValue(patient_name),
+        patient_email: cleanPatientPayloadValue(patient_email),
+        insurance_id: cleanPatientPayloadValue(insurance_id),
+        questionnaire_template_id: questionnaire_template_id || null,
+        questionnaire_version: questionnaire_version || null,
+        answers: answers || [],
+        metadata: metadata || {},
+        current_question_id: current_question_id || null,
+      },
+    }),
+
+  resumePatientQuestionnaireSession: ({
+    patient_name,
+    patient_last_name,
+    resume_code,
+  }) =>
+    request("/patient/questionnaire-sessions/resume", {
+      method: "POST",
+      body: {
+        patient_name:
+          cleanPatientPayloadValue(patient_name) ||
+          cleanPatientPayloadValue(patient_last_name),
+        patient_last_name:
+          cleanPatientPayloadValue(patient_last_name) ||
+          cleanPatientPayloadValue(patient_name),
+        resume_code: cleanString(resume_code),
+      },
     }),
 
   createPatientCase: (
@@ -145,7 +250,12 @@ export const api = {
       method: "POST",
       body: {
         indication,
-        ...normalizePatientPayload(questionnaireInfo),
+        patient_name: cleanPatientPayloadValue(questionnaireInfo.patient_name),
+        patient_last_name:
+          cleanPatientPayloadValue(questionnaireInfo.patient_last_name) ||
+          cleanPatientPayloadValue(questionnaireInfo.patient_name),
+        patient_email: cleanPatientPayloadValue(questionnaireInfo.patient_email),
+        insurance_id: cleanPatientPayloadValue(questionnaireInfo.insurance_id),
         session_id: questionnaireInfo.session_id || null,
         questionnaire_template_id:
           questionnaireInfo.questionnaire_template_id ||
@@ -155,48 +265,28 @@ export const api = {
           questionnaireInfo.questionnaire_version ||
           questionnaireInfo.version ||
           null,
-        answers,
-        metadata,
+        answers: answers || [],
+        metadata: metadata || {},
       },
     }),
 
-  getQuestionnaireConfig: () =>
-    requestWithFallback("/patient/config", "/patient/questionnaire-config"),
-
-  listQuestionnaires: () => request("/patient/questionnaires"),
-
-  getQuestionnaire: (identifier) =>
-    request(`/patient/questionnaires/${encodeURIComponent(identifier)}`),
-
-  getSiteSettings: () => request("/patient/site-settings"),
-
-  listPages: () => request("/patient/pages"),
-
-  getPage: (slug) => request(`/patient/pages/${encodeURIComponent(slug)}`),
+  // -------------------------------------------------------------------------
+  // Doctor
+  // -------------------------------------------------------------------------
 
   getDoctorWorklist: () =>
     request("/doctor/worklist", {
       auth: true,
     }),
 
-  listCases: () => request("/doctor/cases", { auth: true }),
+  listCases: () =>
+    request("/doctor/cases", {
+      auth: true,
+    }),
 
   getCase: (caseId) =>
     request(`/doctor/cases/${encodeURIComponent(caseId)}`, {
       auth: true,
-    }),
-
-  generateReport: (caseId) =>
-    request(`/reports/${encodeURIComponent(caseId)}/generate`, {
-      method: "POST",
-      auth: true,
-    }),
-
-  saveReport: (caseId, reportText) =>
-    request(`/reports/${encodeURIComponent(caseId)}`, {
-      method: "PUT",
-      auth: true,
-      body: { report_text: reportText },
     }),
 
   deleteCase: (caseId) =>
@@ -204,6 +294,30 @@ export const api = {
       method: "DELETE",
       auth: true,
     }),
+
+  // -------------------------------------------------------------------------
+  // Reports
+  // -------------------------------------------------------------------------
+
+  generateReport: (caseId) =>
+    request(`/reports/${encodeURIComponent(caseId)}/generate`, {
+      method: "POST",
+      auth: true,
+    }),
+
+  saveReport: (caseId, reportText, reportJson = null) =>
+    request(`/reports/${encodeURIComponent(caseId)}`, {
+      method: "PUT",
+      auth: true,
+      body: {
+        report_text: reportText,
+        report_json: reportJson,
+      },
+    }),
+
+  // -------------------------------------------------------------------------
+  // Admin dashboard
+  // -------------------------------------------------------------------------
 
   getAdminConfig: async () => {
     const [
@@ -276,94 +390,16 @@ export const api = {
       auth: "admin",
     }),
 
-  saveAdminPage: (slug, payload) =>
-    request(`/admin/pages/${encodeURIComponent(slug)}`, {
-      method: "PUT",
-      auth: "admin",
-      body: payload,
-    }),
-
-  listAdminQuestionnaires: () =>
-    request("/admin/questionnaires", {
-      auth: "admin",
-    }),
-
-  getAdminQuestionnaire: (identifier) =>
-    request(`/admin/questionnaires/${encodeURIComponent(identifier)}`, {
-      auth: "admin",
-    }),
-
-  saveAdminQuestionnaire: (identifier, payload) =>
-    request(`/admin/questionnaires/${encodeURIComponent(identifier)}`, {
-      method: "PUT",
-      auth: "admin",
-      body: payload,
-    }),
-
-  startPatientQuestionnaireSession: (payload = {}) =>
-    request("/patient/questionnaire-sessions/start", {
-      method: "POST",
-      body: {
-        ...normalizePatientPayload(payload),
-        indication: payload.indication,
-      },
-    }),
-
-  saveQuestionnaireProgress: ({
-    session_id,
-    indication,
-    patient_name,
-    patient_last_name,
-    patient_email,
-    insurance_id,
-    questionnaire_template_id,
-    questionnaire_version,
-    answers,
-    metadata,
-    current_question_id,
-  }) =>
-    request("/patient/questionnaire-sessions/progress", {
-      method: "PUT",
-      body: {
-        session_id,
-        indication,
-        ...normalizePatientPayload({
-          patient_name,
-          patient_last_name,
-          patient_email,
-          insurance_id,
-        }),
-        questionnaire_template_id,
-        questionnaire_version,
-        answers,
-        metadata,
-        current_question_id,
-      },
-    }),
-
-  resumePatientQuestionnaireSession: ({
-    patient_name,
-    patient_last_name,
-    resume_code,
-  } = {}) =>
-    request("/patient/questionnaire-sessions/resume", {
-      method: "POST",
-      body: {
-        patient_last_name: cleanString(patient_last_name || patient_name),
-        resume_code: cleanString(resume_code),
-      },
-    }),
-
-  updateSiteSettings: (payload) =>
-    request("/admin/site-settings", {
-      method: "PUT",
-      auth: "admin",
-      body: payload,
-    }),
-
   createPage: (payload) =>
     request("/admin/pages", {
       method: "POST",
+      auth: "admin",
+      body: payload,
+    }),
+
+  saveAdminPage: (slug, payload) =>
+    request(`/admin/pages/${encodeURIComponent(slug)}`, {
+      method: "PUT",
       auth: "admin",
       body: payload,
     }),
@@ -381,9 +417,33 @@ export const api = {
       auth: "admin",
     }),
 
+  updateSiteSettings: (payload) =>
+    request("/admin/site-settings", {
+      method: "PUT",
+      auth: "admin",
+      body: payload,
+    }),
+
   upsertMedia: (payload) =>
     request("/admin/media", {
       method: "POST",
+      auth: "admin",
+      body: payload,
+    }),
+
+  listAdminQuestionnaires: () =>
+    request("/admin/questionnaires", {
+      auth: "admin",
+    }),
+
+  getAdminQuestionnaire: (identifier) =>
+    request(`/admin/questionnaires/${encodeURIComponent(identifier)}`, {
+      auth: "admin",
+    }),
+
+  saveAdminQuestionnaire: (identifier, payload) =>
+    request(`/admin/questionnaires/${encodeURIComponent(identifier)}`, {
+      method: "PUT",
       auth: "admin",
       body: payload,
     }),

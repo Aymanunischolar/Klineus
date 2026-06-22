@@ -11218,3 +11218,256 @@ p {
     font-size: 0.86rem;
   }
 }
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 72px;
+  padding: 28px 0 8px;
+  border-top: 1px solid var(--brand-border);
+}
+
+.site-footer a {
+  color: var(--brand-muted);
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--brand-teal-dark);
+}
+
+.patient-identity-grid-single {
+  grid-template-columns: 1fr;
+}
+.questionnaire-progress-topline-clean {
+  justify-content: flex-end;
+}
+
+.questionnaire-progress-topline-clean span {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--brand-border-strong);
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: #ffffff;
+  color: var(--brand-teal-dark);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.questionnaire-question-shell .question-id {
+  display: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Klineus cleanup overrides                                                  */
+/* -------------------------------------------------------------------------- */
+
+/* Footer: Impressum / Datenschutz belong at the bottom */
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 72px;
+  padding: 28px 0 8px;
+  border-top: 1px solid var(--brand-border);
+}
+
+.site-footer a {
+  color: var(--brand-muted);
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--brand-teal-dark);
+}
+
+/* Patient start page: only one patient-name input */
+.patient-identity-grid-single {
+  grid-template-columns: 1fr;
+}
+
+/* Questionnaire: hide redundant category/question-code UI */
+.question-id,
+.question-code,
+.question-category,
+.question-block,
+.question-block-title,
+.questionnaire-block-title,
+.questionnaire-question-category,
+.questionnaire-meta,
+.questionnaire-question-meta {
+  display: none !important;
+}
+
+/* Questionnaire: clean "Frage X von Y" progress label */
+.questionnaire-progress-topline-clean {
+  justify-content: flex-end;
+}
+
+.questionnaire-progress-topline-clean span {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--brand-border-strong);
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: #ffffff;
+  color: var(--brand-teal-dark);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+/* Questionnaire: cleaner card after removing top navigation */
+.app-shell-compact .main-content {
+  padding-top: 28px;
+}
+
+.questionnaire-card-pro {
+  max-width: 920px;
+  margin-inline: auto;
+}
+
+/* Remove old patient-done fragments if any old component/CMS content remains */
+.patient-document-list,
+.patient-documents-list,
+.patient-document-checklist,
+.documents-to-bring,
+.document-checklist,
+.patient-email-note,
+.patient-mail-note,
+.patient-case-id,
+.patient-done-case-id,
+.patient-done-disclaimer,
+.patient-diagnosis-note,
+.patient-legal-note,
+.patient-next-steps,
+.patient-reminder-panel {
+  display: none !important;
+}
+
+/* Remove old homepage/public CTA fragments if stale CSS/CMS content still renders */
+.home-cta-pro,
+.home-hero-actions,
+.home-chip-row,
+.home-hero-chip-row,
+.home-hero-badges,
+.home-logo-badge,
+.prototype-pill,
+.product-cta-pro,
+.team-cta-pro,
+.contact-quick-actions .secondary-button,
+a[href="/patient/start"],
+a[href="/patient/questionnaire"],
+a[href="/doctor/login"] {
+  display: none !important;
+}
+
+.cms-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.cms-link-row-centered {
+  justify-content: center;
+}
+
+.cms-link-row .primary-button,
+.cms-link-row .secondary-button {
+  display: inline-flex !important;
+}
+
+/* Keep the main contact email button visible */
+.contact-quick-actions a[href^="mailto:"] {
+  display: inline-flex !important;
+}
+
+/* Doctor/admin dashboard: avoid showing stale fallback values if text appears in old DOM */
+.muted-fallback-value,
+.fallback-patient-value {
+  display: none !important;
+}
+
+/* Doctor case page: make answer rows cleaner without question IDs */
+.answer-row .question-id,
+.answer-row .answer-question-id,
+.answer-row code {
+  display: none !important;
+}
+
+/* Doctor case page: prevent long answers/reports from breaking layout */
+.answer-row strong,
+.doctor-report-preview,
+.doctor-letter-scroll {
+  overflow-wrap: anywhere;
+}
+
+/* Public pages after removing CTA buttons */
+.landing-page-pro,
+.product-page-pro,
+.team-page-pro,
+.contact-page-pro,
+.legal-page-pro {
+  padding-bottom: 40px;
+}
+
+.home-hero-pro,
+.product-hero-pro,
+.team-hero-pro,
+.contact-hero-pro,
+.legal-hero-pro {
+  margin-top: 32px;
+}
+
+/* Cleaner cards for product/team after removing action buttons */
+.product-feature-card-pro,
+.team-capability-card-pro,
+.home-step-card-pro {
+  min-height: 100%;
+}
+
+/* Mobile cleanup */
+@media (max-width: 720px) {
+  .site-footer {
+    margin-top: 48px;
+    padding-top: 22px;
+  }
+
+  .questionnaire-progress-topline-clean {
+    justify-content: flex-start;
+  }
+
+  .questionnaire-progress-topline-clean span {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .app-shell-compact .main-content {
+    padding-top: 18px;
+  }
+}
+/* CMS safe public links */
+.cms-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.cms-link-row-centered {
+  justify-content: center;
+}
+
+.cms-link-row .primary-button,
+.cms-link-row .secondary-button {
+  display: inline-flex !important;
+}

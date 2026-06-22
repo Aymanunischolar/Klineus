@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
+import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
+
+function localText(language, de, en) {
+  return language === "en" ? en : de;
+}
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,21 +21,36 @@ export default function AdminLoginPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    const cleanEmail = email.trim();
+
     setIsSubmitting(true);
     setError("");
 
     try {
-      const data = await api.login(email, password);
+      const data = await api.login(cleanEmail, password);
 
       if (data.role !== "admin") {
-        setError("This account does not have admin access.");
+        setError(
+          localText(
+            language,
+            "Dieses Konto hat keinen Admin-Zugang.",
+            "This account does not have admin access.",
+          ),
+        );
         return;
       }
 
       window.localStorage.setItem("klineus_admin_token", data.access_token);
       navigate("/admin/dashboard");
     } catch (loginError) {
-      setError(loginError.message);
+      setError(
+        loginError?.message ||
+          localText(
+            language,
+            "Die Anmeldung war nicht erfolgreich.",
+            "Login was not successful.",
+          ),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -40,52 +61,63 @@ export default function AdminLoginPage() {
       <section className="login-card auth-card admin-auth-card">
         <div className="auth-card-header">
           <p className="eyebrow">Klineus Admin</p>
-          <h1>Admin panel</h1>
+
+          <h1>
+            {localText(language, "Admin-Bereich", "Admin area")}
+          </h1>
+
           <p>
-            Manage questionnaire configuration, extra questions, supported languages,
-            and prototype analytics.
+            {localText(
+              language,
+              "Melden Sie sich an, um Website-Inhalte, Fragebögen, Medien und Auswertungen zu verwalten.",
+              "Sign in to manage website content, questionnaires, media and analytics.",
+            )}
           </p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
-            <span>Email</span>
+            <span>{localText(language, "E-Mail", "Email")}</span>
+
             <input
               autoComplete="email"
               placeholder="admin@klineus.local"
               type="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setError("");
+              }}
             />
           </label>
 
           <label>
-            <span>Password</span>
+            <span>{localText(language, "Passwort", "Password")}</span>
+
             <input
               autoComplete="current-password"
               placeholder="••••••••"
               type="password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                setError("");
+              }}
             />
           </label>
 
           {error ? <p className="form-error">{error}</p> : null}
 
-          <button className="primary-button full-width" disabled={isSubmitting} type="submit">
-            {isSubmitting ? "..." : "Sign in as admin"}
+          <button
+            className="primary-button full-width"
+            disabled={isSubmitting}
+            type="submit"
+          >
+            {isSubmitting
+              ? localText(language, "Wird angemeldet…", "Signing in…")
+              : localText(language, "Als Admin anmelden", "Sign in as admin")}
           </button>
         </form>
-
-        <div className="auth-footer">
-          <Link className="text-link" to="/home">
-            ← Back to home
-          </Link>
-
-          <Link className="text-link" to="/doctor/login">
-            Doctor login
-          </Link>
-        </div>
       </section>
     </AppShell>
   );

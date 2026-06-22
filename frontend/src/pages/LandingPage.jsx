@@ -1,196 +1,155 @@
-import { useEffect, useMemo, useState } from "react";
-
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
-import { api } from "../services/api.js";
 
-const fallbackCopy = {
-  de: {
-    title: "Klineus",
-    lead:
-      "Klineus unterstützt die strukturierte Erhebung, Einordnung und Dokumentation patientenbezogener Informationen vor dem Arztkontakt.",
-
-    workflowEyebrow: "Ablauf",
-    workflowTitle: "Vom Fragebogen zur ärztlichen Übersicht.",
-    steps: [
-      {
-        title: "Patienteninformationen erfassen",
-        text:
-          "Patientinnen und Patienten beantworten strukturierte Fragen zu Beschwerden, Alltag, Vorbehandlung und relevanten Hinweisen.",
-      },
-      {
-        title: "Fall im Dashboard prüfen",
-        text:
-          "Ärztinnen und Ärzte sehen die Antworten übersichtlich zusammengefasst und können wichtige Punkte für das Gespräch prüfen.",
-      },
-      {
-        title: "Dokumentation vorbereiten",
-        text:
-          "Die Informationen können für eine strukturierte ärztliche Dokumentation vorbereitet werden.",
-      },
-    ],
-
-    benefitsEyebrow: "Warum Klineus",
-    benefitsTitle: "Für bessere Vorbereitung vor dem Termin.",
-    benefits: [
-      "Strukturierte Erfassung vor dem Arztkontakt",
-      "Übersichtliche Darstellung für Ärztinnen und Ärzte",
-      "Bessere Vorbereitung des Patientengesprächs",
-      "Klare Dokumentation relevanter Angaben",
-    ],
-  },
-
-  en: {
-    title: "Klineus",
-    lead:
-      "Klineus supports the structured collection, organization and documentation of patient-related information before the medical consultation.",
-
-    workflowEyebrow: "Workflow",
-    workflowTitle: "From questionnaire to physician overview.",
-    steps: [
-      {
-        title: "Collect patient information",
-        text:
-          "Patients answer structured questions about symptoms, daily life, prior treatment and relevant notes.",
-      },
-      {
-        title: "Review the case in the dashboard",
-        text:
-          "Doctors see the answers clearly summarized and can review important points for the consultation.",
-      },
-      {
-        title: "Prepare documentation",
-        text:
-          "The information can be prepared for structured medical documentation.",
-      },
-    ],
-
-    benefitsEyebrow: "Why Klineus",
-    benefitsTitle: "Better preparation before the appointment.",
-    benefits: [
-      "Structured intake before the medical consultation",
-      "Clear overview for doctors",
-      "Better preparation for the patient conversation",
-      "Clear documentation of relevant information",
-    ],
-  },
-};
-
-function getText(value, language, fallback = "") {
-  if (!value) {
-    return fallback;
-  }
-
-  if (typeof value === "string") {
-    return value;
-  }
-
-  return value[language] || value.de || value.en || fallback;
-}
-
-function normalizeImagePath(path, fallback) {
-  const value = path || fallback;
-
-  if (!value) {
-    return "";
-  }
-
-  if (value.startsWith("http://") || value.startsWith("https://")) {
-    return value;
-  }
-
-  if (value.startsWith("/api/static/images/")) {
-    return value.replace("/api/static/images/", "/static/images/");
-  }
-
-  if (value.startsWith("/images/")) {
-    return value.replace("/images/", "/static/images/");
-  }
-
-  if (value.startsWith("static/images/")) {
-    return `/${value}`;
-  }
-
-  return value;
-}
-
-function findSection(page, id) {
-  return (page?.sections || []).find((section) => section.id === id);
+function localText(language, de, en) {
+  return language === "en" ? en : de;
 }
 
 export default function LandingPage() {
   const { language } = useLanguage();
-  const text = fallbackCopy[language] || fallbackCopy.de;
 
-  const [page, setPage] = useState(null);
+  const steps = [
+    {
+      title: localText(
+        language,
+        "Strukturierte Erhebung",
+        "Structured intake",
+      ),
+      text: localText(
+        language,
+        "Medizinisch relevante Patientenangaben werden in einem klaren Ablauf gesammelt.",
+        "Medically relevant patient information is collected in a clear flow.",
+      ),
+    },
+    {
+      title: localText(
+        language,
+        "Übersichtliche Aufbereitung",
+        "Clear preparation",
+      ),
+      text: localText(
+        language,
+        "Antworten und wichtige Punkte werden geordnet dargestellt und leichter prüfbar gemacht.",
+        "Answers and important points are organized and made easier to review.",
+      ),
+    },
+    {
+      title: localText(
+        language,
+        "Ärztliche Prüfung",
+        "Physician review",
+      ),
+      text: localText(
+        language,
+        "Die medizinische Bewertung, Entscheidung und Freigabe bleiben vollständig ärztliche Verantwortung.",
+        "Medical assessment, decisions and approval remain fully the responsibility of the physician.",
+      ),
+    },
+  ];
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadPage() {
-      try {
-        const data = await api.getPage("home");
-
-        if (mounted) {
-          setPage(data);
-        }
-      } catch {
-        if (mounted) {
-          setPage(null);
-        }
-      }
-    }
-
-    loadPage();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const heroSection = useMemo(() => findSection(page, "hero"), [page]);
-
-  const heroTitle = getText(heroSection?.title, language, text.title);
-  const heroBody = getText(heroSection?.body, language, text.lead);
-
-  const heroImage = normalizeImagePath(
-    heroSection?.image_path,
-    "/static/images/hero-medical.png",
-  );
-
-  const heroImageAlt = getText(
-    heroSection?.image_alt,
-    language,
-    "Klineus medical documentation support",
-  );
+  const benefits = [
+    localText(
+      language,
+      "Klare Vorbereitung vor medizinischen Gesprächen.",
+      "Clear preparation before medical consultations.",
+    ),
+    localText(
+      language,
+      "Bessere Übersicht über Beschwerden, Funktion und relevante Risiken.",
+      "Better overview of symptoms, function and relevant risks.",
+    ),
+    localText(
+      language,
+      "Nachvollziehbare Struktur für ärztliche Dokumentation.",
+      "Traceable structure for medical documentation.",
+    ),
+    localText(
+      language,
+      "Technische Unterstützung ohne Ersatz ärztlicher Verantwortung.",
+      "Technical support without replacing physician responsibility.",
+    ),
+  ];
 
   return (
     <AppShell>
       <main className="landing-page-pro">
         <section className="home-hero-pro">
           <div className="home-hero-copy-pro">
-            <h1>{heroTitle}</h1>
-            <p>{heroBody}</p>
+            <p className="eyebrow">Klineus</p>
+
+            <h1>
+              {localText(
+                language,
+                "Klineus strukturiert medizinisch relevante Patientenangaben.",
+                "Klineus structures medically relevant patient information.",
+              )}
+            </h1>
+
+            <p>
+              {localText(
+                language,
+                "Klineus unterstützt medizinische Einrichtungen dabei, Angaben vor einem Termin klarer zu erfassen, aufzubereiten und für die ärztliche Prüfung übersichtlich darzustellen.",
+                "Klineus helps medical organizations collect, prepare and present information clearly before an appointment for physician review.",
+              )}
+            </p>
+
+            <div className="home-trust-row-pro" aria-label="Klineus Merkmale">
+              <span>
+                {localText(language, "Strukturierte Erhebung", "Structured intake")}
+              </span>
+
+              <span>
+                {localText(language, "Ärztlich prüfbar", "Physician-reviewable")}
+              </span>
+
+              <span>
+                {localText(language, "Keine Diagnose", "No diagnosis")}
+              </span>
+            </div>
           </div>
 
           <div className="home-hero-media-pro">
             <img
               className="home-hero-image"
-              src={heroImage}
-              alt={heroImageAlt}
+              src="/static/images/hero-medical.png"
+              alt={localText(
+                language,
+                "Digitale medizinische Oberfläche",
+                "Digital medical interface",
+              )}
               loading="eager"
             />
+
+            <div className="home-hero-note-pro">
+              <strong>Klineus</strong>
+              <span>
+                {localText(
+                  language,
+                  "Unterstützung für strukturierte Vorbereitung.",
+                  "Support for structured preparation.",
+                )}
+              </span>
+            </div>
           </div>
         </section>
 
         <section className="home-workflow-pro">
           <div className="section-heading">
-            <p className="eyebrow">{text.workflowEyebrow}</p>
-            <h2>{text.workflowTitle}</h2>
+            <p className="eyebrow">
+              {localText(language, "Ablauf", "Workflow")}
+            </p>
+
+            <h2>
+              {localText(
+                language,
+                "Von Angaben zu einer klaren medizinischen Übersicht.",
+                "From information to a clear medical overview.",
+              )}
+            </h2>
           </div>
 
           <div className="home-step-grid-pro">
-            {text.steps.map((step, index) => (
+            {steps.map((step, index) => (
               <article className="home-step-card-pro" key={step.title}>
                 <span>{String(index + 1).padStart(2, "0")}</span>
                 <h3>{step.title}</h3>
@@ -202,17 +161,50 @@ export default function LandingPage() {
 
         <section className="home-benefits-pro">
           <div>
-            <p className="eyebrow">{text.benefitsEyebrow}</p>
-            <h2>{text.benefitsTitle}</h2>
+            <p className="eyebrow">
+              {localText(language, "Warum Klineus", "Why Klineus")}
+            </p>
+
+            <h2>
+              {localText(
+                language,
+                "Für bessere Vorbereitung, nicht für automatische Entscheidungen.",
+                "Built for better preparation, not automated decisions.",
+              )}
+            </h2>
           </div>
 
           <div className="home-benefit-list-pro">
-            {text.benefits.map((benefit) => (
+            {benefits.map((benefit) => (
               <article key={benefit}>
                 <span>✓</span>
                 <p>{benefit}</p>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="home-compliance-pro">
+          <div>
+            <p className="eyebrow">
+              {localText(language, "Verantwortung", "Responsibility")}
+            </p>
+
+            <h2>
+              {localText(
+                language,
+                "Klineus ersetzt keine ärztliche Entscheidung.",
+                "Klineus does not replace medical decisions.",
+              )}
+            </h2>
+
+            <p>
+              {localText(
+                language,
+                "Alle Angaben, Hinweise und möglichen Dokumentationsentwürfe müssen ärztlich geprüft, korrigiert und freigegeben werden.",
+                "All information, notes and possible documentation drafts must be reviewed, corrected and approved by a physician.",
+              )}
+            </p>
           </div>
         </section>
       </main>

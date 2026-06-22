@@ -17,21 +17,17 @@ import TeamPage from "./pages/TeamPage.jsx";
 
 function NotFoundPage() {
   return (
-    <div className="not-found-page">
+    <main className="not-found-page">
       <p className="eyebrow">404</p>
+
       <h1>Page not found</h1>
+
       <p>The page you are looking for does not exist or has moved.</p>
 
-      <div className="hero-actions">
-        <a className="primary-button" href="/home">
-          Back to home
-        </a>
-
-        <a className="secondary-button" href="/product">
-          View product
-        </a>
-      </div>
-    </div>
+      <a className="primary-button" href="/home">
+        Back to home
+      </a>
+    </main>
   );
 }
 
@@ -40,40 +36,41 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/home" replace />} />
 
+      {/* Public website routes */}
       <Route path="/home" element={<LandingPage />} />
       <Route path="/product" element={<ProductPage />} />
       <Route path="/team" element={<TeamPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/legal" element={<LegalPage />} />
 
+      {/* Direct patient routes only. Do not link from public website. */}
       <Route path="/patient/start" element={<PatientStartPage />} />
       <Route path="/patient/resume" element={<PatientResumePage />} />
-
-      <Route
-        path="/patient/questionnaire"
-        element={<Navigate to="/patient/start" replace />}
-      />
-
       <Route
         path="/patient/questionnaire/:indication"
         element={<QuestionnairePage />}
       />
-
       <Route path="/patient/done" element={<PatientDonePage />} />
       <Route path="/patient/done/:caseId" element={<PatientDonePage />} />
 
+      {/* Direct doctor routes only. Do not link from public website. */}
       <Route path="/doctor/login" element={<DoctorLoginPage />} />
       <Route path="/doctor/dashboard" element={<DoctorDashboardPage />} />
       <Route path="/doctor/cases/:caseId" element={<DoctorCasePage />} />
       <Route path="/doctor/case/:caseId" element={<DoctorCasePage />} />
-
       <Route
         path="/doctor/cases"
         element={<Navigate to="/doctor/dashboard" replace />}
       />
 
+      {/* Direct admin routes only. Do not link from public website. */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+
+      {/* Remove old public questionnaire/prototype aliases */}
+      <Route path="/patient/questionnaire" element={<Navigate to="/home" replace />} />
+      <Route path="/questionnaire" element={<Navigate to="/home" replace />} />
+      <Route path="/prototype" element={<Navigate to="/home" replace />} />
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

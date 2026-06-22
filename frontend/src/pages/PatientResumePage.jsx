@@ -32,7 +32,7 @@ export default function PatientResumePage() {
       setError(
         localText(
           language,
-          "Bitte geben Sie Patientenname und Zugangscode ein.",
+          "Bitte geben Sie Patientennamen und Zugangscode ein.",
           "Please enter patient name and access code.",
         ),
       );
@@ -55,20 +55,22 @@ export default function PatientResumePage() {
 
       const session = await api.resumePatientQuestionnaireSession({
         patient_name: cleanPatientName,
+        patient_last_name: cleanPatientName,
         resume_code: cleanResumeCode,
       });
-
-      const indication = session.indication || "knee_tep";
 
       window.sessionStorage.setItem(
         PATIENT_IDENTITY_STORAGE_KEY,
         JSON.stringify({
-          session_id: session.session_id,
+          session_id: session.session_id || "",
           patient_name: session.patient_name || cleanPatientName,
-          patient_last_name: session.patient_last_name || "",
+          patient_last_name:
+            session.patient_last_name ||
+            session.patient_name ||
+            cleanPatientName,
           patient_email: session.patient_email || "",
           insurance_id: session.insurance_id || "",
-          indication,
+          indication: session.indication || "knee_tep",
           questionnaire_template_id: session.questionnaire_template_id || "",
           questionnaire_version: session.questionnaire_version || null,
           answers: session.answers || [],
@@ -77,14 +79,14 @@ export default function PatientResumePage() {
         }),
       );
 
-      navigate(`/patient/questionnaire/${indication}`);
+      navigate(`/patient/questionnaire/${session.indication || "knee_tep"}`);
     } catch (resumeError) {
       setError(
         resumeError?.message ||
           localText(
             language,
-            "Es wurde kein aktiver Fragebogen für diesen Namen und Code gefunden.",
-            "No active questionnaire was found for this name and code.",
+            "Es wurde kein aktiver Fragebogen für diesen Patientennamen und Code gefunden.",
+            "No active questionnaire was found for this patient name and code.",
           ),
       );
     } finally {
@@ -93,7 +95,7 @@ export default function PatientResumePage() {
   }
 
   return (
-    <AppShell compact>
+    <AppShell compact hideNav>
       <section className="patient-card patient-start-card">
         <p className="eyebrow">
           {localText(language, "Fragebogen fortsetzen", "Resume questionnaire")}
@@ -116,9 +118,11 @@ export default function PatientResumePage() {
         </p>
 
         <form className="patient-identity-panel" onSubmit={handleResume}>
-          <div className="patient-identity-grid">
+          <div className="patient-identity-grid patient-identity-grid-single">
             <label>
-              <span>{localText(language, "Patientenname", "Patient name")}</span>
+              <span>
+                {localText(language, "Patientenname", "Patient name")}
+              </span>
 
               <input
                 autoComplete="name"
@@ -135,7 +139,9 @@ export default function PatientResumePage() {
                 }}
               />
             </label>
+          </div>
 
+          <div className="patient-identity-grid patient-identity-grid-single">
             <label>
               <span>
                 {localText(

@@ -2,203 +2,246 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const STORAGE_KEY = "klineus_language";
 
+function cleanGermanText(value) {
+  return String(value || "")
+    .replace(/^\s*Block\s+[A-Z]:\s*/i, "")
+    .replaceAll("aerztliche", "ärztliche")
+    .replaceAll("aerztlicher", "ärztlicher")
+    .replaceAll("aerztlich", "ärztlich")
+    .replaceAll("Aerztliche", "Ärztliche")
+    .replaceAll("Aerztlicher", "Ärztlicher")
+    .replaceAll("Aerztlich", "Ärztlich")
+    .replaceAll("Pruefung", "Prüfung")
+    .replaceAll("pruefung", "prüfung")
+    .replaceAll("pruefen", "prüfen")
+    .replaceAll("geprueft", "geprüft")
+    .replaceAll("Kuerzliches", "Kürzliches")
+    .replaceAll("kuerzliches", "kürzliches")
+    .replaceAll("Kuerzliche", "Kürzliche")
+    .replaceAll("kuerzliche", "kürzliche")
+    .replaceAll("Huefte", "Hüfte")
+    .replaceAll("Hueft", "Hüft")
+    .replaceAll("fuer", "für")
+    .replaceAll("moeglich", "möglich")
+    .replaceAll("moegliche", "mögliche")
+    .replaceAll("regelmaessig", "regelmäßig")
+    .replaceAll("Regelmaessige", "Regelmäßige")
+    .replaceAll("vollstaendig", "vollständig")
+    .replaceAll("Vollstaendig", "Vollständig")
+    .replaceAll("unvollstaendig", "unvollständig")
+    .replaceAll("Einschraenkung", "Einschränkung")
+    .replaceAll("einschraenkung", "einschränkung")
+    .replaceAll("Alltagseinschraenkung", "Alltagseinschränkung")
+    .replaceAll("Roentgen", "Röntgen")
+    .replaceAll("Entzuendung", "Entzündung")
+    .replaceAll("Klaerung", "Klärung")
+    .replaceAll("klaeren", "klären")
+    .replaceAll("Arztgespraech", "Arztgespräch")
+    .replaceAll("Gespraech", "Gespräch")
+    .replaceAll("Anaemie", "Anämie")
+    .replaceAll("anaemie", "Anämie")
+    .replaceAll("bezueglich", "bezüglich")
+    .replaceAll("Fruehere", "Frühere")
+    .replaceAll("fruehere", "frühere")
+    .replaceAll("Gelenkverschleiss", "Gelenkverschleiß")
+    .replaceAll("Aufklaerung", "Aufklärung")
+    .trim();
+}
+
 const translations = {
   de: {
     languageName: "Deutsch",
     otherLanguageName: "English",
-    prototypePill: "Klineus Prototyp",
     toggleLabel: "Sprache",
 
-    navProduct: "Produkt",
-    navTeam: "Team",
+    prototypePill: "Klineus",
+
+    navProduct: "Unser Produkt",
+    navTeam: "Über uns",
     navContact: "Kontakt",
     navLegal: "Rechtliches",
+
     quickLinks: "Menü",
-    quickProductTitle: "Klineus Produkt",
-    quickProductText:
-      "Ein System für Patientenaufnahme, Arztprüfung und Dokumentation.",
-    quickDoctorTitle: "Arzt-Dashboard",
-    quickDoctorText: "Der zentrale Arbeitsbereich für ärztliche Prüfung.",
+    quickProductTitle: "Unser Produkt",
+    quickProductText: "Erfahren Sie, was Klineus macht.",
+    quickTeamTitle: "Über uns",
+    quickTeamText: "Mehr über das Klineus Team.",
     quickContactTitle: "Kontakt",
-    quickContactText: "Pilotanfrage, Partnerschaft oder Rückfrage senden.",
+    quickContactText: "Kontakt aufnehmen.",
 
     learnProduct: "Produkt ansehen",
     contactUs: "Kontakt aufnehmen",
-    startPatientQuestionnaire: "Patientenfragebogen starten",
-    openDoctorDashboard: "Arzt-Dashboard öffnen",
     adminPanel: "Admin-Bereich",
 
     landingEyebrow: "Klineus",
     landingTitle: "Klineus",
     landingDescription:
-      "Webbasierter Prototyp für strukturierte Knie- und Hüft-TEP-Fragebögen und ärztlich geprüfte Dokumentationsentwürfe.",
+      "Klineus unterstützt die strukturierte Erhebung und Aufbereitung medizinisch relevanter Patientenangaben vor dem Arztkontakt.",
     landingDisclaimer:
-      "Dieser Prototyp ersetzt keine ärztliche Beurteilung und gibt keine eigenständigen Diagnose- oder Behandlungsempfehlungen.",
+      "Klineus ersetzt keine Diagnose, keine Therapieentscheidung und keine ärztliche Prüfung.",
 
-    homeCard1Title: "Patientenaufnahme vor dem Termin",
+    homeCard1Title: "Strukturierte Erhebung",
     homeCard1Text:
-      "Patientinnen und Patienten erfassen relevante Informationen strukturiert vor dem Arztgespräch.",
-    homeCard2Title: "Leitlinienbasierte Strukturierung",
+      "Patientenangaben werden in einem klaren Ablauf gesammelt.",
+    homeCard2Title: "Übersichtliche Aufbereitung",
     homeCard2Text:
-      "Klineus ordnet Angaben anhand medizinischer Kriterien und markiert offene Punkte.",
-    homeCard3Title: "Ärztliche Prüfung und Dokumentation",
+      "Antworten werden für die ärztliche Prüfung geordnet dargestellt.",
+    homeCard3Title: "Ärztliche Verantwortung",
     homeCard3Text:
-      "Der Arzt erhält ein klares Dashboard mit Hinweisen und Dokumentationsentwurf.",
+      "Klineus unterstützt die Dokumentation, ersetzt aber keine ärztliche Entscheidung.",
 
-    homeCtaEyebrow: "Pilotierung und Partnerschaft",
-    homeCtaTitle: "Klineus wird für den klinischen Einsatz weiterentwickelt.",
+    homeCtaEyebrow: "Klineus",
+    homeCtaTitle: "Strukturierte Vorbereitung für medizinische Gespräche.",
     homeCtaText:
-      "Wir suchen klinische Partner, Feedbackgeber und Einrichtungen, die strukturierte Indikationsprozesse verbessern möchten.",
+      "Klineus hilft dabei, patientenbezogene Informationen vor einem Termin geordnet aufzubereiten.",
 
-    productPageEyebrow: "Produkt",
+    productPageEyebrow: "Unser Produkt",
     productPageTitle:
-      "KI-gestützte Dokumentationsunterstützung für Orthopädie und Unfallchirurgie.",
+      "Klineus strukturiert medizinisch relevante Patientenangaben.",
     productPageIntro:
-      "Klineus unterstützt die leitlinienbasierte Erhebung, Einordnung und Dokumentation von Fragebogenangaben vor dem Arztkontakt.",
+      "Klineus unterstützt Praxen und Kliniken dabei, patientenbezogene Informationen vor einem Termin geordnet zu erfassen, aufzubereiten und für die ärztliche Prüfung übersichtlich darzustellen.",
 
-    workflowEyebrow: "So funktioniert Klineus",
-    workflowTitle:
-      "Von der Patientenantwort zur ärztlich prüfbaren Entscheidungsgrundlage.",
+    workflowEyebrow: "Ablauf",
+    workflowTitle: "Ein klarer Ablauf ohne Ersatz ärztlicher Verantwortung.",
     workflowIntro:
-      "Klineus strukturiert den Indikationsprozess vor dem Arztkontakt. Fragebogenangaben werden gezielt erhoben, anhand medizinischer Kriterien eingeordnet und für den Arzt verständlich aufbereitet.",
-    workflowStep1Title: "Adaptiver Patientenfragebogen",
+      "Klineus bereitet Patientenangaben strukturiert auf und macht wichtige oder unklare Punkte leichter erkennbar.",
+
+    workflowStep1Title: "Strukturierte Erhebung",
     workflowStep1Text:
-      "Patientinnen und Patienten beantworten vor dem Arztkontakt einen digitalen Fragebogen. Die Fragen orientieren sich an relevanten Leitlinienkriterien und sind patientengerecht formuliert.",
-    workflowStep2Title: "Leitlinienbasierte Auswertung",
+      "Relevante Angaben werden in einem klaren Ablauf gesammelt.",
+    workflowStep2Title: "Übersichtliche Aufbereitung",
     workflowStep2Text:
-      "Die Antworten werden automatisch strukturiert und mit hinterlegter Leitlinienlogik abgeglichen. Das System erkennt erfüllte Kriterien, offene Punkte und fehlende Informationen.",
-    workflowStep3Title: "Arzt-Dashboard und Dokumentationsentwurf",
+      "Antworten werden geordnet dargestellt und leichter prüfbar gemacht.",
+    workflowStep3Title: "Dokumentationsentwurf",
     workflowStep3Text:
-      "Der Arzt erhält eine klare Zusammenfassung mit Fragebogenangaben, Dokumentationshinweisen, offenen Punkten und einem vorbereiteten Entwurf für die ärztliche Dokumentation.",
+      "Ein möglicher Entwurf muss ärztlich geprüft, korrigiert und freigegeben werden.",
 
-    productSystemKicker: "Ein Produkt, ein Ablauf",
+    productSystemKicker: "Produkt",
     productSystemTitle:
-      "Klineus verbindet Patientenangaben, ärztliche Prüfung und Dokumentationsentwurf.",
+      "Klineus verbindet strukturierte Erhebung, Übersicht und ärztliche Prüfung.",
     productSystemText:
-      "Das Arzt-Dashboard ist der zentrale Arbeitsbereich. Der Patientenfragebogen liefert die vorbereitenden Informationen. Interne Analysen helfen dem Klineus-Team, Nutzung und Abläufe zu verbessern.",
+      "Die Anwendung unterstützt die Vorbereitung medizinischer Gespräche und die nachvollziehbare Dokumentation.",
 
-    coreProductLabel: "Kernbereich",
+    coreProductLabel: "Kernfunktion",
     supportingWorkflowLabel: "Vorbereitung",
-    internalInsightLabel: "Intern",
-    doctorProductLongTitle: "Arzt-Dashboard",
+    internalInsightLabel: "Übersicht",
+
+    doctorProductLongTitle: "Ärztliche Übersicht",
     doctorProductLongText:
-      "Ärztinnen und Ärzte prüfen eingereichte Fälle, Patientenangaben, BMI, Dokumentationshinweise und KI-generierte Berichtsentwürfe. Die KI-Ausgabe bleibt ein Entwurf und muss ärztlich geprüft und freigegeben werden.",
-    patientProductLongTitle: "Patientenfragebogen",
+      "Ärztinnen und Ärzte prüfen eingereichte Fälle, Patientenangaben, Hinweise und Dokumentationsentwürfe.",
+    patientProductLongTitle: "Strukturierte Patientenangaben",
     patientProductLongText:
-      "Patientinnen und Patienten beantworten vor dem Termin einen geführten Fragebogen. Dadurch liegen Beschwerden, Einschränkungen, Vorbehandlungen, Befunde und Risikohinweise strukturiert vor.",
-    workflowInsightTitle: "Nutzungs- und Verhaltensanalyse",
+      "Patientenangaben werden vor dem Termin strukturiert erfasst und für die ärztliche Prüfung aufbereitet.",
+    workflowInsightTitle: "Nutzung und Abläufe",
     workflowInsightText:
-      "Der interne Admin-Bereich hilft dem Klineus-Team, Nutzung, Ausfülldauer, Sprachen und Berichtserstellung besser zu verstehen.",
+      "Interne Auswertungen helfen, Nutzung, Ausfülldauer und Abläufe besser zu verstehen.",
 
-    valueEyebrow: "Klinischer Nutzen",
+    valueEyebrow: "Nutzen",
     valueTitle:
-      "Mehr Zeit für ärztliche Entscheidung, weniger Zeitverlust durch Routinedokumentation.",
+      "Mehr Übersicht für medizinische Gespräche und Dokumentation.",
     valueText:
-      "Klineus adressiert den zeitintensiven Indikationsprozess in Orthopädie und Unfallchirurgie.",
-    valueMetric1: "Minuten Zeitersparnis pro Patient als Zielwert.",
-    valueMetric2: "Leitlinienlogik für Hüft- und Knie-TEP.",
-    valueMetric3: "Einmal erfassen, mehrfach nutzen.",
-    valueMetric4: "Vom Prototyp zur klinisch validierten Pilotversion.",
+      "Klineus unterstützt eine strukturierte Vorbereitung und eine klarere ärztliche Prüfung.",
+    valueMetric1: "Strukturierte Erhebung patientenbezogener Angaben.",
+    valueMetric2: "Übersichtliche Darstellung wichtiger Informationen.",
+    valueMetric3: "Einmal erfassen, geordnet prüfen.",
+    valueMetric4: "Technische Unterstützung ohne Ersatz ärztlicher Verantwortung.",
 
-    targetEyebrow: "Zielgruppe und Skalierung",
+    targetEyebrow: "Einsatzbereich",
     targetTitle:
-      "Gestartet in der Endoprothetik, skalierbar auf weitere Indikationsbereiche.",
+      "Gestartet mit Knie- und Hüft-TEP, erweiterbar auf weitere medizinische Abläufe.",
     targetText:
-      "Der initiale Fokus liegt auf orthopädischen und unfallchirurgischen Einrichtungen sowie niedergelassenen Fachärzten.",
-    targetClinicTitle: "Kliniken und Endoprothetikzentren",
+      "Klineus richtet sich an medizinische Einrichtungen, die Patientenangaben strukturierter vorbereiten möchten.",
+    targetClinicTitle: "Kliniken und Zentren",
     targetClinicText:
-      "Für Einrichtungen mit hohen Fallzahlen, standardisierten Abläufen und Anforderungen an Nachvollziehbarkeit.",
-    targetPracticeTitle: "Niedergelassene Fachärzte",
+      "Für Einrichtungen mit standardisierten Abläufen und Anforderungen an Nachvollziehbarkeit.",
+    targetPracticeTitle: "Praxen",
     targetPracticeText:
-      "Für Praxen mit Bedarf an strukturierter Voraberhebung und klarer Dokumentationsgrundlage.",
-    targetFutureTitle: "Weitere Indikationsbereiche",
+      "Für Praxen mit Bedarf an strukturierter Voraberhebung und klarer Übersicht.",
+    targetFutureTitle: "Weitere Bereiche",
     targetFutureText:
-      "Das Prinzip lässt sich auf weitere Bereiche in Orthopädie, Unfallchirurgie und andere Fachgebiete übertragen.",
+      "Das Prinzip kann später auf weitere medizinische Abläufe übertragen werden.",
 
-    productCtaEyebrow: "Nächster Schritt",
-    productCtaTitle: "Möchten Sie Klineus als Pilotpartner kennenlernen?",
-    productCtaText:
-      "Kontaktieren Sie uns für Austausch, Feedback oder Pilotierung.",
+    productCtaEyebrow: "Kontakt",
+    productCtaTitle: "Möchten Sie mehr über Klineus erfahren?",
+    productCtaText: "Kontaktieren Sie uns für Rückfragen oder Zusammenarbeit.",
 
-    teamPageEyebrow: "Team",
+    teamPageEyebrow: "Über uns",
     teamPageTitle:
-      "Ein komplementäres Team aus Business, Medizin und Technologie.",
+      "Klineus entsteht an der Schnittstelle von Medizin und Produktentwicklung.",
     teamPageIntro:
-      "Klineus entsteht aus der Verbindung von KI-gestützter Prozessautomatisierung und konkretem klinischem Bedarf.",
-    teamBusinessTitle: "Geschäftsmodell und Umsetzung",
+      "Klineus wird entwickelt, um medizinisch relevante Patientenangaben klarer, strukturierter und prüfbarer aufzubereiten.",
+    teamBusinessTitle: "Produkt und Umsetzung",
     teamBusinessText:
-      "Das Team bringt Erfahrung in Strategie, Vertrieb, Marketing und Finanzierung ein, um Klineus als skalierbares Health-Tech-Produkt aufzubauen.",
-    teamMedicalTitle: "Medizinische und klinische Expertise",
+      "Der Fokus liegt auf klaren Abläufen, einfacher Bedienbarkeit und sinnvoller Produktentwicklung.",
+    teamMedicalTitle: "Medizinische Struktur",
     teamMedicalText:
-      "Die medizinische Seite verantwortet die Übersetzung von Leitlinien in klare Kriterien, fachliche Validierung und Austausch mit klinischen Anwendern.",
-    teamAiTitle: "KI und Produktlogik",
+      "Medizinische Anforderungen werden in klare Fragen und prüfbare Ausgaben übersetzt.",
+    teamAiTitle: "Verantwortungsvolle Technologie",
     teamAiText:
-      "KI unterstützt Strukturierung, Auswertung und Dokumentationsvorbereitung. Sie ersetzt keine ärztliche Entscheidung.",
-    teamMissionEyebrow: "Mission",
-    teamMissionTitle:
-      "Weniger Routinedokumentation, mehr Fokus auf das Arzt-Patienten-Gespräch.",
+      "Technologie unterstützt Strukturierung und Dokumentation, ersetzt aber keine ärztliche Entscheidung.",
+    teamMissionEyebrow: "Grundsätze",
+    teamMissionTitle: "Klar, strukturiert und ärztlich prüfbar.",
     teamMissionText1:
-      "Klineus soll den Indikationsprozess nachvollziehbarer, konsistenter und effizienter machen.",
+      "Klineus soll medizinische Gespräche besser vorbereiten.",
     teamMissionText2:
-      "Das Produkt wird mit klinischem Feedback weiterentwickelt und auf reale Anforderungen im Versorgungsalltag ausgerichtet.",
+      "Die Anwendung wird mit Blick auf reale medizinische Abläufe weiterentwickelt.",
 
     contactEyebrow: "Kontakt",
-    contactTitle: "Interessieren Sie sich für Klineus?",
+    contactTitle: "Sprechen Sie mit uns über Klineus.",
     contactText:
-      "Kontaktieren Sie uns für Pilotierung, Partnerschaft oder Feedback.",
+      "Für Pilotprojekte, Partnerschaften oder allgemeine Rückfragen erreichen Sie uns direkt per E-Mail.",
     contactEmail: "E-Mail",
     contactLocation: "Standort",
-    contactUseCase: "Anwendungsfall",
-    contactUseCaseValue: "Knie- und Hüft-TEP-Dokumentationsunterstützung",
+    contactUseCase: "Anliegen",
+    contactUseCaseValue: "Pilotierung und Partnerschaft",
     contactName: "Name",
     contactNamePlaceholder: "Ihr Name",
     contactOrganization: "Organisation",
-    contactOrganizationPlaceholder: "Klinik, Praxis oder Unternehmen",
+    contactOrganizationPlaceholder: "Klinik, Praxis oder Organisation",
     contactMessage: "Nachricht",
-    contactMessagePlaceholder:
-      "Schreiben Sie uns, wie Sie Klineus einsetzen möchten.",
-    contactSubmit: "Nachricht senden",
-    contactPrototypeAlert:
-      "Vielen Dank. Dies ist ein Prototyp-Kontaktformular. Die Backend-Übermittlung wird später verbunden.",
+    contactMessagePlaceholder: "Worum geht es?",
+    contactSubmit: "E-Mail vorbereiten",
+    contactPrototypeAlert: "Vielen Dank. Ihre Nachricht wurde vorbereitet.",
 
     termsEyebrow: "Rechtliches",
-    termsTitle: "Prototyp-Bedingungen, Datenschutz und klinische Grenzen.",
+    termsTitle: "Impressum und Datenschutz",
     termsIntro:
-      "Diese Inhalte sind Platzhalter und müssen vor einem produktiven Einsatz rechtlich geprüft werden.",
-    terms1Title: "1. Prototyp-Status",
-    terms1Text:
-      "Klineus ist derzeit ein Prototyp für Demonstration, Validierung und interne Tests.",
-    terms2Title: "2. Keine medizinische Entscheidungsfindung",
-    terms2Text:
-      "Klineus stellt keine Diagnosen, trifft keine endgültigen Behandlungsentscheidungen und gibt keine Operationsempfehlungen.",
-    terms3Title: "3. Datenverarbeitung",
+      "Diese Angaben sind Platzhalter und müssen vor produktivem Einsatz rechtlich geprüft werden.",
+    terms1Title: "1. Anbieter",
+    terms1Text: "Klineus",
+    terms2Title: "2. Kontakt",
+    terms2Text: "contact@klineus.de",
+    terms3Title: "3. Datenschutz",
     terms3Text:
-      "Der Patientenname dient der ärztlichen Zuordnung. Direkte Identifikatoren sollen nicht an KI-Prompts übergeben werden.",
-    terms4Title: "4. KI-generierte Entwürfe",
+      "Patientenname und Fallinformationen dienen der ärztlichen Zuordnung. Direkte Identifikatoren sollen nicht an KI-Prompts übergeben werden.",
+    terms4Title: "4. KI-Verarbeitung",
     terms4Text:
-      "KI-generierte Texte sind ausschließlich Dokumentationsentwürfe und müssen ärztlich geprüft werden.",
-    terms5Title: "5. Verfügbarkeit",
+      "KI-generierte Texte sind Dokumentationsentwürfe und müssen ärztlich geprüft werden.",
+    terms5Title: "5. Prüfung vor Produktivbetrieb",
     terms5Text:
-      "Prototyp-Dienste können sich ändern, unterbrochen oder entfernt werden.",
+      "Vor produktivem Einsatz sind Datenschutz, IT-Sicherheit, regulatorische Einordnung und klinische Validierung zu prüfen.",
     terms6Title: "6. Kontakt",
-    terms6Text:
-      "Fragen zum Prototyp, zu Partnerschaften oder zu Evaluierungszugang können über das Kontaktformular gestellt werden.",
+    terms6Text: "Fragen können per E-Mail an contact@klineus.de gestellt werden.",
 
     patientStartEyebrow: "Patientenfragebogen",
-    patientStartTitle: "Patientenfragebogen starten",
-    patientIntro1:
-      "Sie beantworten gleich einige Fragen zur Vorbereitung Ihres Arzttermins.",
-    patientIntro2: "Ihre Angaben helfen, das Arztgespräch vorzubereiten.",
+    patientStartTitle: "Patientenangaben",
+    patientIntro1: "Bitte geben Sie Ihren Patientennamen ein.",
+    patientIntro2:
+      "Ihre Angaben helfen, das Arztgespräch vorzubereiten.",
     patientIntro3:
       "Dies ist keine Diagnose. Ihre Ärztin oder Ihr Arzt prüft alle Angaben.",
+    startPatientQuestionnaire: "Fragebogen starten",
     startQuestionnaire: "Fragebogen starten",
+
     doneTitle: "Vielen Dank.",
-    doneText: "Ihre Angaben wurden übermittelt und werden ärztlich geprüft.",
+    doneText:
+      "Ihre Angaben wurden übermittelt und stehen der Ärztin oder dem Arzt zur Prüfung zur Verfügung.",
+
     home: "Zur Startseite",
     back: "Zurück",
     next: "Weiter",
     submit: "Absenden",
-    answerRequired: "Bitte beantworten Sie die Frage, bevor Sie fortfahren.",
+    answerRequired: "Bitte beantworten Sie diese Frage.",
     heightCm: "Größe in cm",
     weightKg: "Gewicht in kg",
 
@@ -212,44 +255,43 @@ const translations = {
     patientCases: "Patientenfälle",
     logout: "Abmelden",
     loadingCases: "Fälle werden geladen.",
-    emptyCasesTitle: "Noch keine Fälle",
+    emptyCasesTitle: "Noch keine Fälle vorhanden",
     emptyCasesText:
-      "Nach dem Absenden eines Patientenfragebogens erscheint der Fall hier.",
+      "Sobald Patientinnen oder Patienten einen Fragebogen starten oder absenden, erscheinen sie hier.",
     caseId: "Fall-ID",
     created: "Erstellt",
     updated: "Aktualisiert",
     indication: "Indikation",
     status: "Status",
     report: "Bericht",
-    openCase: "Fall öffnen",
+    openCase: "Öffnen",
     kneeTep: "Knie-TEP",
     hipTep: "Hüft-TEP",
-    completed: "abgeschlossen",
+    completed: "ausgefüllt",
     pending: "ausstehend",
-    notGenerated: "nicht generiert",
-    generated: "generiert",
+    notGenerated: "nicht erstellt",
+    generated: "erstellt",
     edited: "bearbeitet",
 
     backToDashboard: "Zurück zum Dashboard",
     kneeCase: "Knie-TEP Fall",
-    hipCase: "Hüft-TEP Fall",
     deleteCase: "Fall löschen",
     deleteConfirm: "Diesen Fall löschen?",
     loadingCase: "Fall wird geladen.",
     caseNotFound: "Fall nicht gefunden.",
     patientAnswers: "Patientenantworten",
     documentationFlags: "Dokumentationshinweise",
-    aiReport: "KI-Bericht",
-    generateAiReport: "KI-Bericht generieren",
+    aiReport: "KI-Entwurf",
+    generateAiReport: "KI-Entwurf erstellen",
     save: "Speichern",
     copy: "Kopieren",
     print: "Drucken",
-    reportGeneratedNotice: "KI-Bericht wurde generiert.",
+    reportGeneratedNotice: "KI-Entwurf wurde erstellt.",
     reportSavedNotice: "Bericht wurde gespeichert.",
     reportCopiedNotice: "Bericht wurde kopiert.",
     noReportToCopy: "Es gibt noch keinen Bericht zum Kopieren.",
     reportPlaceholder:
-      "Generieren Sie einen KI-Bericht. Der Entwurf kann vor dem Speichern manuell bearbeitet werden.",
+      "Erstellen Sie einen KI-Entwurf. Der Text muss ärztlich geprüft werden.",
     printTitle: "Klineus Dokumentationsentwurf",
     noAnswer: "keine Angabe",
     heightShort: "Größe",
@@ -259,196 +301,196 @@ const translations = {
   en: {
     languageName: "English",
     otherLanguageName: "Deutsch",
-    prototypePill: "Klineus prototype",
     toggleLabel: "Language",
 
-    navProduct: "Product",
-    navTeam: "Team",
+    prototypePill: "Klineus",
+
+    navProduct: "Our Product",
+    navTeam: "About Us",
     navContact: "Contact",
     navLegal: "Legal",
+
     quickLinks: "Menu",
-    quickProductTitle: "Klineus product",
-    quickProductText:
-      "One system for intake, physician review and documentation.",
-    quickDoctorTitle: "Doctor dashboard",
-    quickDoctorText: "The central workspace for physician review.",
+    quickProductTitle: "Our Product",
+    quickProductText: "Learn what Klineus does.",
+    quickTeamTitle: "About Us",
+    quickTeamText: "More about the Klineus team.",
     quickContactTitle: "Contact",
-    quickContactText: "Send a pilot, partnership or feedback request.",
+    quickContactText: "Get in touch.",
 
     learnProduct: "View product",
     contactUs: "Contact us",
-    startPatientQuestionnaire: "Start patient questionnaire",
-    openDoctorDashboard: "Open doctor dashboard",
     adminPanel: "Admin area",
 
     landingEyebrow: "Klineus",
     landingTitle: "Klineus",
     landingDescription:
-      "Web-based prototype for structured knee and hip replacement questionnaires and physician-reviewed documentation drafts.",
+      "Klineus supports the structured collection and preparation of medically relevant patient information before the consultation.",
     landingDisclaimer:
-      "This prototype does not replace medical judgment and does not provide autonomous diagnosis or treatment recommendations.",
+      "Klineus does not replace diagnosis, treatment decisions, or medical review.",
 
-    homeCard1Title: "Patient intake before the appointment",
-    homeCard1Text:
-      "Patients provide relevant information in a structured way before the consultation.",
-    homeCard2Title: "Guideline-based structuring",
+    homeCard1Title: "Structured intake",
+    homeCard1Text: "Patient information is collected in a clear flow.",
+    homeCard2Title: "Clear preparation",
     homeCard2Text:
-      "Klineus organizes answers around medical criteria and highlights open points.",
-    homeCard3Title: "Physician review and documentation",
+      "Answers are organized for physician review.",
+    homeCard3Title: "Physician responsibility",
     homeCard3Text:
-      "The doctor receives a clear dashboard with flags and a documentation draft.",
+      "Klineus supports documentation but does not replace medical decisions.",
 
-    homeCtaEyebrow: "Pilot and partnership",
-    homeCtaTitle: "Klineus is being developed for clinical use.",
+    homeCtaEyebrow: "Klineus",
+    homeCtaTitle: "Structured preparation for medical consultations.",
     homeCtaText:
-      "We are looking for clinical partners, feedback providers and institutions that want to improve structured indication workflows.",
+      "Klineus helps prepare patient information before an appointment.",
 
-    productPageEyebrow: "Product",
+    productPageEyebrow: "Our Product",
     productPageTitle:
-      "AI-supported documentation support for orthopedics and trauma surgery.",
+      "Klineus structures medically relevant patient information.",
     productPageIntro:
-      "Klineus supports guideline-based collection, structuring and documentation of questionnaire information before the consultation.",
+      "Klineus helps practices and clinics collect, prepare and present patient-related information clearly before a medical appointment.",
 
-    workflowEyebrow: "How Klineus works",
+    workflowEyebrow: "Workflow",
     workflowTitle:
-      "From patient answers to a physician-reviewable decision basis.",
+      "A clear process without replacing physician responsibility.",
     workflowIntro:
-      "Klineus structures the indication process before the medical consultation. Questionnaire answers are collected in a targeted way, mapped against medical criteria and prepared clearly for physician review.",
-    workflowStep1Title: "Adaptive patient questionnaire",
+      "Klineus prepares patient information in a structured way and makes important or unclear points easier to identify.",
+
+    workflowStep1Title: "Structured intake",
     workflowStep1Text:
-      "Patients complete a digital questionnaire before the consultation. The questions are based on relevant guideline criteria and written in patient-friendly language.",
-    workflowStep2Title: "Guideline-based evaluation",
+      "Relevant information is collected in a clear flow.",
+    workflowStep2Title: "Clear preparation",
     workflowStep2Text:
-      "The answers are automatically structured and compared with embedded guideline logic. The system identifies fulfilled criteria, open points and missing information.",
-    workflowStep3Title: "Doctor dashboard and documentation draft",
+      "Answers are organized and made easier to review.",
+    workflowStep3Title: "Documentation draft",
     workflowStep3Text:
-      "The physician receives a clear summary with questionnaire answers, documentation flags, open points and a prepared draft for medical documentation.",
+      "Any draft must be reviewed, corrected and approved by a physician.",
 
-    productSystemKicker: "One product, one workflow",
+    productSystemKicker: "Product",
     productSystemTitle:
-      "Klineus connects patient input, physician review and documentation drafting.",
+      "Klineus connects structured intake, overview and physician review.",
     productSystemText:
-      "The doctor dashboard is the central workspace. The patient questionnaire provides the prepared information. Internal analytics help the Klineus team improve usage and workflows.",
+      "The application supports preparation for medical consultations and traceable documentation.",
 
-    coreProductLabel: "Core workspace",
+    coreProductLabel: "Core function",
     supportingWorkflowLabel: "Preparation",
-    internalInsightLabel: "Internal",
-    doctorProductLongTitle: "Doctor dashboard",
+    internalInsightLabel: "Overview",
+
+    doctorProductLongTitle: "Physician overview",
     doctorProductLongText:
-      "Physicians review submitted cases, patient answers, BMI, documentation flags and AI-generated draft reports. The AI output remains a draft and must be checked, edited and approved by a physician.",
-    patientProductLongTitle: "Patient questionnaire",
+      "Physicians review submitted cases, patient information, flags and documentation drafts.",
+    patientProductLongTitle: "Structured patient information",
     patientProductLongText:
-      "Patients answer a guided questionnaire before the appointment. Symptoms, limitations, previous treatments, findings and risk information are structured before the consultation.",
-    workflowInsightTitle: "Usage and behavior analytics",
+      "Patient information is collected before the appointment and prepared for physician review.",
+    workflowInsightTitle: "Usage and workflows",
     workflowInsightText:
-      "The internal admin area helps the Klineus team understand usage, completion time, languages and report generation.",
+      "Internal analytics help understand usage, completion time and workflows.",
 
-    valueEyebrow: "Clinical value",
+    valueEyebrow: "Value",
     valueTitle:
-      "More time for medical decision-making, less time lost to routine documentation.",
+      "More clarity for medical conversations and documentation.",
     valueText:
-      "Klineus addresses the time-intensive indication process in orthopedics and trauma surgery.",
-    valueMetric1: "Minutes saved per patient as a target value.",
-    valueMetric2: "Guideline logic for hip and knee replacement pathways.",
-    valueMetric3: "Capture once, reuse multiple times.",
-    valueMetric4: "From prototype to clinically validated pilot version.",
+      "Klineus supports structured preparation and clearer physician review.",
+    valueMetric1: "Structured collection of patient information.",
+    valueMetric2: "Clear presentation of important information.",
+    valueMetric3: "Collect once, review clearly.",
+    valueMetric4: "Technical support without replacing medical responsibility.",
 
-    targetEyebrow: "Target users and scaling",
+    targetEyebrow: "Use case",
     targetTitle:
-      "Starting in endoprosthetics, scalable to further indication areas.",
+      "Starting with knee and hip replacement, expandable to further medical workflows.",
     targetText:
-      "The initial focus is orthopedic and trauma-surgery institutions as well as specialist practices.",
-    targetClinicTitle: "Hospitals and endoprosthetic centers",
+      "Klineus is built for medical organizations that want to prepare patient information in a more structured way.",
+    targetClinicTitle: "Clinics and centers",
     targetClinicText:
-      "For institutions with high case volumes, standardized workflows and traceability requirements.",
-    targetPracticeTitle: "Specialist practices",
+      "For organizations with standardized workflows and traceability requirements.",
+    targetPracticeTitle: "Practices",
     targetPracticeText:
-      "For practices that need structured pre-consultation intake and clear documentation support.",
-    targetFutureTitle: "Further indication areas",
+      "For practices that need structured pre-consultation intake and a clear overview.",
+    targetFutureTitle: "Further areas",
     targetFutureText:
-      "The principle can be transferred to further areas in orthopedics, trauma surgery and other specialties.",
+      "The principle can later be transferred to other medical workflows.",
 
-    productCtaEyebrow: "Next step",
-    productCtaTitle: "Would you like to explore Klineus as a pilot partner?",
-    productCtaText: "Contact us for exchange, feedback or pilot discussions.",
+    productCtaEyebrow: "Contact",
+    productCtaTitle: "Would you like to learn more about Klineus?",
+    productCtaText: "Contact us for questions or collaboration.",
 
-    teamPageEyebrow: "Team",
+    teamPageEyebrow: "About Us",
     teamPageTitle:
-      "A complementary team across business, medicine and technology.",
+      "Klineus is built at the intersection of medicine and product development.",
     teamPageIntro:
-      "Klineus combines AI-supported process automation with concrete clinical needs.",
-    teamBusinessTitle: "Business model and execution",
+      "Klineus is being developed to make medically relevant patient information clearer, more structured and easier to review.",
+    teamBusinessTitle: "Product and execution",
     teamBusinessText:
-      "The team brings experience in strategy, sales, marketing and finance to build Klineus as a scalable health-tech product.",
-    teamMedicalTitle: "Medical and clinical expertise",
+      "The focus is on clear workflows, simple usability and meaningful product development.",
+    teamMedicalTitle: "Medical structure",
     teamMedicalText:
-      "The medical side translates guidelines into clear criteria, validates content and works with clinical users.",
-    teamAiTitle: "AI and product logic",
+      "Medical requirements are translated into clear questions and reviewable outputs.",
+    teamAiTitle: "Responsible technology",
     teamAiText:
-      "AI supports structuring, evaluation and documentation preparation. It does not replace physician decision-making.",
-    teamMissionEyebrow: "Mission",
-    teamMissionTitle:
-      "Less routine documentation, more focus on the doctor-patient conversation.",
+      "Technology supports structuring and documentation but does not replace medical decisions.",
+    teamMissionEyebrow: "Principles",
+    teamMissionTitle: "Clear, structured and physician-reviewable.",
     teamMissionText1:
-      "Klineus aims to make the indication process more traceable, consistent and efficient.",
+      "Klineus should better prepare medical conversations.",
     teamMissionText2:
-      "The product is developed with clinical feedback and aligned with real-world care workflows.",
+      "The application is developed with real medical workflows in mind.",
 
     contactEyebrow: "Contact",
-    contactTitle: "Interested in Klineus?",
-    contactText: "Contact us for pilot discussions, partnership or feedback.",
+    contactTitle: "Talk to us about Klineus.",
+    contactText:
+      "For pilots, partnerships or general questions, you can reach us directly by email.",
     contactEmail: "Email",
     contactLocation: "Location",
-    contactUseCase: "Use case",
-    contactUseCaseValue: "Knee and hip replacement documentation support",
+    contactUseCase: "Topic",
+    contactUseCaseValue: "Pilots and partnerships",
     contactName: "Name",
     contactNamePlaceholder: "Your name",
     contactOrganization: "Organization",
-    contactOrganizationPlaceholder: "Clinic, practice or company",
+    contactOrganizationPlaceholder: "Clinic, practice or organization",
     contactMessage: "Message",
-    contactMessagePlaceholder: "Tell us how you would like to use Klineus.",
-    contactSubmit: "Send message",
-    contactPrototypeAlert:
-      "Thank you. This is a prototype contact form. Backend submission will be connected later.",
+    contactMessagePlaceholder: "How can we help?",
+    contactSubmit: "Prepare email",
+    contactPrototypeAlert: "Thank you. Your message has been prepared.",
 
     termsEyebrow: "Legal",
-    termsTitle: "Prototype terms, privacy and clinical boundaries.",
+    termsTitle: "Imprint and Privacy",
     termsIntro:
-      "These contents are placeholders and must be legally reviewed before production use.",
-    terms1Title: "1. Prototype status",
-    terms1Text:
-      "Klineus is currently a prototype for demonstration, validation and internal testing.",
-    terms2Title: "2. No medical decision-making",
-    terms2Text:
-      "Klineus does not provide diagnoses, final treatment decisions or surgery recommendations.",
-    terms3Title: "3. Data handling",
+      "This information is placeholder content and must be legally reviewed before production use.",
+    terms1Title: "1. Provider",
+    terms1Text: "Klineus",
+    terms2Title: "2. Contact",
+    terms2Text: "contact@klineus.de",
+    terms3Title: "3. Privacy",
     terms3Text:
-      "The patient name is used for doctor-side identification. Direct identifiers should not be passed into AI prompts.",
-    terms4Title: "4. AI-generated drafts",
+      "Patient name and case information are used for physician-side assignment. Direct identifiers should not be passed into AI prompts.",
+    terms4Title: "4. AI processing",
     terms4Text:
-      "AI-generated text is documentation draft only and must be reviewed by a physician.",
-    terms5Title: "5. Availability",
+      "AI-generated text is a documentation draft and must be reviewed by a physician.",
+    terms5Title: "5. Review before production use",
     terms5Text:
-      "Prototype services may change, be interrupted or be removed.",
+      "Before production use, privacy, IT security, regulatory classification and clinical validation must be reviewed.",
     terms6Title: "6. Contact",
-    terms6Text:
-      "Questions about the prototype, partnerships or evaluation access can be sent through the contact form.",
+    terms6Text: "Questions can be sent by email to contact@klineus.de.",
 
     patientStartEyebrow: "Patient questionnaire",
-    patientStartTitle: "Start patient questionnaire",
-    patientIntro1:
-      "You will answer a few questions to prepare your doctor appointment.",
-    patientIntro2: "Your answers help prepare the doctor consultation.",
-    patientIntro3: "This is not a diagnosis. Your doctor will review all information.",
+    patientStartTitle: "Patient information",
+    patientIntro1: "Please enter the patient name.",
+    patientIntro2:
+      "Your answers help prepare the doctor consultation.",
+    patientIntro3:
+      "This is not a diagnosis. Your doctor will review all information.",
+    startPatientQuestionnaire: "Start questionnaire",
     startQuestionnaire: "Start questionnaire",
+
     doneTitle: "Thank you.",
     doneText:
-      "Your information has been submitted and will be reviewed by the doctor.",
+      "Your answers have been submitted and are available for the doctor to review.",
+
     home: "Home",
     back: "Back",
     next: "Next",
     submit: "Submit",
-    answerRequired: "Please answer the question before continuing.",
+    answerRequired: "Please answer this question.",
     heightCm: "Height in cm",
     weightKg: "Weight in kg",
 
@@ -464,16 +506,16 @@ const translations = {
     loadingCases: "Loading cases.",
     emptyCasesTitle: "No cases yet",
     emptyCasesText:
-      "After a patient questionnaire is submitted, the case will appear here.",
+      "Once patients start or submit a questionnaire, they will appear here.",
     caseId: "Case ID",
     created: "Created",
     updated: "Updated",
     indication: "Indication",
     status: "Status",
     report: "Report",
-    openCase: "Open case",
-    kneeTep: "Knee TEP",
-    hipTep: "Hip TEP",
+    openCase: "Open",
+    kneeTep: "Knee replacement",
+    hipTep: "Hip replacement",
     completed: "completed",
     pending: "pending",
     notGenerated: "not generated",
@@ -481,25 +523,24 @@ const translations = {
     edited: "edited",
 
     backToDashboard: "Back to dashboard",
-    kneeCase: "Knee TEP case",
-    hipCase: "Hip TEP case",
+    kneeCase: "Knee replacement case",
     deleteCase: "Delete case",
     deleteConfirm: "Delete this case?",
     loadingCase: "Loading case.",
     caseNotFound: "Case not found.",
     patientAnswers: "Patient answers",
-    documentationFlags: "Documentation flags",
-    aiReport: "AI report",
-    generateAiReport: "Generate AI report",
+    documentationFlags: "Documentation notes",
+    aiReport: "AI draft",
+    generateAiReport: "Generate AI draft",
     save: "Save",
     copy: "Copy",
     print: "Print",
-    reportGeneratedNotice: "AI report was generated.",
+    reportGeneratedNotice: "AI draft was created.",
     reportSavedNotice: "Report was saved.",
     reportCopiedNotice: "Report was copied.",
     noReportToCopy: "There is no report to copy yet.",
     reportPlaceholder:
-      "Generate an AI report. The draft can be edited manually before saving.",
+      "Generate an AI draft. The text must be reviewed by a physician.",
     printTitle: "Klineus documentation draft",
     noAnswer: "not provided",
     heightShort: "Height",
@@ -536,9 +577,9 @@ const flagTranslations = {
         "The patient reports no previous treatment. Conservative treatment history should be reviewed by the physician.",
     },
   },
-  "Radiologischer Nachweis offen": {
+  "Röntgenbefund unklar oder fehlend": {
     en: {
-      title: "Radiological evidence open",
+      title: "X-ray finding unclear or missing",
       description:
         "The patient reports no known X-ray or is unsure. Findings remain open for the consultation.",
     },
@@ -554,14 +595,14 @@ const flagTranslations = {
     en: {
       title: "Recent severe cardiovascular event reported",
       description:
-        "The patient reports an event in the last 3 months. Requires physician review.",
+        "The patient reports a severe cardiovascular event in the last 3 months. Requires physician review.",
     },
   },
   "Diabetes oder erhöhte Blutzuckerwerte berichtet": {
     en: {
       title: "Diabetes or elevated blood sugar reported",
       description:
-        "The patient reports diabetes or elevated blood sugar. Document as patient-reported risk information.",
+        "The patient reports diabetes or elevated blood sugar. HbA1c and preoperative management should be reviewed.",
     },
   },
   "BMI ab 40 berechnet": {
@@ -578,7 +619,7 @@ const flagTranslations = {
     en: {
       title: "Active smoking reported",
       description:
-        "The patient reports current smoking. Document as patient-reported risk information.",
+        "The patient reports current smoking. Nicotine abstinence and perioperative risk should be reviewed.",
     },
   },
   "Kortison-Injektion vor weniger als 6 Wochen berichtet": {
@@ -599,7 +640,7 @@ const flagTranslations = {
     en: {
       title: "Structured information complete",
       description:
-        "No configured orange or red documentation flags were generated from the patient answers.",
+        "No configured orange or red documentation notes were generated from the patient answers.",
     },
   },
 };
@@ -610,50 +651,43 @@ function normalizeLanguage(nextLanguage) {
   return nextLanguage === "en" ? "en" : "de";
 }
 
-function normalizeGermanFlagTitle(title) {
-  return String(title || "")
-    .replaceAll("Kuerzliches", "Kürzliches")
-    .replaceAll("kuerzliches", "kürzliches")
-    .replaceAll("erhoehte", "erhöhte")
-    .replaceAll("Erhoehte", "Erhöhte")
-    .replaceAll("vollstaendig", "vollständig")
-    .replaceAll("Vollstaendig", "Vollständig")
-    .replaceAll("Pruefung", "Prüfung")
-    .replaceAll("pruefung", "prüfung")
-    .replaceAll("aerztlich", "ärztlich")
-    .replaceAll("Aerztlich", "Ärztlich");
-}
-
 function translateFlagText(flag, language) {
-  if (language === "de" || !flag?.title) {
+  if (!flag) {
     return flag;
   }
 
-  const normalizedTitle = normalizeGermanFlagTitle(flag.title);
-  const translated =
-    flagTranslations[normalizedTitle]?.[language] ||
-    flagTranslations[flag.title]?.[language];
+  const cleanedFlag = {
+    ...flag,
+    title: cleanGermanText(flag.title),
+    description: cleanGermanText(flag.description),
+  };
+
+  if (language === "de" || !cleanedFlag.title) {
+    return cleanedFlag;
+  }
+
+  const translated = flagTranslations[cleanedFlag.title]?.[language];
 
   if (!translated) {
-    return flag;
+    return cleanedFlag;
   }
 
-  let description = translated.description || flag.description;
+  let description = translated.description || cleanedFlag.description;
 
-  if (normalizedTitle.includes("BMI") && flag.description) {
-    const bmi = flag.description.match(/BMI von ([0-9.]+)/)?.[1];
+  if (cleanedFlag.title.includes("BMI") && cleanedFlag.description) {
+    const bmi = cleanedFlag.description.match(/BMI von ([0-9.]+)/)?.[1];
 
     if (bmi) {
       description =
-        normalizedTitle === "BMI ab 40 berechnet"
+        cleanedFlag.title === "BMI ab 40 berechnet"
           ? `A BMI of ${bmi} was calculated from the answers. Requires physician review.`
           : `A BMI of ${bmi} was calculated from the answers. Review as modifiable risk information.`;
     }
   }
 
   return {
-    ...flag,
-    title: translated.title || flag.title,
+    ...cleanedFlag,
+    title: translated.title || cleanedFlag.title,
     description,
   };
 }
@@ -676,7 +710,11 @@ export function LanguageProvider({ children }) {
         setLanguageState(normalizeLanguage(nextLanguage)),
       toggleLanguage: () =>
         setLanguageState((current) => (current === "de" ? "en" : "de")),
-      t: (key) => translations[language]?.[key] || translations.de[key] || key,
+      t: (key) => {
+        const rawValue = translations[language]?.[key] || translations.de[key] || key;
+
+        return language === "de" ? cleanGermanText(rawValue) : rawValue;
+      },
       translateFlag: (flag) => translateFlagText(flag, language),
     }),
     [language],

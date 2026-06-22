@@ -62,9 +62,7 @@ export default function QuestionInput({
           return (
             <button
               className={
-                value === optionValue
-                  ? "choice-button selected"
-                  : "choice-button"
+                value === optionValue ? "choice-button selected" : "choice-button"
               }
               key={optionValue}
               type="button"
@@ -118,7 +116,6 @@ export default function QuestionInput({
         {needsDetails ? (
           <label className="question-detail-field">
             <span>{detailsLabel}</span>
-
             <textarea
               aria-label={detailsLabel}
               rows="4"
@@ -186,7 +183,11 @@ export default function QuestionInput({
           <div className="number-grid">
             <label>
               <span>
-                {localText(language, "Packungen pro Tag", "Packs per day")}
+                {localText(
+                  language,
+                  "Packungen pro Tag",
+                  "Packs per day",
+                )}
               </span>
 
               <input
@@ -206,7 +207,11 @@ export default function QuestionInput({
 
             <label>
               <span>
-                {localText(language, "Raucherjahre", "Years of smoking")}
+                {localText(
+                  language,
+                  "Raucherjahre",
+                  "Years of smoking",
+                )}
               </span>
 
               <input
@@ -262,9 +267,7 @@ export default function QuestionInput({
 
           return (
             <button
-              className={
-                isSelected ? "choice-button selected" : "choice-button"
-              }
+              className={isSelected ? "choice-button selected" : "choice-button"}
               key={optionValue}
               type="button"
               onClick={() => {
