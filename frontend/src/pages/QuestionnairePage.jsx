@@ -14,9 +14,6 @@ import {
 } from "../data/questionnaire.js";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 
-const PATIENT_DOCUMENT_CHECKLIST_STORAGE_KEY =
-  "klineus_patient_document_checklist";
-
 const PATIENT_IDENTITY_STORAGE_KEY = "klineus_patient_identity";
 
 function localText(language, de, en) {
@@ -36,6 +33,22 @@ function normalizeIndication(value) {
   return "knee_tep";
 }
 
+function emptyPatientIdentity() {
+  return {
+    session_id: "",
+    patient_name: "",
+    patient_last_name: "",
+    patient_email: "",
+    insurance_id: "",
+    indication: "",
+    questionnaire_template_id: "",
+    questionnaire_version: null,
+    answers: {},
+    metadata: {},
+    current_question_id: "",
+  };
+}
+
 function readPatientIdentity() {
   try {
     const rawValue = window.sessionStorage.getItem(
@@ -43,16 +56,7 @@ function readPatientIdentity() {
     );
 
     if (!rawValue) {
-      return {
-        session_id: "",
-        patient_name: "",
-        patient_last_name: "",
-        patient_email: "",
-        insurance_id: "",
-        indication: "",
-        answers: {},
-        current_question_id: "",
-      };
+      return emptyPatientIdentity();
     }
 
     const parsedValue = JSON.parse(rawValue);
@@ -64,20 +68,14 @@ function readPatientIdentity() {
       patient_email: parsedValue.patient_email || "",
       insurance_id: parsedValue.insurance_id || "",
       indication: parsedValue.indication || "",
+      questionnaire_template_id: parsedValue.questionnaire_template_id || "",
+      questionnaire_version: parsedValue.questionnaire_version || null,
       answers: parsedValue.answers || {},
+      metadata: parsedValue.metadata || {},
       current_question_id: parsedValue.current_question_id || "",
     };
   } catch {
-    return {
-      session_id: "",
-      patient_name: "",
-      patient_last_name: "",
-      patient_email: "",
-      insurance_id: "",
-      indication: "",
-      answers: {},
-      current_question_id: "",
-    };
+    return emptyPatientIdentity();
   }
 }
 
@@ -138,68 +136,6 @@ function serialiseAnswer(answer) {
   return answer;
 }
 
-function answerStartsWithYes(value) {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return String(value.value || "").trim().toLowerCase().startsWith("ja");
-  }
-
-  return String(value || "").trim().toLowerCase().startsWith("ja");
-}
-
-function buildPatientDocumentChecklist(indication, nextAnswers) {
-  const documents = [];
-
-  if (indication === "hip_tep") {
-    if (answerStartsWithYes(nextAnswers.D2)) {
-      documents.push({
-        id: "hip_findings",
-        title: "Arztbriefe, Röntgenbilder oder Befunde zur Hüfte",
-        description:
-          "Bitte bringen Sie vorhandene Unterlagen zu Ihrer Hüfte zum Termin mit.",
-      });
-    }
-
-    if (answerStartsWithYes(nextAnswers.E6)) {
-      documents.push({
-        id: "hip_labs",
-        title: "Letzte Laborergebnisse / HbA1c-Wert",
-        description:
-          "Bitte bringen Sie vorhandene Laborwerte, insbesondere HbA1c, zum Termin mit.",
-      });
-    }
-  } else {
-    if (answerStartsWithYes(nextAnswers.D1)) {
-      documents.push({
-        id: "knee_findings",
-        title: "Arztbriefe, Röntgenbilder oder Befunde zum Knie",
-        description:
-          "Bitte bringen Sie vorhandene Unterlagen zu Ihrem Knie zum Termin mit.",
-      });
-    }
-
-    if (answerStartsWithYes(nextAnswers.E3)) {
-      documents.push({
-        id: "knee_discharge_letters",
-        title: "Entlassungsbriefe zum Herz-Kreislauf-Ereignis",
-        description:
-          "Bitte bringen Sie vorhandene Entlassungsbriefe oder Befunde zum Herzinfarkt, Schlaganfall oder schweren Herz-Kreislauf-Ereignis mit.",
-      });
-    }
-  }
-
-  if (documents.length === 0) {
-    documents.push({
-      id: "no_specific_documents",
-      title: "Keine speziellen Zusatzunterlagen aus Ihren Antworten abgeleitet",
-      description:
-        "Falls Sie trotzdem aktuelle Arztbriefe, Röntgenbilder, Befunde oder Laborwerte haben, bringen Sie diese bitte zum Termin mit.",
-    });
-  }
-
-  return documents;
-}
-
-
 export default function QuestionnairePage() {
   const navigate = useNavigate();
   const params = useParams();
@@ -207,7 +143,6 @@ export default function QuestionnairePage() {
   const { language, t } = useLanguage();
 
   const startedAtRef = useRef(Date.now());
-
   const didRestoreResumeRef = useRef(false);
 
   const [patientIdentity] = useState(() => readPatientIdentity());
@@ -291,8 +226,24 @@ export default function QuestionnairePage() {
     ? Math.round(((currentIndex + 1) / visibleQuestions.length) * 100)
     : 0;
 
+  function getPatientPayload() {
+    return {
+      session_id: patientIdentity.session_id || "",
+      patient_name: patientIdentity.patient_name || "",
+      patient_last_name: patientIdentity.patient_last_name || "",
+      patient_email: patientIdentity.patient_email || "",
+      insurance_id: patientIdentity.insurance_id || "",
+      questionnaire_template_id:
+        patientIdentity.questionnaire_template_id || questionnaire.id || "",
+      questionnaire_version:
+        patientIdentity.questionnaire_version || questionnaire.version || null,
+    };
+  }
+
   function updateAnswer(nextValue) {
-    if (!currentQuestion) return;
+    if (!currentQuestion) {
+      return;
+    }
 
     setAnswers((previous) => ({
       ...previous,
@@ -345,6 +296,7 @@ export default function QuestionnairePage() {
       return;
     }
 
+    const patientPayload = getPatientPayload();
     const nextVisibleQuestions = getVisibleQuestions(allQuestions, nextAnswers);
     const payloadAnswers = buildPayload(nextAnswers, nextVisibleQuestions);
 
@@ -352,14 +304,8 @@ export default function QuestionnairePage() {
       setIsSavingProgress(true);
 
       await api.saveQuestionnaireProgress({
-        session_id: patientIdentity.session_id,
+        ...patientPayload,
         indication,
-        patient_name: patientIdentity.patient_name,
-        patient_last_name: patientIdentity.patient_last_name,
-        patient_email: patientIdentity.patient_email,
-        insurance_id: patientIdentity.insurance_id,
-        questionnaire_template_id: questionnaire.id,
-        questionnaire_version: questionnaire.version,
         answers: payloadAnswers,
         metadata: buildMetadata(nextVisibleQuestions.length),
         current_question_id: nextQuestionId,
@@ -369,12 +315,13 @@ export default function QuestionnairePage() {
         PATIENT_IDENTITY_STORAGE_KEY,
         JSON.stringify({
           ...patientIdentity,
+          ...patientPayload,
           indication,
           answers: nextAnswers,
           current_question_id: nextQuestionId,
         }),
       );
-    }   catch (saveError) {
+    } catch (saveError) {
       console.error("Questionnaire progress save failed:", saveError);
 
       setNotice(
@@ -393,25 +340,20 @@ export default function QuestionnairePage() {
     setError("");
     setNotice("");
 
-    if (
-      !patientIdentity.patient_name ||
-      !patientIdentity.patient_last_name ||
-      !patientIdentity.patient_email ||
-      !patientIdentity.insurance_id
-    ) {
+    if (!patientIdentity.patient_name) {
       setError(
         localText(
           language,
-          "Patientendaten fehlen. Bitte starten Sie den Fragebogen erneut über die Startseite.",
-          "Patient details are missing. Please restart the questionnaire from the start page.",
+          "Bitte starten Sie den Fragebogen erneut über die Patientenseite.",
+          "Please restart the questionnaire from the patient page.",
         ),
       );
-
       return;
     }
 
     setIsSubmitting(true);
 
+    const patientPayload = getPatientPayload();
     const finalVisibleQuestions = getVisibleQuestions(allQuestions, nextAnswers);
     const payloadAnswers = buildPayload(nextAnswers, finalVisibleQuestions);
 
@@ -420,30 +362,11 @@ export default function QuestionnairePage() {
         payloadAnswers,
         buildMetadata(finalVisibleQuestions.length),
         indication,
-        {
-          session_id: patientIdentity.session_id,
-          patient_name: patientIdentity.patient_name,
-          patient_last_name: patientIdentity.patient_last_name,
-          patient_email: patientIdentity.patient_email,
-          insurance_id: patientIdentity.insurance_id,
-          questionnaire_template_id: questionnaire.id,
-          questionnaire_version: questionnaire.version,
-        },
-      );
-
-      window.sessionStorage.setItem(
-        PATIENT_DOCUMENT_CHECKLIST_STORAGE_KEY,
-        JSON.stringify(
-          buildPatientDocumentChecklist(indication, nextAnswers),
-        ),
-      );
-
-           window.sessionStorage.setItem(
-        PATIENT_DOCUMENT_CHECKLIST_STORAGE_KEY,
-        JSON.stringify(createdCase?.documents_to_bring || []),
+        patientPayload,
       );
 
       window.sessionStorage.removeItem(PATIENT_IDENTITY_STORAGE_KEY);
+
       if (createdCase?.case_id) {
         navigate(`/patient/done/${createdCase.case_id}`);
       } else {
@@ -463,49 +386,51 @@ export default function QuestionnairePage() {
     }
   }
 
-async function handleForward() {
-  if (!currentQuestion) return;
+  async function handleForward() {
+    if (!currentQuestion) {
+      return;
+    }
 
-  setError("");
-  setNotice("");
+    setError("");
+    setNotice("");
 
-  const nextAnswers = {
-    ...answers,
-    [currentQuestion.id]: value,
-  };
+    const nextAnswers = {
+      ...answers,
+      [currentQuestion.id]: value,
+    };
 
-  if (!isAnswerComplete(currentQuestion, value)) {
-    setError(
-      t("answerRequired") ||
-        localText(
-          language,
-          "Bitte beantworten Sie diese Frage.",
-          "Please answer this question.",
-        ),
+    if (!isAnswerComplete(currentQuestion, value)) {
+      setError(
+        t("answerRequired") ||
+          localText(
+            language,
+            "Bitte beantworten Sie diese Frage.",
+            "Please answer this question.",
+          ),
+      );
+      return;
+    }
+
+    setAnswers(nextAnswers);
+
+    if (isLastQuestion) {
+      await submitQuestionnaire(nextAnswers);
+      return;
+    }
+
+    const nextVisibleQuestions = getVisibleQuestions(allQuestions, nextAnswers);
+    const nextIndex = Math.min(
+      currentIndex + 1,
+      nextVisibleQuestions.length - 1,
     );
+    const nextQuestionId = nextVisibleQuestions[nextIndex]?.id || "";
 
-    return;
+    await saveProgress(nextAnswers, nextQuestionId);
+
+    setCurrentIndex(nextIndex);
+    setError("");
   }
 
-  setAnswers(nextAnswers);
-
-  if (isLastQuestion) {
-    await submitQuestionnaire(nextAnswers);
-    return;
-  }
-
-  const nextVisibleQuestions = getVisibleQuestions(allQuestions, nextAnswers);
-  const nextIndex = Math.min(
-    currentIndex + 1,
-    nextVisibleQuestions.length - 1,
-  );
-  const nextQuestionId = nextVisibleQuestions[nextIndex]?.id || "";
-
-  await saveProgress(nextAnswers, nextQuestionId);
-
-  setCurrentIndex(nextIndex);
-  setError("");
-}
   function handleBack() {
     setCurrentIndex((index) => Math.max(index - 1, 0));
     setError("");
@@ -519,7 +444,7 @@ async function handleForward() {
 
   if (!currentQuestion) {
     return (
-      <AppShell compact>
+      <AppShell compact hideNav>
         <section className="questionnaire-card questionnaire-card-pro">
           <p className="form-error">
             {localText(
@@ -534,28 +459,14 @@ async function handleForward() {
   }
 
   return (
-    <AppShell compact>
+    <AppShell compact hideNav>
       <section className="questionnaire-card questionnaire-card-pro">
         <div className="questionnaire-progress-panel">
           <div className="questionnaire-progress-topline">
-            <div>
-              <p className="questionnaire-progress-kicker">
-                {questionnaire.labels?.[language] ||
-                  questionnaire.labels?.de ||
-                  localText(language, "Fragebogen", "Questionnaire")}
-              </p>
-
-              <strong>
-                {currentQuestion.blockLabels?.[language] ||
-                  currentQuestion.blockLabels?.de ||
-                  currentQuestion.blockTitle}
-              </strong>
-            </div>
-
-            <span>
-              {localText(language, "Schritt", "Step")} {currentIndex + 1}{" "}
+            <strong>
+              {localText(language, "Frage", "Question")} {currentIndex + 1}{" "}
               {localText(language, "von", "of")} {visibleQuestions.length}
-            </span>
+            </strong>
           </div>
 
           <div
@@ -575,21 +486,13 @@ async function handleForward() {
           <div className="questionnaire-progress-footer">
             <span>{progress}%</span>
 
-            <span>
-              {isSavingProgress
-                ? localText(language, "Speichert…", "Saving…")
-                : localText(
-                    language,
-                    "Eine Frage pro Bildschirm",
-                    "One question per screen",
-                  )}
-            </span>
+            {isSavingProgress ? (
+              <span>{localText(language, "Speichert…", "Saving…")}</span>
+            ) : null}
           </div>
         </div>
 
         <div className="questionnaire-question-shell">
-          <p className="question-id">{currentQuestion.id}</p>
-
           <h1>{getQuestionText(currentQuestion, language)}</h1>
 
           {currentQuestion.helpText?.[language] ||

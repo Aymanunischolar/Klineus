@@ -15,7 +15,7 @@ export default function PatientResumePage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
 
-  const [patientLastName, setPatientLastName] = useState("");
+  const [patientName, setPatientName] = useState("");
   const [resumeCode, setResumeCode] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -23,17 +23,17 @@ export default function PatientResumePage() {
   async function handleResume(event) {
     event.preventDefault();
 
-    const cleanLastName = patientLastName.trim();
+    const cleanPatientName = patientName.trim();
     const cleanResumeCode = resumeCode.trim();
 
     setError("");
 
-    if (!cleanLastName || !cleanResumeCode) {
+    if (!cleanPatientName || !cleanResumeCode) {
       setError(
         localText(
           language,
-          "Bitte geben Sie Nachname und Zugangscode ein.",
-          "Please enter last name and access code.",
+          "Bitte geben Sie Patientenname und Zugangscode ein.",
+          "Please enter patient name and access code.",
         ),
       );
       return;
@@ -54,19 +54,21 @@ export default function PatientResumePage() {
       setIsLoading(true);
 
       const session = await api.resumePatientQuestionnaireSession({
-        patient_last_name: cleanLastName,
+        patient_name: cleanPatientName,
         resume_code: cleanResumeCode,
       });
+
+      const indication = session.indication || "knee_tep";
 
       window.sessionStorage.setItem(
         PATIENT_IDENTITY_STORAGE_KEY,
         JSON.stringify({
           session_id: session.session_id,
-          patient_name: session.patient_name || "",
-          patient_last_name: session.patient_last_name || cleanLastName,
+          patient_name: session.patient_name || cleanPatientName,
+          patient_last_name: session.patient_last_name || "",
           patient_email: session.patient_email || "",
           insurance_id: session.insurance_id || "",
-          indication: session.indication || "knee_tep",
+          indication,
           questionnaire_template_id: session.questionnaire_template_id || "",
           questionnaire_version: session.questionnaire_version || null,
           answers: session.answers || [],
@@ -75,14 +77,14 @@ export default function PatientResumePage() {
         }),
       );
 
-      navigate(`/patient/questionnaire/${session.indication || "knee_tep"}`);
+      navigate(`/patient/questionnaire/${indication}`);
     } catch (resumeError) {
       setError(
         resumeError?.message ||
           localText(
             language,
-            "Es wurde kein aktiver Fragebogen für diesen Nachnamen und Code gefunden.",
-            "No active questionnaire was found for this last name and code.",
+            "Es wurde kein aktiver Fragebogen für diesen Namen und Code gefunden.",
+            "No active questionnaire was found for this name and code.",
           ),
       );
     } finally {
@@ -108,27 +110,27 @@ export default function PatientResumePage() {
         <p className="patient-start-lead">
           {localText(
             language,
-            "Geben Sie Ihren Nachnamen und den vierstelligen Zugangscode aus der E-Mail ein.",
-            "Enter your last name and the four-digit access code from the email.",
+            "Geben Sie Ihren Patientennamen und den vierstelligen Zugangscode ein.",
+            "Enter your patient name and the four-digit access code.",
           )}
         </p>
 
         <form className="patient-identity-panel" onSubmit={handleResume}>
           <div className="patient-identity-grid">
             <label>
-              <span>{localText(language, "Nachname", "Last name")}</span>
+              <span>{localText(language, "Patientenname", "Patient name")}</span>
 
               <input
-                autoComplete="family-name"
+                autoComplete="name"
                 placeholder={localText(
                   language,
-                  "z. B. Mustermann",
-                  "e.g. Mustermann",
+                  "z. B. Max Mustermann",
+                  "e.g. Max Mustermann",
                 )}
                 type="text"
-                value={patientLastName}
+                value={patientName}
                 onChange={(event) => {
-                  setPatientLastName(event.target.value);
+                  setPatientName(event.target.value);
                   setError("");
                 }}
               />

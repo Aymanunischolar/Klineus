@@ -16,34 +16,27 @@ export default function PatientStartPage() {
   const { language } = useLanguage();
 
   const [patientName, setPatientName] = useState("");
-  const [patientLastName, setPatientLastName] = useState("");
-  const [patientEmail, setPatientEmail] = useState("");
-  const [insuranceId, setInsuranceId] = useState("");
-
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [isStarting, setIsStarting] = useState(false);
 
+  function clearMessages() {
+    setError("");
+    setNotice("");
+  }
+
   async function openQuestionnaire(indication) {
     const cleanPatientName = patientName.trim();
-    const cleanPatientLastName = patientLastName.trim();
-    const cleanPatientEmail = patientEmail.trim();
-    const cleanInsuranceId = insuranceId.trim();
 
     setError("");
     setNotice("");
 
-    if (
-      !cleanPatientName ||
-      !cleanPatientLastName ||
-      !cleanPatientEmail ||
-      !cleanInsuranceId
-    ) {
+    if (!cleanPatientName) {
       setError(
         localText(
           language,
-          "Bitte geben Sie Patientenname, Nachname, E-Mail und Versicherungsnummer ein.",
-          "Please enter patient name, last name, email and insurance ID.",
+          "Bitte geben Sie den Patientennamen ein.",
+          "Please enter the patient name.",
         ),
       );
       return;
@@ -54,9 +47,6 @@ export default function PatientStartPage() {
 
       const session = await api.startPatientQuestionnaireSession({
         patient_name: cleanPatientName,
-        patient_last_name: cleanPatientLastName,
-        patient_email: cleanPatientEmail,
-        insurance_id: cleanInsuranceId,
         indication,
       });
 
@@ -64,11 +54,16 @@ export default function PatientStartPage() {
         PATIENT_IDENTITY_STORAGE_KEY,
         JSON.stringify({
           session_id: session.session_id,
-          patient_name: cleanPatientName,
-          patient_last_name: cleanPatientLastName,
-          patient_email: cleanPatientEmail,
-          insurance_id: cleanInsuranceId,
+          patient_name: session.patient_name || cleanPatientName,
+          patient_last_name: session.patient_last_name || "",
+          patient_email: session.patient_email || "",
+          insurance_id: session.insurance_id || "",
           indication,
+          questionnaire_template_id: session.questionnaire_template_id || "",
+          questionnaire_version: session.questionnaire_version || null,
+          answers: session.answers || {},
+          metadata: session.metadata || {},
+          current_question_id: session.current_question_id || "",
         }),
       );
 
@@ -77,7 +72,7 @@ export default function PatientStartPage() {
           localText(
             language,
             `Testmodus: Ihr Zugangscode lautet ${session.resume_code}.`,
-            `Test mode: your resume code is ${session.resume_code}.`,
+            `Test mode: your access code is ${session.resume_code}.`,
           ),
         );
       }
@@ -97,11 +92,6 @@ export default function PatientStartPage() {
     }
   }
 
-  function clearMessages() {
-    setError("");
-    setNotice("");
-  }
-
   return (
     <AppShell compact>
       <section className="patient-card patient-start-card">
@@ -111,17 +101,17 @@ export default function PatientStartPage() {
 
         <h1>
           {localText(
-              language,
-              "Bereiten Sie Ihren Termin strukturiert vor.",
-              "Prepare your appointment in a structured way.",
+            language,
+            "Bereiten Sie Ihren Termin strukturiert vor.",
+            "Prepare your appointment in a structured way.",
           )}
         </h1>
 
         <p className="patient-start-lead">
           {localText(
-              language,
-              "Bitte geben Sie zuerst Ihre Daten für die ärztliche Zuordnung ein. Danach wählen Sie den passenden Fragebogen aus.",
-              "Please enter your details for doctor-side identification first. Then select the matching questionnaire.",
+            language,
+            "Bitte geben Sie Ihren Patientennamen ein. Danach wählen Sie den passenden Fragebogen aus.",
+            "Please enter your patient name. Then select the matching questionnaire.",
           )}
         </p>
 
@@ -129,224 +119,152 @@ export default function PatientStartPage() {
           <div>
             <strong>
               {localText(
-                  language,
-                  "Sie haben bereits einen Zugangscode?",
-                  "Already have an access code?",
+                language,
+                "Sie haben bereits einen Zugangscode?",
+                "Already have an access code?",
               )}
             </strong>
 
             <p>
               {localText(
-                  language,
-                  "Setzen Sie Ihren Fragebogen mit Nachname und vierstelligem Code fort.",
-                  "Continue your questionnaire with your last name and four-digit code.",
+                language,
+                "Setzen Sie Ihren Fragebogen mit Patientennamen und vierstelligem Code fort.",
+                "Continue your questionnaire with your patient name and four-digit code.",
               )}
             </p>
           </div>
 
           <button
-              className="secondary-button"
-              type="button"
-              onClick={() => navigate("/patient/resume")}
+            className="secondary-button"
+            type="button"
+            onClick={() => navigate("/patient/resume")}
           >
             {localText(
-                language,
-                "Fragebogen fortsetzen",
-                "Resume questionnaire",
+              language,
+              "Fragebogen fortsetzen",
+              "Resume questionnaire",
             )}
           </button>
         </div>
 
+        <div className="patient-identity-panel">
+          <div className="patient-identity-heading">
+            <p className="eyebrow">
+              {localText(language, "Patientendaten", "Patient details")}
+            </p>
 
-          <div className="patient-identity-panel">
-            <div className="patient-identity-heading">
-              <p className="eyebrow">
-                {localText(language, "Patientendaten", "Patient details")}
-              </p>
-
-              <h2>
-                {localText(
-                    language,
-                    "Angaben für Arzt und Zugangscode",
-                    "Details for doctor and resume code",
-                )}
-              </h2>
-
-              <p>
-                {localText(
-                    language,
-                    "Sie erhalten einen vierstelligen Zugangscode per E-Mail. Damit können Sie den Fragebogen später mit Ihrem Nachnamen fortsetzen.",
-                    "You will receive a four-digit code by email. You can use it with your last name to continue the questionnaire later.",
-                )}
-              </p>
-            </div>
-
-            <div className="patient-identity-grid">
-              <label>
-              <span>
-                {localText(language, "Patientenname", "Patient name")}
-              </span>
-
-                <input
-                    autoComplete="name"
-                    placeholder={localText(
-                        language,
-                        "z. B. Max Mustermann",
-                        "e.g. Max Mustermann",
-                    )}
-                    type="text"
-                    value={patientName}
-                    onChange={(event) => {
-                      setPatientName(event.target.value);
-                      clearMessages();
-                    }}
-                />
-              </label>
-
-              <label>
-                <span>{localText(language, "Nachname", "Last name")}</span>
-
-                <input
-                    autoComplete="family-name"
-                    placeholder={localText(
-                        language,
-                        "z. B. Mustermann",
-                        "e.g. Mustermann",
-                    )}
-                    type="text"
-                    value={patientLastName}
-                    onChange={(event) => {
-                      setPatientLastName(event.target.value);
-                      clearMessages();
-                    }}
-                />
-              </label>
-
-              <label>
-                <span>{localText(language, "E-Mail", "Email")}</span>
-
-                <input
-                    autoComplete="email"
-                    placeholder={localText(
-                        language,
-                        "z. B. patient@example.com",
-                        "e.g. patient@example.com",
-                    )}
-                    type="email"
-                    value={patientEmail}
-                    onChange={(event) => {
-                      setPatientEmail(event.target.value);
-                      clearMessages();
-                    }}
-                />
-              </label>
-
-              <label>
-              <span>
-                {localText(
-                    language,
-                    "Versicherungsnummer",
-                    "Insurance ID",
-                )}
-              </span>
-
-                <input
-                    autoComplete="off"
-                    placeholder={localText(
-                        language,
-                        "z. B. A123456789",
-                        "e.g. A123456789",
-                    )}
-                    type="text"
-                    value={insuranceId}
-                    onChange={(event) => {
-                      setInsuranceId(event.target.value);
-                      clearMessages();
-                    }}
-                />
-              </label>
-            </div>
-          </div>
-
-          {error ? <p className="form-error">{error}</p> : null}
-          {notice ? <p className="form-notice">{notice}</p> : null}
-
-          <div className="patient-intro-grid">
-            <button
-                className="patient-info-card patient-info-card-button"
-                disabled={isStarting}
-                type="button"
-                onClick={() => openQuestionnaire("knee_tep")}
-            >
-              <div className="joint-choice-image">
-                <img alt="" src="/static/images/knee.png"/>
-              </div>
-
-              <h2>Knie-TEP</h2>
-
-              <p>
-                {localText(
-                    language,
-                    "Fragebogen für Beschwerden, Alltagseinschränkungen, bisherige Behandlung und Risikofaktoren rund um das Knie.",
-                    "Questionnaire for symptoms, daily limitations, previous treatment and risk factors related to the knee.",
-                )}
-              </p>
-
-              <span className="text-link">
-              {isStarting
-                  ? localText(language, "Wird vorbereitet…", "Preparing…")
-                  : localText(
-                      language,
-                      "Knie-Fragebogen starten",
-                      "Start knee questionnaire",
-                  )}
-            </span>
-            </button>
-
-            <button
-                className="patient-info-card patient-info-card-button"
-                disabled={isStarting}
-                type="button"
-                onClick={() => openQuestionnaire("hip_tep")}
-            >
-              <div className="joint-choice-image">
-                <img alt="" src="/static/images/hip.png"/>
-              </div>
-
-              <h2>Hüft-TEP</h2>
-
-              <p>
-                {localText(
-                    language,
-                    "Fragebogen für hüftbezogene Beschwerden, Funktion, konservative Therapie und medizinische Risikofaktoren.",
-                    "Questionnaire for hip-related symptoms, function, conservative treatment and medical risk factors.",
-                )}
-              </p>
-
-              <span className="text-link">
-              {isStarting
-                  ? localText(language, "Wird vorbereitet…", "Preparing…")
-                  : localText(
-                      language,
-                      "Hüft-Fragebogen starten",
-                      "Start hip questionnaire",
-                  )}
-            </span>
-            </button>
-          </div>
-
-          <div className="patient-start-note">
-            <strong>{localText(language, "Wichtig", "Important")}</strong>
+            <h2>{localText(language, "Patientenname", "Patient name")}</h2>
 
             <p>
               {localText(
-                  language,
-                  "Die Auswertung ist nur für das ärztliche Dashboard bestimmt. Am Ende sehen Sie lediglich eine Bestätigung, dass Ihre Eingaben übermittelt wurden.",
-                  "The evaluation is only intended for the doctor dashboard. At the end, you will only see a confirmation that your answers were submitted.",
+                language,
+                "Der Patientenname dient der ärztlichen Zuordnung des Fragebogens.",
+                "The patient name is used by the doctor to assign the questionnaire.",
               )}
             </p>
           </div>
+
+          <div className="patient-identity-grid patient-identity-grid-single">
+            <label>
+              <span>{localText(language, "Patientenname", "Patient name")}</span>
+
+              <input
+                autoComplete="name"
+                placeholder={localText(
+                  language,
+                  "z. B. Max Mustermann",
+                  "e.g. Max Mustermann",
+                )}
+                type="text"
+                value={patientName}
+                onChange={(event) => {
+                  setPatientName(event.target.value);
+                  clearMessages();
+                }}
+              />
+            </label>
+          </div>
+        </div>
+
+        {error ? <p className="form-error">{error}</p> : null}
+        {notice ? <p className="form-notice">{notice}</p> : null}
+
+        <div className="patient-intro-grid">
+          <button
+            className="patient-info-card patient-info-card-button"
+            disabled={isStarting}
+            type="button"
+            onClick={() => openQuestionnaire("knee_tep")}
+          >
+            <div className="joint-choice-image">
+              <img alt="" src="/static/images/knee.png" />
+            </div>
+
+            <h2>Knie-TEP</h2>
+
+            <p>
+              {localText(
+                language,
+                "Fragebogen für Beschwerden, Alltagseinschränkungen, bisherige Behandlung und Risikofaktoren rund um das Knie.",
+                "Questionnaire for symptoms, daily limitations, previous treatment and risk factors related to the knee.",
+              )}
+            </p>
+
+            <span className="text-link">
+              {isStarting
+                ? localText(language, "Wird vorbereitet…", "Preparing…")
+                : localText(
+                    language,
+                    "Knie-Fragebogen starten",
+                    "Start knee questionnaire",
+                  )}
+            </span>
+          </button>
+
+          <button
+            className="patient-info-card patient-info-card-button"
+            disabled={isStarting}
+            type="button"
+            onClick={() => openQuestionnaire("hip_tep")}
+          >
+            <div className="joint-choice-image">
+              <img alt="" src="/static/images/hip.png" />
+            </div>
+
+            <h2>Hüft-TEP</h2>
+
+            <p>
+              {localText(
+                language,
+                "Fragebogen für hüftbezogene Beschwerden, Funktion, konservative Therapie und medizinische Risikofaktoren.",
+                "Questionnaire for hip-related symptoms, function, conservative treatment and medical risk factors.",
+              )}
+            </p>
+
+            <span className="text-link">
+              {isStarting
+                ? localText(language, "Wird vorbereitet…", "Preparing…")
+                : localText(
+                    language,
+                    "Hüft-Fragebogen starten",
+                    "Start hip questionnaire",
+                  )}
+            </span>
+          </button>
+        </div>
+
+        <div className="patient-start-note">
+          <strong>{localText(language, "Wichtig", "Important")}</strong>
+
+          <p>
+            {localText(
+              language,
+              "Die Auswertung ist nur für das ärztliche Dashboard bestimmt. Am Ende sehen Sie lediglich eine Bestätigung, dass Ihre Eingaben übermittelt wurden.",
+              "The evaluation is only intended for the doctor dashboard. At the end, you will only see a confirmation that your answers were submitted.",
+            )}
+          </p>
+        </div>
       </section>
     </AppShell>
-);
+  );
 }

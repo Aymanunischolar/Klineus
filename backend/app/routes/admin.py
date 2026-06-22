@@ -45,6 +45,9 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin)],
 )
 
+FALLBACK_PATIENT_VALUE = "not-provided"
+FALLBACK_PATIENT_EMAIL = "not-provided@klineus.local"
+
 
 def to_plain_data(value: Any) -> dict[str, Any]:
     if value is None:
@@ -57,6 +60,32 @@ def to_plain_data(value: Any) -> dict[str, Any]:
         return value.dict()
 
     return dict(value)
+
+
+def clean_string(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def is_fallback_patient_value(value: Any) -> bool:
+    cleaned = clean_string(value).lower()
+
+    return cleaned in {
+        "",
+        FALLBACK_PATIENT_VALUE,
+        FALLBACK_PATIENT_EMAIL,
+    }
+
+
+def clean_patient_value(value: Any, *, is_email: bool = False) -> str | None:
+    cleaned = clean_string(value)
+
+    if is_fallback_patient_value(cleaned):
+        return None
+
+    if is_email and cleaned.lower().endswith("@klineus.local"):
+        return None
+
+    return cleaned
 
 
 def average(values: list[Any]) -> float | None:
@@ -85,14 +114,20 @@ def get_indication_label(indication: str) -> str:
 def case_to_summary(case) -> PatientCaseSummary:
     metadata = case.metadata if isinstance(case.metadata, dict) else {}
 
-    def pick(field_name: str, *metadata_keys: str):
-        direct_value = getattr(case, field_name, None)
+    def pick(field_name: str, *metadata_keys: str, is_email: bool = False):
+        direct_value = clean_patient_value(
+            getattr(case, field_name, None),
+            is_email=is_email,
+        )
 
         if direct_value:
             return direct_value
 
         for key in metadata_keys:
-            metadata_value = metadata.get(key)
+            metadata_value = clean_patient_value(
+                metadata.get(key),
+                is_email=is_email,
+            )
 
             if metadata_value:
                 return metadata_value
@@ -118,7 +153,6 @@ def case_to_summary(case) -> PatientCaseSummary:
         created_at=case.created_at,
         updated_at=case.updated_at,
         indication=case.indication,
-
         patient_name=pick(
             "patient_name",
             "patient_name",
@@ -137,6 +171,7 @@ def case_to_summary(case) -> PatientCaseSummary:
             "patient_email",
             "patientEmail",
             "email",
+            is_email=True,
         ),
         insurance_id=pick(
             "insurance_id",
@@ -148,14 +183,12 @@ def case_to_summary(case) -> PatientCaseSummary:
             "session_id",
             "sessionId",
         ),
-
         questionnaire_template_id=pick(
             "questionnaire_template_id",
             "questionnaire_template_id",
             "questionnaireTemplateId",
         ),
         questionnaire_version=questionnaire_version,
-
         status=case.status,
         report_status=case.report_status,
         report_generated_at=case.report_generated_at,
@@ -198,16 +231,19 @@ def build_form_type_stats(cases) -> list[FormTypeStats]:
         fill_durations = [
             case.metadata.get("fill_duration_seconds")
             for case in indication_cases
+            if isinstance(case.metadata, dict)
         ]
 
         page_load_times = [
             case.metadata.get("page_load_ms")
             for case in indication_cases
+            if isinstance(case.metadata, dict)
         ]
 
         question_counts = [
             case.metadata.get("question_count")
             for case in indication_cases
+            if isinstance(case.metadata, dict)
         ]
 
         stats.append(
@@ -575,21 +611,25 @@ def get_analytics() -> AnalyticsSummary:
     fill_durations = [
         case.metadata.get("fill_duration_seconds")
         for case in cases
+        if isinstance(case.metadata, dict)
     ]
 
     page_load_times = [
         case.metadata.get("page_load_ms")
         for case in cases
+        if isinstance(case.metadata, dict)
     ]
 
     question_counts = [
         case.metadata.get("question_count")
         for case in cases
+        if isinstance(case.metadata, dict)
     ]
 
     languages = [
         case.metadata.get("language", "unknown")
         for case in cases
+        if isinstance(case.metadata, dict)
     ]
 
     indications = [

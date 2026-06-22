@@ -278,11 +278,7 @@ class QuestionnaireConfigResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Patient cases replace from here
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-# Patient cases
+# Patient questionnaire / cases
 # ---------------------------------------------------------------------------
 
 class QuestionnaireAnswer(BaseModel):
@@ -307,10 +303,10 @@ class CaseClientMetadata(BaseModel):
 
 class StartPatientQuestionnaireRequest(BaseModel):
     patient_name: str
-    patient_last_name: str
-    patient_email: str
-    insurance_id: str
     indication: Indication
+    patient_last_name: str | None = None
+    patient_email: str | None = None
+    insurance_id: str | None = None
 
 
 class StartPatientQuestionnaireResponse(BaseModel):
@@ -334,7 +330,8 @@ class SavePatientQuestionnaireProgressRequest(BaseModel):
 
 
 class ResumePatientQuestionnaireRequest(BaseModel):
-    patient_last_name: str
+    patient_name: str | None = None
+    patient_last_name: str | None = None
     resume_code: str
 
 
@@ -382,10 +379,13 @@ class DocumentationFlag(BaseModel):
     title: str
     description: str
 
+
 class TrafficLightAssessment(BaseModel):
-    level: Literal["green", "orange", "red"]
+    level: FlagLevel
     label: str
     description: str
+
+
 class AnswerGroup(BaseModel):
     block_id: str
     block_title: str
@@ -408,13 +408,6 @@ class PatientQuestionnaireSessionSummary(BaseModel):
     status: str = "in_progress"
 
 
-class DoctorWorklistResponse(BaseModel):
-    pending_sessions: list[PatientQuestionnaireSessionSummary] = Field(
-        default_factory=list
-    )
-    completed_cases: list["PatientCaseSummary"] = Field(default_factory=list)
-
-
 class PatientCaseSummary(BaseModel):
     case_id: str
     created_at: datetime
@@ -433,6 +426,13 @@ class PatientCaseSummary(BaseModel):
     status: CaseStatus
     report_status: ReportStatus
     report_generated_at: datetime | None = None
+
+
+class DoctorWorklistResponse(BaseModel):
+    pending_sessions: list[PatientQuestionnaireSessionSummary] = Field(
+        default_factory=list
+    )
+    completed_cases: list[PatientCaseSummary] = Field(default_factory=list)
 
 
 class PatientCaseDetail(PatientCaseSummary):
@@ -459,7 +459,9 @@ class SaveReportRequest(BaseModel):
 class DeleteCaseResponse(BaseModel):
     case_id: str
     deleted: bool
-# ---------------------------------------------------------------------------till here
+
+
+# ---------------------------------------------------------------------------
 # Admin analytics and logs
 # ---------------------------------------------------------------------------
 

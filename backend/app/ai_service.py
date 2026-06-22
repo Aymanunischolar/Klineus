@@ -10,6 +10,7 @@ import requests
 from app.config import get_settings
 from app.report_service import (
     DISCLAIMER,
+    clean_german_text,
     ensure_disclaimer,
     format_minimum_answers_for_ai,
 )
@@ -29,17 +30,35 @@ def clean_text(value: Any) -> str:
         "**": "",
         "__": "",
         "`": "",
+        "•": "",
         "Idk": "unklar",
         "idk": "unklar",
         "IDK": "unklar",
         "I don't know": "unklar",
         "i don't know": "unklar",
+        "I do not know": "unklar",
+        "i do not know": "unklar",
         "Keine Angabe.": "nicht angegeben",
+        "Keine Angabe": "nicht angegeben",
+        "keine Angabe": "nicht angegeben",
+        "not provided": "nicht angegeben",
+        "Not provided": "nicht angegeben",
+        "not-provided": "nicht angegeben",
+        "not-provided@klineus.local": "nicht angegeben",
+        "Patient name": "Patientenname",
+        "last name": "Patientenname",
+        "Last name": "Patientenname",
+        "Nachname": "Patientenname",
+        "insurance number": "Versicherungsnummer",
+        "Insurance number": "Versicherungsnummer",
+        "insurance ID": "Versicherungsnummer",
+        "Insurance ID": "Versicherungsnummer",
     }
 
     for old, new in replacements.items():
         text = text.replace(old, new)
 
+    text = clean_german_text(text)
     text = re.sub(r"^\s*[-*•]\s+", "", text)
     text = re.sub(r"\s+", " ", text)
     text = text.strip()
@@ -52,11 +71,15 @@ def clean_list(value: Any) -> list[str]:
         return []
 
     if isinstance(value, list):
-        return [
-            clean_text(item)
-            for item in value
-            if clean_text(item)
-        ]
+        cleaned_items = []
+
+        for item in value:
+            cleaned_item = clean_text(item)
+
+            if cleaned_item:
+                cleaned_items.append(cleaned_item)
+
+        return cleaned_items
 
     text = clean_text(value)
 
@@ -125,8 +148,10 @@ Never include direct patient identifiers in the output.
 Do not include patient name, last name, email, phone number, insurance number, address or date of birth.
 If a direct identifier appears accidentally, ignore it and do not repeat it.
 Use German medical documentation style.
+Use proper German umlauts: ä, ö, ü, Ä, Ö, Ü and ß.
+Do not write ae, oe, ue, ss when the correct German character should be used.
 Keep the language concise and professional.
-Translate unclear answers such as "Idk" to "unklar".
+Translate unclear answers such as "Idk" or "I do not know" to "unklar".
 If information is missing, contradictory or unclear, write "unklar" or "nicht angegeben".
 
 Clinical context:
@@ -244,7 +269,11 @@ def add_heading(lines: list[str], heading: str) -> None:
     lines.append(f"## {heading}")
 
 
-def add_bullets(lines: list[str], items: list[str], fallback: str = "Nicht angegeben.") -> None:
+def add_bullets(
+    lines: list[str],
+    items: list[str],
+    fallback: str = "Nicht angegeben.",
+) -> None:
     clean_items = [clean_text(item) for item in items if clean_text(item)]
 
     if not clean_items:
@@ -283,25 +312,56 @@ def build_markdown_from_report_json(report_json: dict[str, Any]) -> str:
         add_bullets(lines, unclear)
 
     add_heading(lines, "3. Funktionelle Einschränkungen")
-    lines.append(safe_section_text(report_json, "functional_limitations") or "Nicht angegeben.")
-    key_points = safe_section_list(report_json, "functional_limitations", "key_points")
+    lines.append(
+        safe_section_text(report_json, "functional_limitations")
+        or "Nicht angegeben."
+    )
+
+    key_points = safe_section_list(
+        report_json,
+        "functional_limitations",
+        "key_points",
+    )
+
     if key_points:
         add_bullets(lines, key_points)
 
     add_heading(lines, "4. Bisherige konservative Behandlung")
-    lines.append(safe_section_text(report_json, "conservative_treatment") or "Nicht angegeben.")
-    key_points = safe_section_list(report_json, "conservative_treatment", "key_points")
+    lines.append(
+        safe_section_text(report_json, "conservative_treatment")
+        or "Nicht angegeben."
+    )
+
+    key_points = safe_section_list(
+        report_json,
+        "conservative_treatment",
+        "key_points",
+    )
+
     if key_points:
         add_bullets(lines, key_points)
 
     add_heading(lines, "5. Vorbefunde und vorhandene Unterlagen")
-    lines.append(safe_section_text(report_json, "findings_and_documents") or "Nicht angegeben.")
-    key_points = safe_section_list(report_json, "findings_and_documents", "key_points")
+    lines.append(
+        safe_section_text(report_json, "findings_and_documents")
+        or "Nicht angegeben."
+    )
+
+    key_points = safe_section_list(
+        report_json,
+        "findings_and_documents",
+        "key_points",
+    )
+
     if key_points:
         add_bullets(lines, key_points)
 
     add_heading(lines, "6. Relevante Risikohinweise")
-    risk_notes = report_json.get("risk_notes") if isinstance(report_json.get("risk_notes"), dict) else {}
+    risk_notes = (
+        report_json.get("risk_notes")
+        if isinstance(report_json.get("risk_notes"), dict)
+        else {}
+    )
 
     lines.append("")
     lines.append("### Kritisch zu klären")
@@ -350,6 +410,7 @@ def build_markdown_from_report_json(report_json: dict[str, Any]) -> str:
     )
 
     clean_output = "\n".join(lines)
+    clean_output = clean_german_text(clean_output)
     clean_output = re.sub(r"\n{3,}", "\n\n", clean_output)
 
     return ensure_disclaimer(clean_output)
@@ -376,7 +437,7 @@ def extract_error_message(response: requests.Response) -> str:
 
     if isinstance(error, dict):
         message = error.get("message")
-        status = error.get("status")
+        status_value = error.get("status")
         code = error.get("code")
 
         parts = []
@@ -384,8 +445,8 @@ def extract_error_message(response: requests.Response) -> str:
         if code:
             parts.append(f"code={code}")
 
-        if status:
-            parts.append(f"status={status}")
+        if status_value:
+            parts.append(f"status={status_value}")
 
         if message:
             parts.append(str(message))

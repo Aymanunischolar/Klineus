@@ -10,6 +10,27 @@ function getAdminToken() {
   return window.localStorage.getItem("klineus_admin_token");
 }
 
+const FALLBACK_PATIENT_EMAIL = "not-provided@klineus.local";
+const FALLBACK_PATIENT_VALUE = "not-provided";
+
+function cleanString(value) {
+  return String(value || "").trim();
+}
+
+function normalizePatientPayload(payload = {}) {
+  const patientName = cleanString(payload.patient_name);
+  const patientLastName = cleanString(payload.patient_last_name);
+  const patientEmail = cleanString(payload.patient_email);
+  const insuranceId = cleanString(payload.insurance_id);
+
+  return {
+    patient_name: patientName || FALLBACK_PATIENT_VALUE,
+    patient_last_name: patientLastName || patientName || FALLBACK_PATIENT_VALUE,
+    patient_email: patientEmail || FALLBACK_PATIENT_EMAIL,
+    insurance_id: insuranceId || FALLBACK_PATIENT_VALUE,
+  };
+}
+
 export function assetUrl(path, fallback = "") {
   const value = path || fallback;
 
@@ -64,7 +85,6 @@ async function request(path, options = {}) {
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, fetchOptions);
-
   const rawText = await response.text();
 
   let data = null;
@@ -115,33 +135,30 @@ export const api = {
       body: { email, password },
     }),
 
- createPatientCase: (
-  answers,
-  metadata = {},
-  indication = "knee_tep",
-  questionnaireInfo = {},
-) =>
-  request("/patient/cases", {
-    method: "POST",
-    body: {
-      indication,
-      patient_name: questionnaireInfo.patient_name || null,
-      patient_last_name: questionnaireInfo.patient_last_name || null,
-      patient_email: questionnaireInfo.patient_email || null,
-      insurance_id: questionnaireInfo.insurance_id || null,
-      session_id: questionnaireInfo.session_id || null,
-      questionnaire_template_id:
-        questionnaireInfo.questionnaire_template_id ||
-        questionnaireInfo.id ||
-        null,
-      questionnaire_version:
-        questionnaireInfo.questionnaire_version ||
-        questionnaireInfo.version ||
-        null,
-      answers,
-      metadata,
-    },
-  }),
+  createPatientCase: (
+    answers,
+    metadata = {},
+    indication = "knee_tep",
+    questionnaireInfo = {},
+  ) =>
+    request("/patient/cases", {
+      method: "POST",
+      body: {
+        indication,
+        ...normalizePatientPayload(questionnaireInfo),
+        session_id: questionnaireInfo.session_id || null,
+        questionnaire_template_id:
+          questionnaireInfo.questionnaire_template_id ||
+          questionnaireInfo.id ||
+          null,
+        questionnaire_version:
+          questionnaireInfo.questionnaire_version ||
+          questionnaireInfo.version ||
+          null,
+        answers,
+        metadata,
+      },
+    }),
 
   getQuestionnaireConfig: () =>
     requestWithFallback("/patient/config", "/patient/questionnaire-config"),
@@ -157,8 +174,7 @@ export const api = {
 
   getPage: (slug) => request(`/patient/pages/${encodeURIComponent(slug)}`),
 
-
-      getDoctorWorklist: () =>
+  getDoctorWorklist: () =>
     request("/doctor/worklist", {
       auth: true,
     }),
@@ -189,41 +205,41 @@ export const api = {
       auth: true,
     }),
 
- getAdminConfig: async () => {
-  const [
-    analytics,
-    siteSettings,
-    pagesResponse,
-    media,
-    questionnairesResponse,
-    apiLogs,
-    aiLogs,
-    languages,
-    extraQuestions,
-  ] = await Promise.all([
-    request("/admin/analytics", { auth: "admin" }),
-    request("/admin/site-settings", { auth: "admin" }),
-    request("/admin/pages", { auth: "admin" }),
-    request("/admin/media", { auth: "admin" }),
-    request("/admin/questionnaires", { auth: "admin" }),
-    request("/admin/api-logs", { auth: "admin" }),
-    request("/admin/ai-logs", { auth: "admin" }),
-    request("/admin/languages", { auth: "admin" }),
-    request("/admin/questions", { auth: "admin" }),
-  ]);
+  getAdminConfig: async () => {
+    const [
+      analytics,
+      siteSettings,
+      pagesResponse,
+      media,
+      questionnairesResponse,
+      apiLogs,
+      aiLogs,
+      languages,
+      extraQuestions,
+    ] = await Promise.all([
+      request("/admin/analytics", { auth: "admin" }),
+      request("/admin/site-settings", { auth: "admin" }),
+      request("/admin/pages", { auth: "admin" }),
+      request("/admin/media", { auth: "admin" }),
+      request("/admin/questionnaires", { auth: "admin" }),
+      request("/admin/api-logs", { auth: "admin" }),
+      request("/admin/ai-logs", { auth: "admin" }),
+      request("/admin/languages", { auth: "admin" }),
+      request("/admin/questions", { auth: "admin" }),
+    ]);
 
-  return {
-    analytics,
-    siteSettings,
-    pages: pagesResponse?.pages || [],
-    media: media || [],
-    questionnaires: questionnairesResponse?.questionnaires || [],
-    apiLogs: apiLogs || [],
-    aiLogs: aiLogs || [],
-    languages: languages || [],
-    extra_questions: extraQuestions || [],
-  };
-},
+    return {
+      analytics,
+      siteSettings,
+      pages: pagesResponse?.pages || [],
+      media: media || [],
+      questionnaires: questionnairesResponse?.questionnaires || [],
+      apiLogs: apiLogs || [],
+      aiLogs: aiLogs || [],
+      languages: languages || [],
+      extra_questions: extraQuestions || [],
+    };
+  },
 
   getAdminAnalytics: () =>
     request("/admin/analytics", {
@@ -277,28 +293,19 @@ export const api = {
       auth: "admin",
     }),
 
-   saveAdminQuestionnaire: (identifier, payload) =>
+  saveAdminQuestionnaire: (identifier, payload) =>
     request(`/admin/questionnaires/${encodeURIComponent(identifier)}`, {
       method: "PUT",
       auth: "admin",
       body: payload,
     }),
 
-  startPatientQuestionnaireSession: ({
-    patient_name,
-    patient_last_name,
-    patient_email,
-    insurance_id,
-    indication,
-  }) =>
+  startPatientQuestionnaireSession: (payload = {}) =>
     request("/patient/questionnaire-sessions/start", {
       method: "POST",
       body: {
-        patient_name,
-        patient_last_name,
-        patient_email,
-        insurance_id,
-        indication,
+        ...normalizePatientPayload(payload),
+        indication: payload.indication,
       },
     }),
 
@@ -320,10 +327,12 @@ export const api = {
       body: {
         session_id,
         indication,
-        patient_name,
-        patient_last_name,
-        patient_email,
-        insurance_id,
+        ...normalizePatientPayload({
+          patient_name,
+          patient_last_name,
+          patient_email,
+          insurance_id,
+        }),
         questionnaire_template_id,
         questionnaire_version,
         answers,
@@ -332,12 +341,16 @@ export const api = {
       },
     }),
 
-  resumePatientQuestionnaireSession: ({ patient_last_name, resume_code }) =>
+  resumePatientQuestionnaireSession: ({
+    patient_name,
+    patient_last_name,
+    resume_code,
+  } = {}) =>
     request("/patient/questionnaire-sessions/resume", {
       method: "POST",
       body: {
-        patient_last_name,
-        resume_code,
+        patient_last_name: cleanString(patient_last_name || patient_name),
+        resume_code: cleanString(resume_code),
       },
     }),
 

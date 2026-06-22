@@ -241,15 +241,35 @@ function getIndicationLabel(indication, language) {
   return indication || "—";
 }
 
-function patientDisplayName(patientCase) {
-  const fullName = patientCase?.patient_name || "";
-  const lastName = patientCase?.patient_last_name || "";
+function displayValue(value) {
+  if (
+    !value ||
+    value === "not-provided" ||
+    value === "not-provided@klineus.local"
+  ) {
+    return "—";
+  }
 
-  if (fullName && lastName && !fullName.includes(lastName)) {
+  return value;
+}
+
+function patientDisplayName(patientCase) {
+  const fullName = displayValue(patientCase?.patient_name);
+  const lastName = displayValue(patientCase?.patient_last_name);
+
+  if (fullName !== "—" && lastName !== "—" && !fullName.includes(lastName)) {
     return `${fullName} ${lastName}`;
   }
 
-  return fullName || lastName || "—";
+  if (fullName !== "—") {
+    return fullName;
+  }
+
+  if (lastName !== "—") {
+    return lastName;
+  }
+
+  return "—";
 }
 
 function safeJsonParse(value) {
@@ -900,10 +920,10 @@ export default function AdminDashboardPage() {
                             </td>
 
                             <td className="mono">
-                              {patientCase.insurance_id || "—"}
+                              {displayValue(patientCase.insurance_id)}
                             </td>
 
-                            <td>{patientCase.patient_email || "—"}</td>
+                            <td>{displayValue(patientCase.patient_email)}</td>
 
                             <td className="mono">
                               {patientCase.case_id
@@ -928,7 +948,7 @@ export default function AdminDashboardPage() {
                               {formatDate(patientCase.created_at, language)}
                             </td>
 
-                            <td>{patientCase.status || "—"}</td>
+                            <td>{displayValue(patientCase.status)}</td>
                           </tr>
                         ))}
                       </tbody>

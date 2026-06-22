@@ -7,68 +7,36 @@ DEFAULT_SITE_SETTINGS = {
     "nav_links": [
         {
             "label": {
-                "de": "Produkt",
-                "en": "Product",
+                "de": "Unser Produkt",
+                "en": "Our Product",
             },
             "href": "/product",
             "variant": "nav",
         },
         {
             "label": {
-                "de": "Team",
-                "en": "Team",
+                "de": "Über uns",
+                "en": "About Us",
             },
             "href": "/team",
-            "variant": "nav",
-        },
-        {
-            "label": {
-                "de": "Kontakt",
-                "en": "Contact",
-            },
-            "href": "/contact",
-            "variant": "nav",
-        },
-        {
-            "label": {
-                "de": "Rechtliches",
-                "en": "Legal",
-            },
-            "href": "/legal",
             "variant": "nav",
         },
     ],
     "footer_links": [
         {
             "label": {
-                "de": "Produkt",
-                "en": "Product",
+                "de": "Impressum",
+                "en": "Imprint",
             },
-            "href": "/product",
+            "href": "/legal#terms",
             "variant": "footer",
         },
         {
             "label": {
-                "de": "Team",
-                "en": "Team",
+                "de": "Datenschutz",
+                "en": "Privacy",
             },
-            "href": "/team",
-            "variant": "footer",
-        },
-        {
-            "label": {
-                "de": "Kontakt",
-                "en": "Contact",
-            },
-            "href": "/contact",
-            "variant": "footer",
-        },
-        {
-            "label": {
-                "de": "Rechtliches",
-                "en": "Legal",
-            },
-            "href": "/legal",
+            "href": "/legal#privacy",
             "variant": "footer",
         },
     ],

@@ -6,7 +6,7 @@ const translations = {
   de: {
     languageName: "Deutsch",
     otherLanguageName: "English",
-    prototypePill: "Knie-TEP Prototyp",
+    prototypePill: "Klineus Prototyp",
     toggleLabel: "Sprache",
 
     navProduct: "Produkt",
@@ -15,7 +15,8 @@ const translations = {
     navLegal: "Rechtliches",
     quickLinks: "Menü",
     quickProductTitle: "Klineus Produkt",
-    quickProductText: "Ein System für Patientenaufnahme, Arztprüfung und Dokumentation.",
+    quickProductText:
+      "Ein System für Patientenaufnahme, Arztprüfung und Dokumentation.",
     quickDoctorTitle: "Arzt-Dashboard",
     quickDoctorText: "Der zentrale Arbeitsbereich für ärztliche Prüfung.",
     quickContactTitle: "Kontakt",
@@ -27,10 +28,10 @@ const translations = {
     openDoctorDashboard: "Arzt-Dashboard öffnen",
     adminPanel: "Admin-Bereich",
 
-    landingEyebrow: "Orthopädische Dokumentationsunterstützung",
+    landingEyebrow: "Klineus",
     landingTitle: "Klineus",
     landingDescription:
-      "Webbasierter Prototyp für strukturierte Knie-TEP-Fragebögen und ärztlich geprüfte Dokumentationsentwürfe.",
+      "Webbasierter Prototyp für strukturierte Knie- und Hüft-TEP-Fragebögen und ärztlich geprüfte Dokumentationsentwürfe.",
     landingDisclaimer:
       "Dieser Prototyp ersetzt keine ärztliche Beurteilung und gibt keine eigenständigen Diagnose- oder Behandlungsempfehlungen.",
 
@@ -52,21 +53,24 @@ const translations = {
     productPageEyebrow: "Produkt",
     productPageTitle:
       "KI-gestützte Dokumentationsunterstützung für Orthopädie und Unfallchirurgie.",
- productPageIntro:
-  "Klineus unterstützt die leitlinienbasierte Erhebung, Einordnung und Dokumentation von Fragebogenangaben vor dem Arztkontakt.",
+    productPageIntro:
+      "Klineus unterstützt die leitlinienbasierte Erhebung, Einordnung und Dokumentation von Fragebogenangaben vor dem Arztkontakt.",
+
     workflowEyebrow: "So funktioniert Klineus",
-    workflowTitle: "Von der Patientenantwort zur ärztlich prüfbaren Entscheidungsgrundlage.",
-  workflowIntro:
-  "Klineus strukturiert den Indikationsprozess vor dem Arztkontakt. Fragebogenangaben werden gezielt erhoben, anhand medizinischer Kriterien eingeordnet und für den Arzt verständlich aufbereitet.",
+    workflowTitle:
+      "Von der Patientenantwort zur ärztlich prüfbaren Entscheidungsgrundlage.",
+    workflowIntro:
+      "Klineus strukturiert den Indikationsprozess vor dem Arztkontakt. Fragebogenangaben werden gezielt erhoben, anhand medizinischer Kriterien eingeordnet und für den Arzt verständlich aufbereitet.",
     workflowStep1Title: "Adaptiver Patientenfragebogen",
     workflowStep1Text:
       "Patientinnen und Patienten beantworten vor dem Arztkontakt einen digitalen Fragebogen. Die Fragen orientieren sich an relevanten Leitlinienkriterien und sind patientengerecht formuliert.",
     workflowStep2Title: "Leitlinienbasierte Auswertung",
     workflowStep2Text:
       "Die Antworten werden automatisch strukturiert und mit hinterlegter Leitlinienlogik abgeglichen. Das System erkennt erfüllte Kriterien, offene Punkte und fehlende Informationen.",
-    workflowStep3Title: "Arzt-Dashboard und Epikrise-Entwurf",
-  workflowStep3Text:
-  "Der Arzt erhält eine klare Zusammenfassung mit Fragebogenangaben, Dokumentationshinweisen, offenen Punkten und einem vorbereiteten Entwurf für die ärztliche Dokumentation.",
+    workflowStep3Title: "Arzt-Dashboard und Dokumentationsentwurf",
+    workflowStep3Text:
+      "Der Arzt erhält eine klare Zusammenfassung mit Fragebogenangaben, Dokumentationshinweisen, offenen Punkten und einem vorbereiteten Entwurf für die ärztliche Dokumentation.",
+
     productSystemKicker: "Ein Produkt, ein Ablauf",
     productSystemTitle:
       "Klineus verbindet Patientenangaben, ärztliche Prüfung und Dokumentationsentwurf.",
@@ -87,7 +91,8 @@ const translations = {
       "Der interne Admin-Bereich hilft dem Klineus-Team, Nutzung, Ausfülldauer, Sprachen und Berichtserstellung besser zu verstehen.",
 
     valueEyebrow: "Klinischer Nutzen",
-    valueTitle: "Mehr Zeit für ärztliche Entscheidung, weniger Zeitverlust durch Routinedokumentation.",
+    valueTitle:
+      "Mehr Zeit für ärztliche Entscheidung, weniger Zeitverlust durch Routinedokumentation.",
     valueText:
       "Klineus adressiert den zeitintensiven Indikationsprozess in Orthopädie und Unfallchirurgie.",
     valueMetric1: "Minuten Zeitersparnis pro Patient als Zielwert.",
@@ -96,7 +101,8 @@ const translations = {
     valueMetric4: "Vom Prototyp zur klinisch validierten Pilotversion.",
 
     targetEyebrow: "Zielgruppe und Skalierung",
-    targetTitle: "Gestartet in der Endoprothetik, skalierbar auf weitere Indikationsbereiche.",
+    targetTitle:
+      "Gestartet in der Endoprothetik, skalierbar auf weitere Indikationsbereiche.",
     targetText:
       "Der initiale Fokus liegt auf orthopädischen und unfallchirurgischen Einrichtungen sowie niedergelassenen Fachärzten.",
     targetClinicTitle: "Kliniken und Endoprothetikzentren",
@@ -111,10 +117,12 @@ const translations = {
 
     productCtaEyebrow: "Nächster Schritt",
     productCtaTitle: "Möchten Sie Klineus als Pilotpartner kennenlernen?",
-    productCtaText: "Kontaktieren Sie uns für Austausch, Feedback oder Pilotierung.",
+    productCtaText:
+      "Kontaktieren Sie uns für Austausch, Feedback oder Pilotierung.",
 
     teamPageEyebrow: "Team",
-    teamPageTitle: "Ein komplementäres Team aus Business, Medizin und Technologie.",
+    teamPageTitle:
+      "Ein komplementäres Team aus Business, Medizin und Technologie.",
     teamPageIntro:
       "Klineus entsteht aus der Verbindung von KI-gestützter Prozessautomatisierung und konkretem klinischem Bedarf.",
     teamBusinessTitle: "Geschäftsmodell und Umsetzung",
@@ -136,17 +144,19 @@ const translations = {
 
     contactEyebrow: "Kontakt",
     contactTitle: "Interessieren Sie sich für Klineus?",
-    contactText: "Kontaktieren Sie uns für Pilotierung, Partnerschaft oder Feedback.",
+    contactText:
+      "Kontaktieren Sie uns für Pilotierung, Partnerschaft oder Feedback.",
     contactEmail: "E-Mail",
     contactLocation: "Standort",
     contactUseCase: "Anwendungsfall",
-    contactUseCaseValue: "Knie-TEP-Dokumentationsunterstützung",
+    contactUseCaseValue: "Knie- und Hüft-TEP-Dokumentationsunterstützung",
     contactName: "Name",
     contactNamePlaceholder: "Ihr Name",
     contactOrganization: "Organisation",
     contactOrganizationPlaceholder: "Klinik, Praxis oder Unternehmen",
     contactMessage: "Nachricht",
-    contactMessagePlaceholder: "Schreiben Sie uns, wie Sie Klineus einsetzen möchten.",
+    contactMessagePlaceholder:
+      "Schreiben Sie uns, wie Sie Klineus einsetzen möchten.",
     contactSubmit: "Nachricht senden",
     contactPrototypeAlert:
       "Vielen Dank. Dies ist ein Prototyp-Kontaktformular. Die Backend-Übermittlung wird später verbunden.",
@@ -162,8 +172,8 @@ const translations = {
     terms2Text:
       "Klineus stellt keine Diagnosen, trifft keine endgültigen Behandlungsentscheidungen und gibt keine Operationsempfehlungen.",
     terms3Title: "3. Datenverarbeitung",
-   terms3Text:
-  "Patientenname und Versicherungsnummer dienen der ärztlichen Zuordnung. Direkte Identifikatoren sollen nicht an KI-Prompts übergeben werden.",
+    terms3Text:
+      "Der Patientenname dient der ärztlichen Zuordnung. Direkte Identifikatoren sollen nicht an KI-Prompts übergeben werden.",
     terms4Title: "4. KI-generierte Entwürfe",
     terms4Text:
       "KI-generierte Texte sind ausschließlich Dokumentationsentwürfe und müssen ärztlich geprüft werden.",
@@ -175,13 +185,15 @@ const translations = {
       "Fragen zum Prototyp, zu Partnerschaften oder zu Evaluierungszugang können über das Kontaktformular gestellt werden.",
 
     patientStartEyebrow: "Patientenfragebogen",
-    patientStartTitle: "Fragen zu Ihren Kniebeschwerden",
-    patientIntro1: "Sie beantworten gleich einige Fragen zu Ihren Beschwerden am Knie.",
+    patientStartTitle: "Patientenfragebogen starten",
+    patientIntro1:
+      "Sie beantworten gleich einige Fragen zur Vorbereitung Ihres Arzttermins.",
     patientIntro2: "Ihre Angaben helfen, das Arztgespräch vorzubereiten.",
-    patientIntro3: "Dies ist keine Diagnose. Ihre Ärztin oder Ihr Arzt prüft alle Angaben.",
+    patientIntro3:
+      "Dies ist keine Diagnose. Ihre Ärztin oder Ihr Arzt prüft alle Angaben.",
     startQuestionnaire: "Fragebogen starten",
     doneTitle: "Vielen Dank.",
-    doneText: "Ihre Angaben wurden übermittelt und werden vom Arzt geprüft.",
+    doneText: "Ihre Angaben wurden übermittelt und werden ärztlich geprüft.",
     home: "Zur Startseite",
     back: "Zurück",
     next: "Weiter",
@@ -201,8 +213,9 @@ const translations = {
     logout: "Abmelden",
     loadingCases: "Fälle werden geladen.",
     emptyCasesTitle: "Noch keine Fälle",
-    emptyCasesText: "Nach dem Absenden eines Patientenfragebogens erscheint der Fall hier.",
-    caseId: "Case ID",
+    emptyCasesText:
+      "Nach dem Absenden eines Patientenfragebogens erscheint der Fall hier.",
+    caseId: "Fall-ID",
     created: "Erstellt",
     updated: "Aktualisiert",
     indication: "Indikation",
@@ -210,6 +223,7 @@ const translations = {
     report: "Bericht",
     openCase: "Fall öffnen",
     kneeTep: "Knie-TEP",
+    hipTep: "Hüft-TEP",
     completed: "abgeschlossen",
     pending: "ausstehend",
     notGenerated: "nicht generiert",
@@ -218,8 +232,9 @@ const translations = {
 
     backToDashboard: "Zurück zum Dashboard",
     kneeCase: "Knie-TEP Fall",
+    hipCase: "Hüft-TEP Fall",
     deleteCase: "Fall löschen",
-    deleteConfirm: "Diesen anonymen Fall löschen?",
+    deleteConfirm: "Diesen Fall löschen?",
     loadingCase: "Fall wird geladen.",
     caseNotFound: "Fall nicht gefunden.",
     patientAnswers: "Patientenantworten",
@@ -244,7 +259,7 @@ const translations = {
   en: {
     languageName: "English",
     otherLanguageName: "Deutsch",
-    prototypePill: "Knee TEP Prototype",
+    prototypePill: "Klineus prototype",
     toggleLabel: "Language",
 
     navProduct: "Product",
@@ -253,7 +268,8 @@ const translations = {
     navLegal: "Legal",
     quickLinks: "Menu",
     quickProductTitle: "Klineus product",
-    quickProductText: "One system for intake, physician review and documentation.",
+    quickProductText:
+      "One system for intake, physician review and documentation.",
     quickDoctorTitle: "Doctor dashboard",
     quickDoctorText: "The central workspace for physician review.",
     quickContactTitle: "Contact",
@@ -265,10 +281,10 @@ const translations = {
     openDoctorDashboard: "Open doctor dashboard",
     adminPanel: "Admin area",
 
-    landingEyebrow: "Orthopedic documentation support",
+    landingEyebrow: "Klineus",
     landingTitle: "Klineus",
     landingDescription:
-      "Web-based prototype for structured Knee TEP questionnaires and physician-reviewed documentation drafts.",
+      "Web-based prototype for structured knee and hip replacement questionnaires and physician-reviewed documentation drafts.",
     landingDisclaimer:
       "This prototype does not replace medical judgment and does not provide autonomous diagnosis or treatment recommendations.",
 
@@ -290,12 +306,14 @@ const translations = {
     productPageEyebrow: "Product",
     productPageTitle:
       "AI-supported documentation support for orthopedics and trauma surgery.",
-   productPageIntro:
-  "Klineus supports guideline-based collection, structuring and documentation of questionnaire information before the consultation.",
+    productPageIntro:
+      "Klineus supports guideline-based collection, structuring and documentation of questionnaire information before the consultation.",
+
     workflowEyebrow: "How Klineus works",
-    workflowTitle: "From patient answers to a physician-reviewable decision basis.",
-   workflowIntro:
-  "Klineus structures the indication process before the medical consultation. Questionnaire answers are collected in a targeted way, mapped against medical criteria and prepared clearly for physician review.",
+    workflowTitle:
+      "From patient answers to a physician-reviewable decision basis.",
+    workflowIntro:
+      "Klineus structures the indication process before the medical consultation. Questionnaire answers are collected in a targeted way, mapped against medical criteria and prepared clearly for physician review.",
     workflowStep1Title: "Adaptive patient questionnaire",
     workflowStep1Text:
       "Patients complete a digital questionnaire before the consultation. The questions are based on relevant guideline criteria and written in patient-friendly language.",
@@ -303,8 +321,9 @@ const translations = {
     workflowStep2Text:
       "The answers are automatically structured and compared with embedded guideline logic. The system identifies fulfilled criteria, open points and missing information.",
     workflowStep3Title: "Doctor dashboard and documentation draft",
-  workflowStep3Text:
-  "The physician receives a clear summary with questionnaire answers, documentation flags, open points and a prepared draft for medical documentation.",
+    workflowStep3Text:
+      "The physician receives a clear summary with questionnaire answers, documentation flags, open points and a prepared draft for medical documentation.",
+
     productSystemKicker: "One product, one workflow",
     productSystemTitle:
       "Klineus connects patient input, physician review and documentation drafting.",
@@ -325,16 +344,18 @@ const translations = {
       "The internal admin area helps the Klineus team understand usage, completion time, languages and report generation.",
 
     valueEyebrow: "Clinical value",
-    valueTitle: "More time for medical decision-making, less time lost to routine documentation.",
+    valueTitle:
+      "More time for medical decision-making, less time lost to routine documentation.",
     valueText:
       "Klineus addresses the time-intensive indication process in orthopedics and trauma surgery.",
     valueMetric1: "Minutes saved per patient as a target value.",
-    valueMetric2: "Guideline logic for hip and knee TEP.",
+    valueMetric2: "Guideline logic for hip and knee replacement pathways.",
     valueMetric3: "Capture once, reuse multiple times.",
     valueMetric4: "From prototype to clinically validated pilot version.",
 
     targetEyebrow: "Target users and scaling",
-    targetTitle: "Starting in endoprosthetics, scalable to further indication areas.",
+    targetTitle:
+      "Starting in endoprosthetics, scalable to further indication areas.",
     targetText:
       "The initial focus is orthopedic and trauma-surgery institutions as well as specialist practices.",
     targetClinicTitle: "Hospitals and endoprosthetic centers",
@@ -352,7 +373,8 @@ const translations = {
     productCtaText: "Contact us for exchange, feedback or pilot discussions.",
 
     teamPageEyebrow: "Team",
-    teamPageTitle: "A complementary team across business, medicine and technology.",
+    teamPageTitle:
+      "A complementary team across business, medicine and technology.",
     teamPageIntro:
       "Klineus combines AI-supported process automation with concrete clinical needs.",
     teamBusinessTitle: "Business model and execution",
@@ -378,7 +400,7 @@ const translations = {
     contactEmail: "Email",
     contactLocation: "Location",
     contactUseCase: "Use case",
-    contactUseCaseValue: "Knee TEP documentation support",
+    contactUseCaseValue: "Knee and hip replacement documentation support",
     contactName: "Name",
     contactNamePlaceholder: "Your name",
     contactOrganization: "Organization",
@@ -390,7 +412,7 @@ const translations = {
       "Thank you. This is a prototype contact form. Backend submission will be connected later.",
 
     termsEyebrow: "Legal",
-    termsTitle: "Prototype terms, privacy and clinical boundary.",
+    termsTitle: "Prototype terms, privacy and clinical boundaries.",
     termsIntro:
       "These contents are placeholders and must be legally reviewed before production use.",
     terms1Title: "1. Prototype status",
@@ -400,8 +422,8 @@ const translations = {
     terms2Text:
       "Klineus does not provide diagnoses, final treatment decisions or surgery recommendations.",
     terms3Title: "3. Data handling",
-   terms3Text:
-  "Patient name and insurance ID are used for doctor-side identification. Direct identifiers should not be passed into AI prompts.",
+    terms3Text:
+      "The patient name is used for doctor-side identification. Direct identifiers should not be passed into AI prompts.",
     terms4Title: "4. AI-generated drafts",
     terms4Text:
       "AI-generated text is documentation draft only and must be reviewed by a physician.",
@@ -413,13 +435,15 @@ const translations = {
       "Questions about the prototype, partnerships or evaluation access can be sent through the contact form.",
 
     patientStartEyebrow: "Patient questionnaire",
-    patientStartTitle: "Questions about your knee symptoms",
-    patientIntro1: "You will answer a few questions about your knee symptoms.",
+    patientStartTitle: "Start patient questionnaire",
+    patientIntro1:
+      "You will answer a few questions to prepare your doctor appointment.",
     patientIntro2: "Your answers help prepare the doctor consultation.",
     patientIntro3: "This is not a diagnosis. Your doctor will review all information.",
     startQuestionnaire: "Start questionnaire",
     doneTitle: "Thank you.",
-    doneText: "Your information has been submitted and will be reviewed by the doctor.",
+    doneText:
+      "Your information has been submitted and will be reviewed by the doctor.",
     home: "Home",
     back: "Back",
     next: "Next",
@@ -439,7 +463,8 @@ const translations = {
     logout: "Log out",
     loadingCases: "Loading cases.",
     emptyCasesTitle: "No cases yet",
-    emptyCasesText: "After a patient questionnaire is submitted, the case will appear here.",
+    emptyCasesText:
+      "After a patient questionnaire is submitted, the case will appear here.",
     caseId: "Case ID",
     created: "Created",
     updated: "Updated",
@@ -448,6 +473,7 @@ const translations = {
     report: "Report",
     openCase: "Open case",
     kneeTep: "Knee TEP",
+    hipTep: "Hip TEP",
     completed: "completed",
     pending: "pending",
     notGenerated: "not generated",
@@ -456,8 +482,9 @@ const translations = {
 
     backToDashboard: "Back to dashboard",
     kneeCase: "Knee TEP case",
+    hipCase: "Hip TEP case",
     deleteCase: "Delete case",
-    deleteConfirm: "Delete this anonymous case?",
+    deleteConfirm: "Delete this case?",
     loadingCase: "Loading case.",
     caseNotFound: "Case not found.",
     patientAnswers: "Patient answers",
@@ -485,7 +512,7 @@ const flagTranslations = {
     en: {
       title: "Pain information unclear",
       description:
-        "The patient reports no current knee pain. Review this as an open point in the consultation.",
+        "The patient reports no current pain. Review this as an open point in the consultation.",
     },
   },
   "Kurze Symptomdauer": {
@@ -520,17 +547,17 @@ const flagTranslations = {
     en: {
       title: "Active infection reported",
       description:
-        "The patient reports a currently treated inflammation or infection in the knee. Requires physician review.",
+        "The patient reports a currently treated inflammation or infection. Requires physician review.",
     },
   },
-  "Kuerzliches schweres Herz-Kreislauf-Ereignis berichtet": {
+  "Kürzliches schweres Herz-Kreislauf-Ereignis berichtet": {
     en: {
       title: "Recent severe cardiovascular event reported",
       description:
         "The patient reports an event in the last 3 months. Requires physician review.",
     },
   },
-  "Diabetes oder erhoehte Blutzuckerwerte berichtet": {
+  "Diabetes oder erhöhte Blutzuckerwerte berichtet": {
     en: {
       title: "Diabetes or elevated blood sugar reported",
       description:
@@ -558,7 +585,7 @@ const flagTranslations = {
     en: {
       title: "Cortisone injection less than 6 weeks ago reported",
       description:
-        "The patient reports a recent cortisone injection into the knee. Requires physician review.",
+        "The patient reports a recent cortisone injection. Requires physician review.",
     },
   },
   "Kortison-Injektion vor 6 Wochen bis 3 Monaten berichtet": {
@@ -568,7 +595,7 @@ const flagTranslations = {
         "The patient reports a cortisone injection in the relevant time period. Mark as an open point for the consultation.",
     },
   },
-  "Strukturierte Angaben vollstaendig": {
+  "Strukturierte Angaben vollständig": {
     en: {
       title: "Structured information complete",
       description:
@@ -583,12 +610,29 @@ function normalizeLanguage(nextLanguage) {
   return nextLanguage === "en" ? "en" : "de";
 }
 
+function normalizeGermanFlagTitle(title) {
+  return String(title || "")
+    .replaceAll("Kuerzliches", "Kürzliches")
+    .replaceAll("kuerzliches", "kürzliches")
+    .replaceAll("erhoehte", "erhöhte")
+    .replaceAll("Erhoehte", "Erhöhte")
+    .replaceAll("vollstaendig", "vollständig")
+    .replaceAll("Vollstaendig", "Vollständig")
+    .replaceAll("Pruefung", "Prüfung")
+    .replaceAll("pruefung", "prüfung")
+    .replaceAll("aerztlich", "ärztlich")
+    .replaceAll("Aerztlich", "Ärztlich");
+}
+
 function translateFlagText(flag, language) {
   if (language === "de" || !flag?.title) {
     return flag;
   }
 
-  const translated = flagTranslations[flag.title]?.[language];
+  const normalizedTitle = normalizeGermanFlagTitle(flag.title);
+  const translated =
+    flagTranslations[normalizedTitle]?.[language] ||
+    flagTranslations[flag.title]?.[language];
 
   if (!translated) {
     return flag;
@@ -596,12 +640,12 @@ function translateFlagText(flag, language) {
 
   let description = translated.description || flag.description;
 
-  if (flag.title.includes("BMI") && flag.description) {
+  if (normalizedTitle.includes("BMI") && flag.description) {
     const bmi = flag.description.match(/BMI von ([0-9.]+)/)?.[1];
 
     if (bmi) {
       description =
-        flag.title === "BMI ab 40 berechnet"
+        normalizedTitle === "BMI ab 40 berechnet"
           ? `A BMI of ${bmi} was calculated from the answers. Requires physician review.`
           : `A BMI of ${bmi} was calculated from the answers. Review as modifiable risk information.`;
     }
@@ -628,16 +672,21 @@ export function LanguageProvider({ children }) {
   const value = useMemo(
     () => ({
       language,
-      setLanguage: (nextLanguage) => setLanguageState(normalizeLanguage(nextLanguage)),
+      setLanguage: (nextLanguage) =>
+        setLanguageState(normalizeLanguage(nextLanguage)),
       toggleLanguage: () =>
         setLanguageState((current) => (current === "de" ? "en" : "de")),
       t: (key) => translations[language]?.[key] || translations.de[key] || key,
       translateFlag: (flag) => translateFlagText(flag, language),
     }),
-    [language]
+    [language],
   );
 
-  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+  return (
+    <LanguageContext.Provider value={value}>
+      {children}
+    </LanguageContext.Provider>
+  );
 }
 
 export function useLanguage() {

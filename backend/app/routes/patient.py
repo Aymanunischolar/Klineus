@@ -31,6 +31,9 @@ from app.storage import storage
 
 router = APIRouter(prefix="/patient", tags=["patient"])
 
+FALLBACK_PATIENT_VALUE = "not-provided"
+FALLBACK_PATIENT_EMAIL = "not-provided@klineus.local"
+
 
 def to_plain_data(value: Any) -> dict[str, Any]:
     if value is None:
@@ -45,6 +48,113 @@ def to_plain_data(value: Any) -> dict[str, Any]:
     return dict(value)
 
 
+def clean_string(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def is_fallback_value(value: Any) -> bool:
+    cleaned = clean_string(value).lower()
+
+    return cleaned in {
+        "",
+        FALLBACK_PATIENT_VALUE,
+        FALLBACK_PATIENT_EMAIL,
+    }
+
+
+def is_real_patient_email(value: Any) -> bool:
+    email = clean_string(value).lower()
+
+    if not email:
+        return False
+
+    if email == FALLBACK_PATIENT_EMAIL:
+        return False
+
+    if email.endswith("@klineus.local"):
+        return False
+
+    return "@" in email and "." in email.rsplit("@", 1)[-1]
+
+
+def normalize_patient_payload(
+    *,
+    patient_name: str | None = None,
+    patient_last_name: str | None = None,
+    patient_email: str | None = None,
+    insurance_id: str | None = None,
+) -> dict[str, str]:
+    clean_patient_name = clean_string(patient_name)
+    clean_patient_last_name = clean_string(patient_last_name)
+    clean_patient_email = clean_string(patient_email)
+    clean_insurance_id = clean_string(insurance_id)
+
+    normalized_name = (
+        clean_patient_name
+        if clean_patient_name and clean_patient_name != FALLBACK_PATIENT_VALUE
+        else FALLBACK_PATIENT_VALUE
+    )
+
+    normalized_last_name = (
+        clean_patient_last_name
+        if clean_patient_last_name and clean_patient_last_name != FALLBACK_PATIENT_VALUE
+        else normalized_name
+    )
+
+    normalized_email = (
+        clean_patient_email
+        if is_real_patient_email(clean_patient_email)
+        else FALLBACK_PATIENT_EMAIL
+    )
+
+    normalized_insurance_id = (
+        clean_insurance_id
+        if clean_insurance_id and clean_insurance_id != FALLBACK_PATIENT_VALUE
+        else FALLBACK_PATIENT_VALUE
+    )
+
+    return {
+        "patient_name": normalized_name,
+        "patient_last_name": normalized_last_name,
+        "patient_email": normalized_email,
+        "insurance_id": normalized_insurance_id,
+    }
+
+
+def optional_patient_update_fields(
+    *,
+    patient_name: str | None = None,
+    patient_last_name: str | None = None,
+    patient_email: str | None = None,
+    insurance_id: str | None = None,
+) -> dict[str, str | None]:
+    clean_patient_name = clean_string(patient_name)
+    clean_patient_last_name = clean_string(patient_last_name)
+    clean_patient_email = clean_string(patient_email)
+    clean_insurance_id = clean_string(insurance_id)
+
+    if is_fallback_value(clean_patient_name):
+        clean_patient_name = ""
+
+    if is_fallback_value(clean_patient_last_name):
+        clean_patient_last_name = ""
+
+    if is_fallback_value(clean_patient_email):
+        clean_patient_email = ""
+
+    if is_fallback_value(clean_insurance_id):
+        clean_insurance_id = ""
+
+    return {
+        "patient_name": clean_patient_name or None,
+        "patient_last_name": clean_patient_last_name or clean_patient_name or None,
+        "patient_email": clean_patient_email
+        if is_real_patient_email(clean_patient_email)
+        else None,
+        "insurance_id": clean_insurance_id or None,
+    }
+
+
 def generate_resume_code() -> str:
     return f"{random.randint(0, 9999):04d}"
 
@@ -55,83 +165,13 @@ def build_resume_url() -> str:
 
     return f"{public_url}/patient/resume"
 
-def answer_value(value: Any) -> Any:
-    if isinstance(value, dict):
-        return value.get("value", "")
-
-    return value
-
-
-def answer_starts_with_yes(value: Any) -> bool:
-    return str(answer_value(value) or "").strip().lower().startswith("ja")
-
-
-def answer_by_question_id(
-    answers: list[dict[str, Any]],
-    question_id: str,
-) -> Any:
-    for answer in answers:
-        if answer.get("question_id") == question_id:
-            return answer.get("answer")
-
-    return None
-
 
 def build_documents_to_bring(
     *,
     indication: str,
     answers: list[dict[str, Any]],
 ) -> list[dict[str, str]]:
-    documents: list[dict[str, str]] = []
-
-    if indication == "hip_tep":
-        if answer_starts_with_yes(answer_by_question_id(answers, "D2")):
-            documents.append(
-                {
-                    "id": "hip_findings",
-                    "title": "Arztbriefe, Röntgenbilder oder Befunde zur Hüfte",
-                    "description": "Bitte bringen Sie vorhandene Unterlagen zu Ihrer Hüfte zum Termin mit.",
-                }
-            )
-
-        if answer_starts_with_yes(answer_by_question_id(answers, "E6")):
-            documents.append(
-                {
-                    "id": "hip_labs",
-                    "title": "Letzte Laborergebnisse / HbA1c-Wert",
-                    "description": "Bitte bringen Sie vorhandene Laborwerte, insbesondere HbA1c, zum Termin mit.",
-                }
-            )
-
-    else:
-        if answer_starts_with_yes(answer_by_question_id(answers, "D1")):
-            documents.append(
-                {
-                    "id": "knee_findings",
-                    "title": "Arztbriefe, Röntgenbilder oder Befunde zum Knie",
-                    "description": "Bitte bringen Sie vorhandene Unterlagen zu Ihrem Knie zum Termin mit.",
-                }
-            )
-
-        if answer_starts_with_yes(answer_by_question_id(answers, "E3")):
-            documents.append(
-                {
-                    "id": "knee_discharge_letters",
-                    "title": "Entlassungsbriefe zum Herz-Kreislauf-Ereignis",
-                    "description": "Bitte bringen Sie vorhandene Entlassungsbriefe oder Befunde zum Herzinfarkt, Schlaganfall oder schweren Herz-Kreislauf-Ereignis mit.",
-                }
-            )
-
-    if not documents:
-        documents.append(
-            {
-                "id": "general_documents",
-                "title": "Vorhandene medizinische Unterlagen",
-                "description": "Falls vorhanden, bringen Sie bitte aktuelle Arztbriefe, Röntgenbilder, Befunde oder Laborwerte zum Termin mit.",
-            }
-        )
-
-    return documents
+    return []
 
 
 def session_to_resume_response(session) -> ResumePatientQuestionnaireResponse:
@@ -226,23 +266,39 @@ def get_patient_config() -> QuestionnaireConfigResponse:
 def start_patient_questionnaire_session(
     request: StartPatientQuestionnaireRequest,
 ) -> StartPatientQuestionnaireResponse:
-    resume_code = generate_resume_code()
-
-    session = storage.create_questionnaire_session(
-        indication=request.indication,
+    patient_payload = normalize_patient_payload(
         patient_name=request.patient_name,
         patient_last_name=request.patient_last_name,
         patient_email=request.patient_email,
         insurance_id=request.insurance_id,
+    )
+
+    if patient_payload["patient_name"] == FALLBACK_PATIENT_VALUE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Patient name is required.",
+        )
+
+    resume_code = generate_resume_code()
+
+    session = storage.create_questionnaire_session(
+        indication=request.indication,
+        patient_name=patient_payload["patient_name"],
+        patient_last_name=patient_payload["patient_last_name"],
+        patient_email=patient_payload["patient_email"],
+        insurance_id=patient_payload["insurance_id"],
         resume_code=resume_code,
     )
 
-    resume_code_sent = send_patient_resume_code_email(
-        to_email=request.patient_email,
-        patient_name=request.patient_name,
-        resume_code=resume_code,
-        resume_url=build_resume_url(),
-    )
+    resume_code_sent = False
+
+    if is_real_patient_email(patient_payload["patient_email"]):
+        resume_code_sent = send_patient_resume_code_email(
+            to_email=patient_payload["patient_email"],
+            patient_name=patient_payload["patient_name"],
+            resume_code=resume_code,
+            resume_url=build_resume_url(),
+        )
 
     return StartPatientQuestionnaireResponse(
         session_id=session.session_id,
@@ -260,24 +316,22 @@ def save_patient_questionnaire_progress(
 ) -> ResumePatientQuestionnaireResponse:
     answers = [to_plain_data(answer) for answer in request.answers]
     metadata = to_plain_data(request.metadata)
+    documents_to_bring = []
 
-    documents_to_bring = build_documents_to_bring(
-        indication=request.indication,
-        answers=answers,
-    )
-
-    metadata = {
-        **metadata,
-        "documents_to_bring": documents_to_bring,
-    }
-
-    session = storage.save_questionnaire_session_progress(
-        session_id=request.session_id,
-        indication=request.indication,
+    patient_updates = optional_patient_update_fields(
         patient_name=request.patient_name,
         patient_last_name=request.patient_last_name,
         patient_email=request.patient_email,
         insurance_id=request.insurance_id,
+    )
+
+    session = storage.save_questionnaire_session_progress(
+        session_id=request.session_id,
+        indication=request.indication,
+        patient_name=patient_updates["patient_name"],
+        patient_last_name=patient_updates["patient_last_name"],
+        patient_email=patient_updates["patient_email"],
+        insurance_id=patient_updates["insurance_id"],
         questionnaire_template_id=request.questionnaire_template_id,
         questionnaire_version=request.questionnaire_version,
         answers=answers,
@@ -301,15 +355,23 @@ def save_patient_questionnaire_progress(
 def resume_patient_questionnaire_session(
     request: ResumePatientQuestionnaireRequest,
 ) -> ResumePatientQuestionnaireResponse:
+    lookup_name = clean_string(request.patient_last_name or request.patient_name)
+
+    if not lookup_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Patient name is required.",
+        )
+
     session = storage.resume_questionnaire_session(
-        patient_last_name=request.patient_last_name,
+        patient_last_name=lookup_name,
         resume_code=request.resume_code,
     )
 
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active questionnaire session found for this last name and code.",
+            detail="No active questionnaire session found for this name and code.",
         )
 
     return session_to_resume_response(session)
@@ -329,29 +391,27 @@ def create_patient_case(
 ) -> CreatePatientCaseResponse:
     answers = [to_plain_data(answer) for answer in request.answers]
     metadata = to_plain_data(request.metadata)
-
-    documents_to_bring = build_documents_to_bring(
-        indication=request.indication,
-        answers=answers,
-    )
-
-    metadata = {
-        **metadata,
-        "documents_to_bring": documents_to_bring,
-    }
+    documents_to_bring = []
 
     session = None
 
     if request.session_id:
         session = storage.get_questionnaire_session(request.session_id)
 
-    created_case = storage.create_case(
-        indication=request.indication,
+    patient_payload = normalize_patient_payload(
         patient_name=request.patient_name or getattr(session, "patient_name", None),
         patient_last_name=request.patient_last_name
         or getattr(session, "patient_last_name", None),
         patient_email=request.patient_email or getattr(session, "patient_email", None),
         insurance_id=request.insurance_id or getattr(session, "insurance_id", None),
+    )
+
+    created_case = storage.create_case(
+        indication=request.indication,
+        patient_name=patient_payload["patient_name"],
+        patient_last_name=patient_payload["patient_last_name"],
+        patient_email=patient_payload["patient_email"],
+        insurance_id=patient_payload["insurance_id"],
         session_id=request.session_id,
         questionnaire_template_id=request.questionnaire_template_id,
         questionnaire_version=request.questionnaire_version,
@@ -359,11 +419,9 @@ def create_patient_case(
         metadata=metadata,
     )
 
-    patient_email = created_case.patient_email
-
-    if patient_email:
+    if is_real_patient_email(created_case.patient_email):
         send_patient_submission_confirmation_email(
-            to_email=patient_email,
+            to_email=created_case.patient_email,
             patient_name=created_case.patient_name or "Patient",
             case_id=created_case.case_id,
             documents_to_bring=documents_to_bring,

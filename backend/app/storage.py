@@ -85,6 +85,9 @@ class SQLiteCaseStorage:
                 CREATE INDEX IF NOT EXISTS idx_patient_sessions_resume
                 ON patient_questionnaire_sessions(patient_last_name, resume_code);
 
+                CREATE INDEX IF NOT EXISTS idx_patient_sessions_name_resume
+                ON patient_questionnaire_sessions(patient_name, resume_code);
+
                 CREATE INDEX IF NOT EXISTS idx_patient_sessions_status
                 ON patient_questionnaire_sessions(status);
 
@@ -194,12 +197,15 @@ class SQLiteCaseStorage:
     ) -> PatientQuestionnaireSession:
         now = utc_now()
 
+        clean_patient_name = patient_name.strip()
+        clean_patient_last_name = patient_last_name.strip() or clean_patient_name
+
         session = PatientQuestionnaireSession(
             session_id=str(uuid4()),
             resume_code=resume_code,
             indication=indication,
-            patient_name=patient_name.strip(),
-            patient_last_name=patient_last_name.strip(),
+            patient_name=clean_patient_name,
+            patient_last_name=clean_patient_last_name,
             patient_email=patient_email.strip(),
             insurance_id=insurance_id.strip(),
             answers=[],
@@ -276,8 +282,8 @@ class SQLiteCaseStorage:
         return self._row_to_session(row) if row else None
 
     def list_questionnaire_sessions(
-            self,
-            status: str | None = None,
+        self,
+        status: str | None = None,
     ) -> list[PatientQuestionnaireSession]:
         query = """
             SELECT *
@@ -303,18 +309,31 @@ class SQLiteCaseStorage:
         patient_last_name: str,
         resume_code: str,
     ) -> PatientQuestionnaireSession | None:
+        lookup_name = patient_last_name.strip()
+        clean_resume_code = resume_code.strip()
+
+        if not lookup_name or not clean_resume_code:
+            return None
+
         with connect() as connection:
             row = connection.execute(
                 """
                 SELECT *
                 FROM patient_questionnaire_sessions
-                WHERE lower(patient_last_name) = lower(?)
+                WHERE (
+                        lower(patient_last_name) = lower(?)
+                     OR lower(patient_name) = lower(?)
+                  )
                   AND resume_code = ?
                   AND status = 'in_progress'
                 ORDER BY updated_at DESC
                 LIMIT 1
                 """,
-                (patient_last_name.strip(), resume_code.strip()),
+                (
+                    lookup_name,
+                    lookup_name,
+                    clean_resume_code,
+                ),
             ).fetchone()
 
         return self._row_to_session(row) if row else None
@@ -346,16 +365,22 @@ class SQLiteCaseStorage:
             if patient_name
             else existing_session.patient_name
         )
+
         next_patient_last_name = (
             patient_last_name.strip()
             if patient_last_name
             else existing_session.patient_last_name
         )
+
+        if not next_patient_last_name:
+            next_patient_last_name = next_patient_name
+
         next_patient_email = (
             patient_email.strip()
             if patient_email
             else existing_session.patient_email
         )
+
         next_insurance_id = (
             insurance_id.strip()
             if insurance_id

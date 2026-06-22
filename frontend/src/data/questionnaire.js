@@ -95,8 +95,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
   blocks: [
     {
       id: "A",
-      titleDe: "Block A: Ihr Knieproblem",
-      titleEn: "Block A: Your knee problem",
+      titleDe: "Ihr Knieproblem",
+      titleEn: "Your knee problem",
       questions: [
         {
           id: "A1",
@@ -143,25 +143,25 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
           ]),
           showIf: { questionId: "A2", equals: "Ja" },
         },
-       {
-  id: "A6",
-  textDe: "Was beschreibt Ihre Beschwerden am besten?",
-  textEn: "What best describes your symptoms?",
-  type: "multiple",
-  options: options([
-    ["Schmerz", "Pain"],
-    ["Steifigkeit", "Stiffness"],
-    ["Unsicherheit im Knie", "Instability in the knee"],
-    ["Das Knie knickt weg", "The knee gives way"],
-    [
-      "Knie lässt sich nicht richtig beugen oder strecken",
-      "The knee cannot be properly bent or straightened",
-    ],
-    ["Schwellung", "Swelling"],
-    ["Etwas anderes", "Something else"],
-  ]),
-  showIf: { questionId: "A2", equals: "Ja" },
-},
+        {
+          id: "A6",
+          textDe: "Was beschreibt Ihre Beschwerden am besten?",
+          textEn: "What best describes your symptoms?",
+          type: "multiple",
+          options: options([
+            ["Schmerz", "Pain"],
+            ["Steifigkeit", "Stiffness"],
+            ["Unsicherheit im Knie", "Instability in the knee"],
+            ["Das Knie knickt weg", "The knee gives way"],
+            [
+              "Knie lässt sich nicht richtig beugen oder strecken",
+              "The knee cannot be properly bent or straightened",
+            ],
+            ["Schwellung", "Swelling"],
+            ["Etwas anderes", "Something else"],
+          ]),
+          showIf: { questionId: "A2", equals: "Ja" },
+        },
         {
           id: "A7",
           textDe: "Was ist heute der Hauptgrund für Ihren Termin?",
@@ -182,8 +182,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "B",
-      titleDe: "Block B: Auswirkungen im Alltag",
-      titleEn: "Block B: Effects on everyday life",
+      titleDe: "Auswirkungen im Alltag",
+      titleEn: "Effects on everyday life",
       questions: [
         {
           id: "B1",
@@ -243,8 +243,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "C",
-      titleDe: "Block C: Bisherige Behandlung",
-      titleEn: "Block C: Previous treatment",
+      titleDe: "Bisherige Behandlung",
+      titleEn: "Previous treatment",
       questions: [
         {
           id: "C1",
@@ -310,8 +310,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "D",
-      titleDe: "Block D: Vorbefunde und ärztliche Aussagen",
-      titleEn: "Block D: Previous findings and medical statements",
+      titleDe: "Vorbefunde und ärztliche Aussagen",
+      titleEn: "Previous findings and medical statements",
       questions: [
         {
           id: "D1",
@@ -344,8 +344,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "E",
-      titleDe: "Block E: Gesundheit und Risiken",
-      titleEn: "Block E: Health and risks",
+      titleDe: "Gesundheit und Risiken",
+      titleEn: "Health and risks",
       questions: [
         {
           id: "E1",
@@ -500,8 +500,8 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "F",
-      titleDe: "Block F: Ziele, Erwartungen und Ergänzungen",
-      titleEn: "Block F: Goals, expectations and additional information",
+      titleDe: "Ziele, Erwartungen und Ergänzungen",
+      titleEn: "Goals, expectations and additional information",
       questions: [
         {
           id: "F1",
@@ -513,11 +513,23 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
           options: options([
             ["Weniger Schmerzen", "Less pain"],
             ["Besser gehen können", "Being able to walk better"],
-            ["Wieder besser Treppen steigen", "Being able to climb stairs better again"],
-            ["Wieder besser schlafen", "Being able to sleep better again"],
-            ["Im Alltag unabhängiger sein", "Being more independent in everyday life"],
+            [
+              "Wieder besser Treppen steigen",
+              "Being able to climb stairs better again",
+            ],
+            [
+              "Wieder besser schlafen",
+              "Being able to sleep better again",
+            ],
+            [
+              "Im Alltag unabhängiger sein",
+              "Being more independent in everyday life",
+            ],
             ["Wieder arbeiten können", "Being able to work again"],
-            ["Wieder Sport oder Hobbys ausüben", "Being able to do sports or hobbies again"],
+            [
+              "Wieder Sport oder Hobbys ausüben",
+              "Being able to do sports or hobbies again",
+            ],
             ["Sonstiges", "Other"],
           ]),
         },
@@ -563,8 +575,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
   blocks: [
     {
       id: "A",
-      titleDe: "Block A: Ihr Hüftproblem",
-      titleEn: "Block A: Your hip problem",
+      titleDe: "Ihr Hüftproblem",
+      titleEn: "Your hip problem",
       questions: [
         {
           id: "A1",
@@ -604,28 +616,34 @@ export const hipTepQuestionnaire = makeQuestionnaire({
           type: "multiple",
           options: options([
             ["Beim Gehen oder Belasten", "When walking or putting weight on it"],
-            ["Beim Aufstehen oder Lagewechsel", "When standing up or changing position"],
+            [
+              "Beim Aufstehen oder Lagewechsel",
+              "When standing up or changing position",
+            ],
             ["In Ruhe", "At rest"],
             ["Nachts", "At night"],
             ["Eigentlich immer", "Almost all the time"],
           ]),
           showIf: { questionId: "A2", equals: "Ja" },
         },
-      {
-  id: "A6",
-  textDe: "Was beschreibt Ihre Beschwerden am besten?",
-  textEn: "What best describes your symptoms?",
-  type: "multiple",
-  options: options([
-    ["Schmerz", "Pain"],
-    ["Steifigkeit", "Stiffness"],
-    ["Die Hüfte ist unbeweglich", "The hip is stiff or difficult to move"],
-    ["Ich humpele", "I limp"],
-    ["Die Hüfte fühlt sich schwach an", "The hip feels weak"],
-    ["Etwas anderes", "Something else"],
-  ]),
-  showIf: { questionId: "A2", equals: "Ja" },
-},
+        {
+          id: "A6",
+          textDe: "Was beschreibt Ihre Beschwerden am besten?",
+          textEn: "What best describes your symptoms?",
+          type: "multiple",
+          options: options([
+            ["Schmerz", "Pain"],
+            ["Steifigkeit", "Stiffness"],
+            [
+              "Die Hüfte ist unbeweglich",
+              "The hip is stiff or difficult to move",
+            ],
+            ["Ich humpele", "I limp"],
+            ["Die Hüfte fühlt sich schwach an", "The hip feels weak"],
+            ["Etwas anderes", "Something else"],
+          ]),
+          showIf: { questionId: "A2", equals: "Ja" },
+        },
         {
           id: "A7",
           textDe: "Was ist der Hauptgrund für Ihren Termin?",
@@ -646,8 +664,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "B",
-      titleDe: "Block B: Auswirkungen im Alltag",
-      titleEn: "Block B: Effects on everyday life",
+      titleDe: "Auswirkungen im Alltag",
+      titleEn: "Effects on everyday life",
       questions: [
         {
           id: "B1",
@@ -716,8 +734,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "C",
-      titleDe: "Block C: Bisherige Behandlung",
-      titleEn: "Block C: Previous treatment",
+      titleDe: "Bisherige Behandlung",
+      titleEn: "Previous treatment",
       questions: [
         {
           id: "C1",
@@ -802,8 +820,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "D",
-      titleDe: "Block D: Vorbefunde und ärztliche Aussagen",
-      titleEn: "Block D: Previous findings and medical statements",
+      titleDe: "Vorbefunde und ärztliche Aussagen",
+      titleEn: "Previous findings and medical statements",
       questions: [
         {
           id: "D1",
@@ -852,8 +870,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "E",
-      titleDe: "Block E: Gesundheit und Risiken",
-      titleEn: "Block E: Health and risks",
+      titleDe: "Gesundheit und Risiken",
+      titleEn: "Health and risks",
       questions: [
         {
           id: "E1",
@@ -909,25 +927,25 @@ export const hipTepQuestionnaire = makeQuestionnaire({
           detailsLabel: "Angabe",
           detailsLabels: label("Angabe", "Details"),
         },
-       {
-  id: "E6",
-  textDe: "Haben Sie Diabetes oder erhöhte Blutzuckerwerte?",
-  textEn: "Do you have diabetes or elevated blood sugar levels?",
-  type: "single_with_text",
-  options: common.yesNoUnknown,
-  detailsIf: ["Ja"],
-  detailsLabel: "Diabetes-Typ und HbA1c Wert",
-  detailsLabels: label(
-    "Diabetes-Typ und HbA1c Wert",
-    "Diabetes type and HbA1c value",
-  ),
-  notesByValue: {
-    Ja: "Bitte bringen Sie falls vorhanden Ihre letzten Laborergebnisse, insbesondere den HbA1c-Wert, zum Termin mit.",
-  },
-  notesByValueEn: {
-    Ja: "Please bring your latest lab results, especially the HbA1c value, to your appointment if available.",
-  },
-},
+        {
+          id: "E6",
+          textDe: "Haben Sie Diabetes oder erhöhte Blutzuckerwerte?",
+          textEn: "Do you have diabetes or elevated blood sugar levels?",
+          type: "single_with_text",
+          options: common.yesNoUnknown,
+          detailsIf: ["Ja"],
+          detailsLabel: "Diabetes-Typ und HbA1c Wert",
+          detailsLabels: label(
+            "Diabetes-Typ und HbA1c Wert",
+            "Diabetes type and HbA1c value",
+          ),
+          notesByValue: {
+            Ja: "Bitte bringen Sie falls vorhanden Ihre letzten Laborergebnisse, insbesondere den HbA1c-Wert, zum Termin mit.",
+          },
+          notesByValueEn: {
+            Ja: "Please bring your latest lab results, especially the HbA1c value, to your appointment if available.",
+          },
+        },
         {
           id: "E7",
           textDe:
@@ -999,8 +1017,8 @@ export const hipTepQuestionnaire = makeQuestionnaire({
     },
     {
       id: "F",
-      titleDe: "Block F: Ziele, Erwartungen und gemeinsame Entscheidung",
-      titleEn: "Block F: Goals, expectations and shared decision-making",
+      titleDe: "Ziele, Erwartungen und gemeinsame Entscheidung",
+      titleEn: "Goals, expectations and shared decision-making",
       questions: [
         {
           id: "F1",

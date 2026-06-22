@@ -1,92 +1,80 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
 
-
 const fallbackCopy = {
   de: {
-    eyebrow: "Klineus Prototyp",
-    title: "Strukturierte Patientenerfassung für Knie- und Hüft-TEP.",
+    title: "Klineus",
     lead:
-      "Klineus unterstützt Patientinnen und Patienten beim Ausfüllen eines strukturierten Fragebogens und hilft Ärztinnen und Ärzten, Fälle effizient zu prüfen und Dokumentationsentwürfe vorzubereiten.",
-    primaryCta: "Fragebogen starten",
-    secondaryCta: "Produkt ansehen",
-    trustOne: "Knie- und Hüft-TEP",
-    trustTwo: "Arztprüfung vorgesehen",
+      "Klineus unterstützt die strukturierte Erhebung, Einordnung und Dokumentation patientenbezogener Informationen vor dem Arztkontakt.",
 
     workflowEyebrow: "Ablauf",
-    workflowTitle: "Vom Fragebogen zum ärztlich geprüften Entwurf.",
+    workflowTitle: "Vom Fragebogen zur ärztlichen Übersicht.",
     steps: [
       {
-        title: "Patientendaten erfassen",
-        text: "Patientinnen und Patienten beantworten indikationsspezifische Fragen zu Beschwerden, Alltag, Vorbehandlung und Risikohinweisen.",
+        title: "Patienteninformationen erfassen",
+        text:
+          "Patientinnen und Patienten beantworten strukturierte Fragen zu Beschwerden, Alltag, Vorbehandlung und relevanten Hinweisen.",
       },
       {
         title: "Fall im Dashboard prüfen",
-        text: "Ärztinnen und Ärzte sehen strukturierte Antworten, Warnhinweise und wichtige offene Punkte für das Gespräch.",
+        text:
+          "Ärztinnen und Ärzte sehen die Antworten übersichtlich zusammengefasst und können wichtige Punkte für das Gespräch prüfen.",
       },
       {
         title: "Dokumentation vorbereiten",
-        text: "Ein KI-generierter Entwurf wird erstellt, bleibt aber immer prüfpflichtig und muss ärztlich freigegeben werden.",
+        text:
+          "Die Informationen können für eine strukturierte ärztliche Dokumentation vorbereitet werden.",
       },
     ],
+
     benefitsEyebrow: "Warum Klineus",
-    benefitsTitle: "Für bessere Vorbereitung, nicht für automatische Entscheidungen.",
+    benefitsTitle: "Für bessere Vorbereitung vor dem Termin.",
     benefits: [
-      "Standardisierte Erfassung vor dem Termin",
-      "Klarere Übersicht über Beschwerden und Funktion",
-      "Risikohinweise für die ärztliche Prüfung",
-      "PDF-tauglicher Dokumentationsentwurf",
+      "Strukturierte Erfassung vor dem Arztkontakt",
+      "Übersichtliche Darstellung für Ärztinnen und Ärzte",
+      "Bessere Vorbereitung des Patientengesprächs",
+      "Klare Dokumentation relevanter Angaben",
     ],
-    ctaTitle: "Starten Sie mit dem Prototyp.",
-    ctaText:
-      "Wählen Sie einen Fragebogen aus und testen Sie den Ablauf vom Patientenformular bis zum ärztlichen Dashboard.",
-    ctaButton: "Zum Patientenstart",
   },
+
   en: {
-    eyebrow: "Klineus prototype",
-    title: "Structured patient intake for knee and hip replacement pathways.",
+    title: "Klineus",
     lead:
-      "Klineus helps patients complete a structured questionnaire and supports doctors with efficient case review and documentation drafting.",
-    primaryCta: "Start questionnaire",
-    secondaryCta: "View product",
-    trustOne: "Knee and hip TEP",
-    trustTwo: "Doctor review required",
-    trustThree: "AI draft with approval",
+      "Klineus supports the structured collection, organization and documentation of patient-related information before the medical consultation.",
+
     workflowEyebrow: "Workflow",
-    workflowTitle: "From questionnaire to physician-reviewed draft.",
+    workflowTitle: "From questionnaire to physician overview.",
     steps: [
       {
         title: "Collect patient information",
-        text: "Patients answer indication-specific questions about symptoms, daily life, prior treatment and risk notes.",
+        text:
+          "Patients answer structured questions about symptoms, daily life, prior treatment and relevant notes.",
       },
       {
-        title: "Review case in dashboard",
-        text: "Doctors see structured answers, documentation notes and open points for the consultation.",
+        title: "Review the case in the dashboard",
+        text:
+          "Doctors see the answers clearly summarized and can review important points for the consultation.",
       },
       {
         title: "Prepare documentation",
-        text: "An AI-generated draft can be created, but it always requires physician review and approval.",
+        text:
+          "The information can be prepared for structured medical documentation.",
       },
     ],
+
     benefitsEyebrow: "Why Klineus",
-    benefitsTitle: "Built for preparation, not automated decisions.",
+    benefitsTitle: "Better preparation before the appointment.",
     benefits: [
-      "Standardized intake before the appointment",
-      "Clearer overview of symptoms and function",
-      "Risk notes for medical review",
-      "PDF-ready documentation draft",
+      "Structured intake before the medical consultation",
+      "Clear overview for doctors",
+      "Better preparation for the patient conversation",
+      "Clear documentation of relevant information",
     ],
-    ctaTitle: "Start with the prototype.",
-    ctaText:
-      "Select a questionnaire and test the flow from patient form to doctor dashboard.",
-    ctaButton: "Go to patient start",
   },
 };
-
 
 function getText(value, language, fallback = "") {
   if (!value) {
@@ -99,7 +87,6 @@ function getText(value, language, fallback = "") {
 
   return value[language] || value.de || value.en || fallback;
 }
-
 
 function normalizeImagePath(path, fallback) {
   const value = path || fallback;
@@ -127,11 +114,9 @@ function normalizeImagePath(path, fallback) {
   return value;
 }
 
-
 function findSection(page, id) {
   return (page?.sections || []).find((section) => section.id === id);
 }
-
 
 export default function LandingPage() {
   const { language } = useLanguage();
@@ -167,15 +152,16 @@ export default function LandingPage() {
 
   const heroTitle = getText(heroSection?.title, language, text.title);
   const heroBody = getText(heroSection?.body, language, text.lead);
-  const heroEyebrow = getText(heroSection?.eyebrow, language, text.eyebrow);
+
   const heroImage = normalizeImagePath(
     heroSection?.image_path,
-    "/static/images/hero-medical.png"
+    "/static/images/hero-medical.png",
   );
+
   const heroImageAlt = getText(
     heroSection?.image_alt,
     language,
-    "Klineus medical documentation support"
+    "Klineus medical documentation support",
   );
 
   return (
@@ -183,25 +169,8 @@ export default function LandingPage() {
       <main className="landing-page-pro">
         <section className="home-hero-pro">
           <div className="home-hero-copy-pro">
-            <p className="eyebrow">{heroEyebrow}</p>
             <h1>{heroTitle}</h1>
             <p>{heroBody}</p>
-
-            <div className="hero-actions">
-              <Link className="primary-button" to="/patient/start">
-                {text.primaryCta}
-              </Link>
-
-              <Link className="secondary-button" to="/product">
-                {text.secondaryCta}
-              </Link>
-            </div>
-
-            <div className="home-trust-row-pro" aria-label="Klineus features">
-              <span>{text.trustOne}</span>
-              <span>{text.trustTwo}</span>
-              <span>{text.trustThree}</span>
-            </div>
           </div>
 
           <div className="home-hero-media-pro">
@@ -211,11 +180,6 @@ export default function LandingPage() {
               alt={heroImageAlt}
               loading="eager"
             />
-
-            <div className="home-hero-note-pro">
-              <strong>Klineus</strong>
-              <span>{text.trustThree}</span>
-            </div>
           </div>
         </section>
 
@@ -250,18 +214,6 @@ export default function LandingPage() {
               </article>
             ))}
           </div>
-        </section>
-
-        <section className="home-cta-pro">
-          <div>
-            <p className="eyebrow">Klineus</p>
-            <h2>{text.ctaTitle}</h2>
-            <p>{text.ctaText}</p>
-          </div>
-
-          <Link className="primary-button" to="/patient/start">
-            {text.ctaButton}
-          </Link>
         </section>
       </main>
     </AppShell>

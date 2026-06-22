@@ -42,6 +42,15 @@ def get_db_path() -> Path:
     return Path(os.getenv("KLINEUS_DB_PATH", str(DEFAULT_DB_PATH)))
 
 
+def refresh_seed_data_enabled() -> bool:
+    return os.getenv("KLINEUS_REFRESH_SEED_DATA", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def connect() -> sqlite3.Connection:
     db_path = get_db_path()
     db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -63,6 +72,9 @@ def loads(value: str | None, fallback: Any = None) -> Any:
 
 
 def to_plain_data(value: Any) -> dict[str, Any]:
+    if value is None:
+        return {}
+
     if hasattr(value, "model_dump"):
         return value.model_dump()
 
@@ -156,151 +168,315 @@ def seed_database(connection: sqlite3.Connection | None = None) -> None:
 
 def seed_languages(connection: sqlite3.Connection) -> None:
     now = utc_now_iso()
+    refresh_existing = refresh_seed_data_enabled()
 
     for language in DEFAULT_LANGUAGES:
-        connection.execute(
-            """
-            INSERT OR IGNORE INTO languages (
-                code,
-                name,
-                enabled,
-                created_at,
-                updated_at
+        if refresh_existing:
+            connection.execute(
+                """
+                INSERT INTO languages (
+                    code,
+                    name,
+                    enabled,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(code) DO UPDATE SET
+                    name = excluded.name,
+                    enabled = excluded.enabled,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    language["code"],
+                    language["name"],
+                    1 if language.get("enabled", True) else 0,
+                    now,
+                    now,
+                ),
             )
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (
-                language["code"],
-                language["name"],
-                1 if language.get("enabled", True) else 0,
-                now,
-                now,
-            ),
-        )
+        else:
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO languages (
+                    code,
+                    name,
+                    enabled,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    language["code"],
+                    language["name"],
+                    1 if language.get("enabled", True) else 0,
+                    now,
+                    now,
+                ),
+            )
 
 
 def seed_media_assets(connection: sqlite3.Connection) -> None:
     now = utc_now_iso()
+    refresh_existing = refresh_seed_data_enabled()
 
     for asset in DEFAULT_MEDIA_ASSETS:
-        connection.execute(
-            """
-            INSERT OR IGNORE INTO media_assets (
-                id,
-                key,
-                path,
-                alt_json,
-                caption_json,
-                kind,
-                created_at,
-                updated_at
+        if refresh_existing:
+            connection.execute(
+                """
+                INSERT INTO media_assets (
+                    id,
+                    key,
+                    path,
+                    alt_json,
+                    caption_json,
+                    kind,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET
+                    path = excluded.path,
+                    alt_json = excluded.alt_json,
+                    caption_json = excluded.caption_json,
+                    kind = excluded.kind,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    create_id("media"),
+                    asset["key"],
+                    asset["path"],
+                    dumps(asset.get("alt", {})),
+                    dumps(asset.get("caption", {})),
+                    asset.get("kind", "image"),
+                    now,
+                    now,
+                ),
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                create_id("media"),
-                asset["key"],
-                asset["path"],
-                dumps(asset.get("alt", {})),
-                dumps(asset.get("caption", {})),
-                asset.get("kind", "image"),
-                now,
-                now,
-            ),
-        )
+        else:
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO media_assets (
+                    id,
+                    key,
+                    path,
+                    alt_json,
+                    caption_json,
+                    kind,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    create_id("media"),
+                    asset["key"],
+                    asset["path"],
+                    dumps(asset.get("alt", {})),
+                    dumps(asset.get("caption", {})),
+                    asset.get("kind", "image"),
+                    now,
+                    now,
+                ),
+            )
 
 
 def seed_site_settings(connection: sqlite3.Connection) -> None:
     now = utc_now_iso()
 
-    connection.execute(
-        """
-        INSERT OR IGNORE INTO site_settings (
-            id,
-            data_json,
-            created_at,
-            updated_at
+    if refresh_seed_data_enabled():
+        connection.execute(
+            """
+            INSERT INTO site_settings (
+                id,
+                data_json,
+                created_at,
+                updated_at
+            )
+            VALUES (1, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                data_json = excluded.data_json,
+                updated_at = excluded.updated_at
+            """,
+            (
+                dumps(DEFAULT_SITE_SETTINGS),
+                now,
+                now,
+            ),
         )
-        VALUES (1, ?, ?, ?)
-        """,
-        (
-            dumps(DEFAULT_SITE_SETTINGS),
-            now,
-            now,
-        ),
-    )
+    else:
+        connection.execute(
+            """
+            INSERT OR IGNORE INTO site_settings (
+                id,
+                data_json,
+                created_at,
+                updated_at
+            )
+            VALUES (1, ?, ?, ?)
+            """,
+            (
+                dumps(DEFAULT_SITE_SETTINGS),
+                now,
+                now,
+            ),
+        )
 
 
 def seed_content_pages(connection: sqlite3.Connection) -> None:
     now = utc_now_iso()
+    refresh_existing = refresh_seed_data_enabled()
 
     for page in DEFAULT_CONTENT_PAGES:
-        connection.execute(
-            """
-            INSERT OR IGNORE INTO content_pages (
-                id,
-                slug,
-                title_json,
-                description_json,
-                sections_json,
-                seo_json,
-                is_published,
-                created_at,
-                updated_at
+        if refresh_existing:
+            connection.execute(
+                """
+                INSERT INTO content_pages (
+                    id,
+                    slug,
+                    title_json,
+                    description_json,
+                    sections_json,
+                    seo_json,
+                    is_published,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(slug) DO UPDATE SET
+                    title_json = excluded.title_json,
+                    description_json = excluded.description_json,
+                    sections_json = excluded.sections_json,
+                    seo_json = excluded.seo_json,
+                    is_published = excluded.is_published,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    create_id("page"),
+                    page["slug"],
+                    dumps(page.get("title", {})),
+                    dumps(page.get("description", {})),
+                    dumps(page.get("sections", [])),
+                    dumps(page.get("seo", {})),
+                    1 if page.get("is_published", True) else 0,
+                    now,
+                    now,
+                ),
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                create_id("page"),
-                page["slug"],
-                dumps(page.get("title", {})),
-                dumps(page.get("description", {})),
-                dumps(page.get("sections", [])),
-                dumps(page.get("seo", {})),
-                1 if page.get("is_published", True) else 0,
-                now,
-                now,
-            ),
-        )
+        else:
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO content_pages (
+                    id,
+                    slug,
+                    title_json,
+                    description_json,
+                    sections_json,
+                    seo_json,
+                    is_published,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    create_id("page"),
+                    page["slug"],
+                    dumps(page.get("title", {})),
+                    dumps(page.get("description", {})),
+                    dumps(page.get("sections", [])),
+                    dumps(page.get("seo", {})),
+                    1 if page.get("is_published", True) else 0,
+                    now,
+                    now,
+                ),
+            )
 
 
 def seed_questionnaires(connection: sqlite3.Connection) -> None:
     now = utc_now_iso()
+    refresh_existing = refresh_seed_data_enabled()
 
     for questionnaire in DEFAULT_QUESTIONNAIRES:
-        connection.execute(
-            """
-            INSERT OR IGNORE INTO questionnaire_templates (
-                id,
-                indication,
-                slug,
-                labels_json,
-                description_json,
-                image_path,
-                image_alt_json,
-                version,
-                is_published,
-                blocks_json,
-                created_at,
-                updated_at
+        if refresh_existing:
+            connection.execute(
+                """
+                INSERT INTO questionnaire_templates (
+                    id,
+                    indication,
+                    slug,
+                    labels_json,
+                    description_json,
+                    image_path,
+                    image_alt_json,
+                    version,
+                    is_published,
+                    blocks_json,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(indication) DO UPDATE SET
+                    slug = excluded.slug,
+                    labels_json = excluded.labels_json,
+                    description_json = excluded.description_json,
+                    image_path = excluded.image_path,
+                    image_alt_json = excluded.image_alt_json,
+                    version = excluded.version,
+                    is_published = excluded.is_published,
+                    blocks_json = excluded.blocks_json,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    create_id("questionnaire"),
+                    questionnaire["indication"],
+                    questionnaire["slug"],
+                    dumps(questionnaire.get("labels", {})),
+                    dumps(questionnaire.get("description", {})),
+                    questionnaire.get("image_path"),
+                    dumps(questionnaire.get("image_alt", {})),
+                    int(questionnaire.get("version", 1)),
+                    1 if questionnaire.get("is_published", True) else 0,
+                    dumps(questionnaire.get("blocks", [])),
+                    now,
+                    now,
+                ),
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                create_id("questionnaire"),
-                questionnaire["indication"],
-                questionnaire["slug"],
-                dumps(questionnaire.get("labels", {})),
-                dumps(questionnaire.get("description", {})),
-                questionnaire.get("image_path"),
-                dumps(questionnaire.get("image_alt", {})),
-                int(questionnaire.get("version", 1)),
-                1 if questionnaire.get("is_published", True) else 0,
-                dumps(questionnaire.get("blocks", [])),
-                now,
-                now,
-            ),
-        )
+        else:
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO questionnaire_templates (
+                    id,
+                    indication,
+                    slug,
+                    labels_json,
+                    description_json,
+                    image_path,
+                    image_alt_json,
+                    version,
+                    is_published,
+                    blocks_json,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    create_id("questionnaire"),
+                    questionnaire["indication"],
+                    questionnaire["slug"],
+                    dumps(questionnaire.get("labels", {})),
+                    dumps(questionnaire.get("description", {})),
+                    questionnaire.get("image_path"),
+                    dumps(questionnaire.get("image_alt", {})),
+                    int(questionnaire.get("version", 1)),
+                    1 if questionnaire.get("is_published", True) else 0,
+                    dumps(questionnaire.get("blocks", [])),
+                    now,
+                    now,
+                ),
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -327,7 +503,13 @@ def list_languages() -> list[LanguageDefinition]:
     ]
 
 
-def upsert_language(code: str, name: str, enabled: bool = True) -> LanguageDefinition:
+def upsert_language(
+    code: str,
+    name: str,
+    enabled: bool = True,
+) -> LanguageDefinition:
+    clean_code = code.strip().lower()
+    clean_name = name.strip()
     now = utc_now_iso()
 
     with connect() as connection:
@@ -347,15 +529,19 @@ def upsert_language(code: str, name: str, enabled: bool = True) -> LanguageDefin
                 updated_at = excluded.updated_at
             """,
             (
-                code.strip().lower(),
-                name.strip(),
+                clean_code,
+                clean_name,
                 1 if enabled else 0,
                 now,
                 now,
             ),
         )
 
-    return LanguageDefinition(code=code.strip().lower(), name=name.strip(), enabled=enabled)
+    return LanguageDefinition(
+        code=clean_code,
+        name=clean_name,
+        enabled=enabled,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -405,6 +591,7 @@ def get_media_asset(key: str) -> MediaAsset | None:
 def upsert_media_asset(payload: UpsertMediaAssetRequest) -> MediaAsset:
     data = to_plain_data(payload)
     now = utc_now_iso()
+
     existing = get_media_asset(data["key"])
     asset_id = existing.id if existing else create_id("media")
     created_at = existing.created_at.isoformat() if existing else now
@@ -443,8 +630,10 @@ def upsert_media_asset(payload: UpsertMediaAssetRequest) -> MediaAsset:
         )
 
     saved = get_media_asset(data["key"])
+
     if not saved:
         raise RuntimeError("Media asset could not be saved.")
+
     return saved
 
 
@@ -531,7 +720,6 @@ def list_content_pages(published_only: bool = False) -> list[ContentPageSummary]
         SELECT *
         FROM content_pages
     """
-    params: tuple[Any, ...] = ()
 
     if published_only:
         query += " WHERE is_published = 1"
@@ -539,12 +727,15 @@ def list_content_pages(published_only: bool = False) -> list[ContentPageSummary]
     query += " ORDER BY slug ASC"
 
     with connect() as connection:
-        rows = connection.execute(query, params).fetchall()
+        rows = connection.execute(query).fetchall()
 
     return [row_to_page_summary(row) for row in rows]
 
 
-def get_content_page(slug: str, published_only: bool = False) -> ContentPageDetail | None:
+def get_content_page(
+    slug: str,
+    published_only: bool = False,
+) -> ContentPageDetail | None:
     query = """
         SELECT *
         FROM content_pages
@@ -564,6 +755,7 @@ def get_content_page(slug: str, published_only: bool = False) -> ContentPageDeta
 def upsert_content_page(payload: UpsertContentPageRequest) -> ContentPageDetail:
     data = to_plain_data(payload)
     now = utc_now_iso()
+
     existing = get_content_page(data["slug"], published_only=False)
     page_id = existing.id if existing else create_id("page")
     created_at = existing.created_at.isoformat() if existing else now
@@ -605,8 +797,10 @@ def upsert_content_page(payload: UpsertContentPageRequest) -> ContentPageDetail:
         )
 
     saved = get_content_page(data["slug"], published_only=False)
+
     if not saved:
         raise RuntimeError("Content page could not be saved.")
+
     return saved
 
 
@@ -627,7 +821,9 @@ def delete_content_page(slug: str) -> bool:
 # Questionnaire templates
 # ---------------------------------------------------------------------------
 
-def row_to_questionnaire_summary(row: sqlite3.Row) -> QuestionnaireTemplateSummary:
+def row_to_questionnaire_summary(
+    row: sqlite3.Row,
+) -> QuestionnaireTemplateSummary:
     return QuestionnaireTemplateSummary(
         id=row["id"],
         indication=row["indication"],
@@ -643,7 +839,9 @@ def row_to_questionnaire_summary(row: sqlite3.Row) -> QuestionnaireTemplateSumma
     )
 
 
-def row_to_questionnaire_detail(row: sqlite3.Row) -> QuestionnaireTemplateDetail:
+def row_to_questionnaire_detail(
+    row: sqlite3.Row,
+) -> QuestionnaireTemplateDetail:
     return QuestionnaireTemplateDetail(
         id=row["id"],
         indication=row["indication"],
@@ -660,7 +858,9 @@ def row_to_questionnaire_detail(row: sqlite3.Row) -> QuestionnaireTemplateDetail
     )
 
 
-def list_questionnaires(published_only: bool = False) -> list[QuestionnaireTemplateSummary]:
+def list_questionnaires(
+    published_only: bool = False,
+) -> list[QuestionnaireTemplateSummary]:
     query = """
         SELECT *
         FROM questionnaire_templates
@@ -677,13 +877,18 @@ def list_questionnaires(published_only: bool = False) -> list[QuestionnaireTempl
     return [row_to_questionnaire_summary(row) for row in rows]
 
 
-def get_questionnaire(identifier: str, published_only: bool = False) -> QuestionnaireTemplateDetail | None:
+def get_questionnaire(
+    identifier: str,
+    published_only: bool = False,
+) -> QuestionnaireTemplateDetail | None:
     query = """
         SELECT *
         FROM questionnaire_templates
-        WHERE indication = ?
-           OR slug = ?
-           OR id = ?
+        WHERE (
+            indication = ?
+            OR slug = ?
+            OR id = ?
+        )
     """
     params: tuple[Any, ...] = (identifier, identifier, identifier)
 
@@ -696,9 +901,12 @@ def get_questionnaire(identifier: str, published_only: bool = False) -> Question
     return row_to_questionnaire_detail(row) if row else None
 
 
-def upsert_questionnaire(payload: UpsertQuestionnaireTemplateRequest) -> QuestionnaireTemplateDetail:
+def upsert_questionnaire(
+    payload: UpsertQuestionnaireTemplateRequest,
+) -> QuestionnaireTemplateDetail:
     data = to_plain_data(payload)
     now = utc_now_iso()
+
     existing = get_questionnaire(data["indication"], published_only=False)
     questionnaire_id = existing.id if existing else create_id("questionnaire")
     created_at = existing.created_at.isoformat() if existing else now
@@ -749,8 +957,10 @@ def upsert_questionnaire(payload: UpsertQuestionnaireTemplateRequest) -> Questio
         )
 
     saved = get_questionnaire(data["indication"], published_only=False)
+
     if not saved:
         raise RuntimeError("Questionnaire could not be saved.")
+
     return saved
 
 
@@ -769,7 +979,10 @@ def delete_questionnaire(identifier: str) -> bool:
     return cursor.rowcount > 0
 
 
-def set_questionnaire_published(identifier: str, is_published: bool) -> QuestionnaireTemplateDetail | None:
+def set_questionnaire_published(
+    identifier: str,
+    is_published: bool,
+) -> QuestionnaireTemplateDetail | None:
     now = utc_now_iso()
 
     with connect() as connection:

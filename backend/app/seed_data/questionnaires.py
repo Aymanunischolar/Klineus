@@ -101,8 +101,8 @@ DURATION_OPTIONS = [
 KNEE_BLOCKS = [
     block(
         "A",
-        "Block A: Ihr Knieproblem",
-        "Block A: Your knee problem",
+        "Ihr Knieproblem",
+        "Your knee problem",
         1,
         [
             question(
@@ -194,11 +194,10 @@ KNEE_BLOCKS = [
             ),
         ],
     ),
-
     block(
         "B",
-        "Block B: Auswirkungen im Alltag",
-        "Block B: Impact on daily life",
+        "Auswirkungen im Alltag",
+        "Impact on daily life",
         2,
         [
             question(
@@ -314,11 +313,10 @@ KNEE_BLOCKS = [
             ),
         ],
     ),
-
     block(
         "C",
-        "Block C: Bisherige Behandlung",
-        "Block C: Previous treatment",
+        "Bisherige Behandlung",
+        "Previous treatment",
         3,
         [
             question(
@@ -389,11 +387,10 @@ KNEE_BLOCKS = [
             ),
         ],
     ),
-
     block(
         "D",
-        "Block D: Vorbefunde und ärztliche Aussagen",
-        "Block D: Previous findings and medical statements",
+        "Vorbefunde und ärztliche Aussagen",
+        "Previous findings and medical statements",
         4,
         [
             question(
@@ -450,11 +447,10 @@ KNEE_BLOCKS = [
             ),
         ],
     ),
-
     block(
         "E",
-        "Block E: Gesundheit und Risiken",
-        "Block E: Health and risks",
+        "Gesundheit und Risiken",
+        "Health and risks",
         5,
         [
             question(
@@ -595,11 +591,10 @@ KNEE_BLOCKS = [
             ),
         ],
     ),
-
     block(
         "F",
-        "Block F: Ziele, Erwartungen und Ergänzungen",
-        "Block F: Goals, expectations and additions",
+        "Ziele, Erwartungen und Ergänzungen",
+        "Goals, expectations and additions",
         6,
         [
             question(
@@ -666,14 +661,11 @@ KNEE_BLOCKS = [
 
 
 DE_REPLACEMENTS = [
-    ("Knie-TEP", "Hüft-TEP"),
-    ("Knieproblem", "Hüftproblem"),
-    ("Knieschmerzen", "Hüftschmerzen"),
-    ("Kniebeschwerden", "Hüftbeschwerden"),
-    ("Knieprothese", "Hüftprothese"),
-    ("Knieoperation", "Hüftoperation"),
-    ("Knie", "Hüfte"),
-    ("Knies", "Hüfte"),
+    ("Das Knie knickt weg", "Das Bein gibt nach"),
+    (
+        "Knie lässt sich nicht richtig beugen oder strecken",
+        "Hüfte lässt sich nicht richtig bewegen",
+    ),
     ("diesem Knie", "dieser Hüfte"),
     ("dieses Knie", "diese Hüfte"),
     ("Ihres Knies", "Ihrer Hüfte"),
@@ -684,27 +676,30 @@ DE_REPLACEMENTS = [
     ("am Knie", "an der Hüfte"),
     ("zum Knie", "zur Hüfte"),
     ("vom Knie", "von der Hüfte"),
-    ("Das Knie knickt weg", "Das Bein gibt nach"),
-    (
-        "Knie lässt sich nicht richtig beugen oder strecken",
-        "Hüfte lässt sich nicht richtig bewegen",
-    ),
+    ("Knie-TEP", "Hüft-TEP"),
+    ("Knieproblem", "Hüftproblem"),
+    ("Knieschmerzen", "Hüftschmerzen"),
+    ("Kniebeschwerden", "Hüftbeschwerden"),
+    ("Knieprothese", "Hüftprothese"),
+    ("Knieoperation", "Hüftoperation"),
+    ("Knies", "Hüfte"),
+    ("Knie", "Hüfte"),
 ]
 
 EN_REPLACEMENTS = [
+    ("The knee gives way", "The leg gives way"),
+    (
+        "The knee cannot be bent or straightened properly",
+        "The hip cannot be moved properly",
+    ),
     ("Knee TEP", "Hip TEP"),
     ("knee replacement", "hip replacement"),
     ("knee problem", "hip problem"),
     ("knee pain", "hip pain"),
     ("knee symptoms", "hip symptoms"),
     ("knee operation", "hip operation"),
-    ("knee", "hip"),
     ("Knee", "Hip"),
-    ("The knee gives way", "The leg gives way"),
-    (
-        "The knee cannot be bent or straightened properly",
-        "The hip cannot be moved properly",
-    ),
+    ("knee", "hip"),
 ]
 
 
@@ -745,10 +740,10 @@ def make_hip_blocks() -> list[dict]:
 DEFAULT_QUESTIONNAIRES = [
     {
         "indication": "knee_tep",
-        "slug": "knie",
+        "slug": "knie-tep",
         "labels": {
-            "de": "Knie",
-            "en": "Knee",
+            "de": "Knie-TEP Fragebogen",
+            "en": "Knee replacement questionnaire",
         },
         "description": {
             "de": "Fragen zu Kniebeschwerden und möglicher Knie-TEP.",
@@ -759,16 +754,16 @@ DEFAULT_QUESTIONNAIRES = [
             "de": "Knie Illustration",
             "en": "Knee illustration",
         },
-        "version": 1,
+        "version": 2,
         "is_published": True,
         "blocks": KNEE_BLOCKS,
     },
     {
         "indication": "hip_tep",
-        "slug": "huefte",
+        "slug": "hueft-tep",
         "labels": {
-            "de": "Hüfte",
-            "en": "Hip",
+            "de": "Hüft-TEP Fragebogen",
+            "en": "Hip replacement questionnaire",
         },
         "description": {
             "de": "Fragen zu Hüftbeschwerden und möglicher Hüft-TEP.",
@@ -779,7 +774,7 @@ DEFAULT_QUESTIONNAIRES = [
             "de": "Hüfte Illustration",
             "en": "Hip illustration",
         },
-        "version": 1,
+        "version": 2,
         "is_published": True,
         "blocks": make_hip_blocks(),
     },

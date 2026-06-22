@@ -51,9 +51,9 @@ class PatientQuestionnaireSession:
     indication: str
 
     patient_name: str
-    patient_last_name: str
-    patient_email: str
-    insurance_id: str
+    patient_last_name: str | None = None
+    patient_email: str | None = None
+    insurance_id: str | None = None
 
     answers: list[dict[str, Any]] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)

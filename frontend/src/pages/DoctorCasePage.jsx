@@ -9,6 +9,52 @@ function localText(language, de, en) {
   return language === "en" ? en : de;
 }
 
+function cleanGermanMedicalText(value) {
+  return String(value || "")
+    .replaceAll("aerztlich", "ärztlich")
+    .replaceAll("Aerztlich", "Ärztlich")
+    .replaceAll("aerztliche", "ärztliche")
+    .replaceAll("Aerztliche", "Ärztliche")
+    .replaceAll("aerztlicher", "ärztlicher")
+    .replaceAll("Aerztlicher", "Ärztlicher")
+    .replaceAll("aerztlich", "ärztlich")
+    .replaceAll("Pruefung", "Prüfung")
+    .replaceAll("pruefung", "prüfung")
+    .replaceAll("pruefen", "prüfen")
+    .replaceAll("Pruefen", "Prüfen")
+    .replaceAll("erhoeht", "erhöht")
+    .replaceAll("Erhoeht", "Erhöht")
+    .replaceAll("erhoehte", "erhöhte")
+    .replaceAll("Erhoehte", "Erhöhte")
+    .replaceAll("erhoehten", "erhöhten")
+    .replaceAll("Erhoehten", "Erhöhten")
+    .replaceAll("Huefte", "Hüfte")
+    .replaceAll("huefte", "hüfte")
+    .replaceAll("Hufte", "Hüfte")
+    .replaceAll("hufte", "hüfte")
+    .replaceAll("Hueft", "Hüft")
+    .replaceAll("hueft", "hüft")
+    .replaceAll("moeglich", "möglich")
+    .replaceAll("Moeglich", "Möglich")
+    .replaceAll("frueher", "früher")
+    .replaceAll("Frueher", "Früher")
+    .replaceAll("fuer", "für")
+    .replaceAll("Fuer", "Für")
+    .replaceAll("ueber", "über")
+    .replaceAll("Ueber", "Über")
+    .replaceAll("koennen", "können")
+    .replaceAll("Koennen", "Können")
+    .replaceAll("muessen", "müssen")
+    .replaceAll("Muessen", "Müssen")
+    .replaceAll("Roe", "Rö")
+    .replaceAll("roentgen", "röntgen")
+    .replaceAll("Roentgen", "Röntgen")
+    .replaceAll("Arztgespraech", "Arztgespräch")
+    .replaceAll("arztgespraech", "arztgespräch")
+    .replaceAll("Gespraech", "Gespräch")
+    .replaceAll("gespraech", "gespräch");
+}
+
 function formatDate(value, language) {
   if (!value) {
     return "-";
@@ -32,15 +78,32 @@ function indicationLabel(indication) {
   return "Knie-TEP";
 }
 
+function displayValue(value) {
+  if (
+    !value ||
+    value === "not-provided" ||
+    value === "not-provided@klineus.local"
+  ) {
+    return "-";
+  }
+
+  return cleanGermanMedicalText(value);
+}
+
 function patientDisplayName(patientCase) {
   const fullName = patientCase?.patient_name || "";
   const lastName = patientCase?.patient_last_name || "";
 
-  if (fullName && lastName && !fullName.includes(lastName)) {
-    return `${fullName} ${lastName}`;
+  if (
+    lastName &&
+    lastName !== "not-provided" &&
+    fullName &&
+    !fullName.includes(lastName)
+  ) {
+    return cleanGermanMedicalText(`${fullName} ${lastName}`);
   }
 
-  return fullName || lastName || "-";
+  return cleanGermanMedicalText(fullName || lastName || "-");
 }
 
 function getCaseIdFromParams(params) {
@@ -54,17 +117,17 @@ function getCaseIdFromParams(params) {
 }
 
 function getQuestionText(answer) {
-  return (
+  return cleanGermanMedicalText(
     answer.question ||
-    answer.question_de ||
-    answer.question_text_de ||
-    answer.question_text ||
-    answer.label_de ||
-    answer.label ||
-    answer.text_de ||
-    answer.text ||
-    answer.question_id ||
-    "-"
+      answer.question_de ||
+      answer.question_text_de ||
+      answer.question_text ||
+      answer.label_de ||
+      answer.label ||
+      answer.text_de ||
+      answer.text ||
+      answer.question_id ||
+      "-",
   );
 }
 
@@ -77,12 +140,12 @@ function getBlockId(answer) {
 }
 
 function getBlockTitle(answer) {
-  return (
+  return cleanGermanMedicalText(
     answer.block_title ||
-    answer.block_title_de ||
-    answer.blockTitle ||
-    answer.block ||
-    getBlockId(answer)
+      answer.block_title_de ||
+      answer.blockTitle ||
+      answer.block ||
+      getBlockId(answer),
   );
 }
 
@@ -119,11 +182,12 @@ function normalizeAnswerGroups(patientCase) {
   if (backendGroups.length > 0) {
     return backendGroups.map((group, index) => ({
       blockId: group.blockId || group.block_id || `group-${index}`,
-      blockTitle:
+      blockTitle: cleanGermanMedicalText(
         group.blockTitle ||
-        group.block_title ||
-        group.block_id ||
-        `Abschnitt ${index + 1}`,
+          group.block_title ||
+          group.block_id ||
+          `Abschnitt ${index + 1}`,
+      ),
       answers: Array.isArray(group.answers) ? group.answers : [],
     }));
   }
@@ -141,7 +205,9 @@ function normalizeAnswer(answer) {
   }
 
   if (Array.isArray(answer)) {
-    return answer.length ? answer.join(", ") : "Keine Angabe";
+    return answer.length
+      ? cleanGermanMedicalText(answer.join(", "))
+      : "Keine Angabe";
   }
 
   if (typeof answer === "object") {
@@ -173,7 +239,9 @@ function normalizeAnswer(answer) {
         parts.push(`Rauchstopp seit: ${answer.stopped_since}`);
       }
 
-      return parts.length ? parts.join(" · ") : "Keine Angabe";
+      return parts.length
+        ? cleanGermanMedicalText(parts.join(" · "))
+        : "Keine Angabe";
     }
 
     if (
@@ -186,13 +254,17 @@ function normalizeAnswer(answer) {
     }
 
     if (Object.prototype.hasOwnProperty.call(answer, "value")) {
-      return answer.detail ? `${answer.value}: ${answer.detail}` : answer.value;
+      const answerValue = answer.detail
+        ? `${answer.value}: ${answer.detail}`
+        : answer.value;
+
+      return cleanGermanMedicalText(answerValue);
     }
 
-    return JSON.stringify(answer, null, 2);
+    return cleanGermanMedicalText(JSON.stringify(answer, null, 2));
   }
 
-  return String(answer);
+  return cleanGermanMedicalText(String(answer));
 }
 
 function extractReportText(data) {
@@ -201,18 +273,18 @@ function extractReportText(data) {
   }
 
   if (typeof data === "string") {
-    return data;
+    return cleanGermanMedicalText(data);
   }
 
-  return (
+  return cleanGermanMedicalText(
     data.report_text ||
-    data.report ||
-    data.markdown ||
-    data.content ||
-    data.ai_report ||
-    data.report_json?.markdown ||
-    data.report_json?.report_text ||
-    ""
+      data.report ||
+      data.markdown ||
+      data.content ||
+      data.ai_report ||
+      data.report_json?.markdown ||
+      data.report_json?.report_text ||
+      "",
   );
 }
 
@@ -296,10 +368,10 @@ function EditableReportTemplate({ text, language, onChange }) {
     );
   }
 
-  const lines = text.split("\n");
+  const lines = cleanGermanMedicalText(text).split("\n");
 
   function updateLine(index, nextContent, prefix = "") {
-    const cleanContent = String(nextContent || "")
+    const cleanContent = cleanGermanMedicalText(nextContent)
       .replace(/\n+/g, " ")
       .trim();
 
@@ -421,9 +493,7 @@ function EditableReportTemplate({ text, language, onChange }) {
             suppressContentEditableWarning
             spellCheck="true"
             key={index}
-            onBlur={(event) =>
-              updateLine(index, event.currentTarget.innerText)
-            }
+            onBlur={(event) => updateLine(index, event.currentTarget.innerText)}
           >
             {trimmedLine}
           </p>
@@ -545,7 +615,7 @@ export default function DoctorCasePage() {
     setNotice("");
 
     try {
-      await api.saveReport(caseId, reportText);
+      await api.saveReport(caseId, cleanGermanMedicalText(reportText));
 
       setNotice(
         localText(
@@ -652,10 +722,10 @@ export default function DoctorCasePage() {
                 {localText(language, "Ampellogik", "Traffic light")}
               </p>
 
-              <h2>{trafficLight.label}</h2>
+              <h2>{cleanGermanMedicalText(trafficLight.label)}</h2>
             </div>
 
-            <p>{trafficLight.description}</p>
+            <p>{cleanGermanMedicalText(trafficLight.description)}</p>
           </section>
         ) : null}
 
@@ -667,19 +737,21 @@ export default function DoctorCasePage() {
 
           <article className="case-summary-card">
             <span>{localText(language, "Nachname", "Last name")}</span>
-            <strong>{patientCase?.patient_last_name || "-"}</strong>
+            <strong>{displayValue(patientCase?.patient_last_name)}</strong>
           </article>
 
           <article className="case-summary-card">
             <span>{localText(language, "E-Mail", "Email")}</span>
-            <strong>{patientCase?.patient_email || "-"}</strong>
+            <strong>{displayValue(patientCase?.patient_email)}</strong>
           </article>
 
           <article className="case-summary-card">
             <span>
               {localText(language, "Versicherungsnummer", "Insurance ID")}
             </span>
-            <strong className="mono">{patientCase?.insurance_id || "-"}</strong>
+            <strong className="mono">
+              {displayValue(patientCase?.insurance_id)}
+            </strong>
           </article>
 
           <article className="case-summary-card">
@@ -699,7 +771,7 @@ export default function DoctorCasePage() {
 
           <article className="case-summary-card">
             <span>{localText(language, "Status", "Status")}</span>
-            <strong>{patientCase?.status || "-"}</strong>
+            <strong>{displayValue(patientCase?.status)}</strong>
           </article>
 
           <article className="case-summary-card">
@@ -745,14 +817,20 @@ export default function DoctorCasePage() {
                   {flags.map((flag, index) => (
                     <article className={flagLevelClass(flag)} key={index}>
                       <strong>
-                        {flag.title ||
-                          flag.label ||
-                          flag.message ||
-                          localText(language, "Hinweis", "Note")}
+                        {cleanGermanMedicalText(
+                          flag.title ||
+                            flag.label ||
+                            flag.message ||
+                            localText(language, "Hinweis", "Note"),
+                        )}
                       </strong>
 
                       {flag.description || flag.text || flag.reason ? (
-                        <p>{flag.description || flag.text || flag.reason}</p>
+                        <p>
+                          {cleanGermanMedicalText(
+                            flag.description || flag.text || flag.reason,
+                          )}
+                        </p>
                       ) : null}
                     </article>
                   ))}
@@ -793,7 +871,7 @@ export default function DoctorCasePage() {
                 <div className="answer-group-list">
                   {answerGroups.map((group) => (
                     <article className="answer-group" key={group.blockId}>
-                      <h3>{group.blockTitle}</h3>
+                      <h3>{cleanGermanMedicalText(group.blockTitle)}</h3>
 
                       <div className="answer-list">
                         {group.answers.map((answer, index) => (
@@ -909,12 +987,12 @@ export default function DoctorCasePage() {
 
             <div>
               <span>E-Mail</span>
-              <strong>{patientCase?.patient_email || "-"}</strong>
+              <strong>{displayValue(patientCase?.patient_email)}</strong>
             </div>
 
             <div>
               <span>Versicherungsnummer</span>
-              <strong>{patientCase?.insurance_id || "-"}</strong>
+              <strong>{displayValue(patientCase?.insurance_id)}</strong>
             </div>
 
             <div>

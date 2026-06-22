@@ -10380,3 +10380,841 @@ p {
   }
 }
 
+.site-footer {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 72px;
+  padding: 28px 0 8px;
+  color: var(--brand-muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.site-footer a {
+  color: var(--brand-muted);
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--brand-teal-dark);
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    align-items: center;
+    flex-direction: row;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .topbar-actions {
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .brand-logo {
+    height: 42px;
+    max-width: 150px;
+  }
+
+  .products-menu {
+    width: auto;
+  }
+
+  .products-menu-button {
+    min-height: 40px;
+    width: auto;
+    padding: 8px 13px;
+    font-size: 0.9rem;
+  }
+
+  .products-dropdown {
+    left: auto;
+    right: 0;
+    width: min(280px, calc(100vw - 28px));
+    min-width: 0;
+  }
+
+  .language-toggle {
+    align-items: center;
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .language-toggle > span {
+    display: none;
+  }
+
+  .language-switch {
+    min-width: 78px;
+    min-height: 36px;
+  }
+
+  .language-switch span {
+    min-height: 26px;
+    padding: 0 8px;
+    font-size: 0.78rem;
+  }
+
+  .site-footer {
+    flex-wrap: wrap;
+    margin-top: 48px;
+    padding-bottom: 18px;
+  }
+}
+
+.patient-identity-grid-single {
+  grid-template-columns: 1fr;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Responsive fixes: doctor case, long emails, mobile card sizing */
+/* -------------------------------------------------------------------------- */
+
+.case-summary-card,
+.admin-stat-card,
+.metric-card,
+.doctor-print-case-meta,
+.doctor-print-patient-grid,
+.patient-done-card,
+.case-id-card {
+  min-width: 0;
+}
+
+.case-summary-card strong,
+.case-summary-card span,
+.case-summary-card .mono,
+.admin-table td,
+.case-table td,
+.metric-card strong,
+.case-id-card strong,
+.doctor-print-case-meta strong,
+.doctor-print-patient-grid strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.case-id-card {
+  display: grid;
+  gap: 6px;
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid var(--brand-border);
+  border-radius: 14px;
+  background: #f8fcff;
+}
+
+.case-id-card span {
+  color: var(--brand-muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.case-id-card strong {
+  color: var(--brand-navy-dark);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.92rem;
+}
+
+/* Doctor case page mobile layout */
+
+@media (max-width: 920px) {
+  .doctor-workspace-grid,
+  .case-summary-grid,
+  .doctor-notes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .case-summary-grid {
+    gap: 12px;
+  }
+
+  .case-summary-card {
+    padding: 16px;
+  }
+
+  .doctor-case-shell {
+    width: 100%;
+  }
+
+  .doctor-main-column,
+  .doctor-side-column {
+    min-width: 0;
+  }
+
+  .doctor-report-preview,
+  .doctor-report-preview-editable {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* General mobile sizing */
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 16px;
+  }
+
+  .topbar {
+    margin-bottom: 28px;
+  }
+
+  .patient-card,
+  .questionnaire-card,
+  .login-card,
+  .empty-state,
+  .admin-panel,
+  .report-section {
+    padding: 22px;
+    border-radius: 18px;
+  }
+
+  .patient-start-card h1,
+  .patient-done-card h1,
+  .questionnaire-card h1,
+  .login-card h1,
+  .dashboard-header h1,
+  .case-header h1 {
+    font-size: clamp(1.9rem, 9vw, 2.7rem);
+    line-height: 1.08;
+  }
+
+  .patient-start-lead,
+  .question-help-text,
+  .dashboard-subtitle,
+  .case-subtitle {
+    font-size: 1rem;
+  }
+
+  .patient-intro-grid,
+  .patient-identity-grid,
+  .number-grid,
+  .home-step-grid-pro,
+  .home-benefit-list-pro,
+  .product-feature-grid-pro,
+  .team-capability-grid-pro {
+    grid-template-columns: 1fr;
+  }
+
+  .question-nav,
+  .question-nav-pro,
+  .patient-start-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .question-nav button,
+  .question-nav a,
+  .patient-start-actions button,
+  .patient-start-actions a {
+    width: 100%;
+  }
+
+  .choice-button {
+    min-height: 56px;
+    padding: 14px 16px;
+  }
+
+  .questionnaire-progress-panel {
+    padding: 16px;
+  }
+
+  .questionnaire-progress-topline {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .case-table,
+  .admin-table {
+    min-width: 760px;
+  }
+}
+
+/* Small mobile screens */
+
+@media (max-width: 520px) {
+  .app-shell {
+    padding: 12px;
+  }
+
+  .brand-logo {
+    height: 40px;
+    max-width: 140px;
+  }
+
+  .patient-card,
+  .questionnaire-card,
+  .login-card,
+  .empty-state,
+  .admin-panel,
+  .report-section {
+    padding: 18px;
+  }
+
+  .patient-info-card,
+  .patient-info-card-button {
+    padding: 18px;
+  }
+
+  .joint-choice-image {
+    min-height: 120px;
+  }
+
+  .questionnaire-card h1 {
+    font-size: clamp(1.65rem, 8vw, 2.25rem);
+  }
+
+  .primary-button,
+  .secondary-button,
+  .danger-button,
+  .small-button {
+    min-height: 46px;
+    padding: 11px 16px;
+  }
+
+  .case-summary-card strong,
+  .metric-card strong {
+    font-size: 1rem;
+  }
+
+  .doctor-notes-grid {
+    gap: 12px;
+  }
+
+  .flag-card {
+    padding: 14px;
+  }
+}
+
+/* Extra protection for very narrow phones */
+
+@media (max-width: 380px) {
+  .language-switch {
+    min-width: 72px;
+  }
+
+  .products-menu-button {
+    padding: 8px 10px;
+  }
+
+  .patient-card,
+  .questionnaire-card,
+  .login-card {
+    padding: 14px;
+  }
+
+  .case-id-card strong,
+  .case-summary-card strong,
+  .admin-table td,
+  .case-table td {
+    font-size: 0.86rem;
+  }
+}
+
+.patient-identity-grid-single {
+  grid-template-columns: 1fr;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Klineus final cleanup: header, footer, contact, mobile, overflow */
+/* -------------------------------------------------------------------------- */
+
+.topbar {
+  position: relative;
+  z-index: 20;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.products-menu {
+  position: relative;
+}
+
+.products-menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 1px solid var(--brand-border);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--brand-navy-dark);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.products-menu-button:hover {
+  border-color: rgba(35, 112, 151, 0.35);
+  background: #f7fbff;
+}
+
+.products-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 50;
+  display: grid;
+  min-width: 210px;
+  padding: 8px;
+  border: 1px solid var(--brand-border);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 20px 55px rgba(10, 31, 48, 0.14);
+}
+
+.products-dropdown a {
+  padding: 11px 12px;
+  border-radius: 12px;
+  color: var(--brand-navy-dark);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.products-dropdown a:hover {
+  background: #f3f8fc;
+}
+
+.site-footer {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 54px;
+  padding: 24px 0 8px;
+  border-top: 1px solid rgba(205, 222, 232, 0.8);
+  color: var(--brand-muted);
+  font-size: 0.92rem;
+}
+
+.site-footer a {
+  color: var(--brand-muted);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--brand-teal);
+}
+
+.patient-identity-grid-single {
+  grid-template-columns: 1fr;
+}
+
+/* Long emails, IDs, case references */
+
+.case-summary-card,
+.admin-stat-card,
+.metric-card,
+.doctor-print-case-meta,
+.doctor-print-patient-grid,
+.patient-done-card,
+.case-id-card {
+  min-width: 0;
+}
+
+.case-summary-card strong,
+.case-summary-card span,
+.case-summary-card .mono,
+.admin-table td,
+.case-table td,
+.metric-card strong,
+.case-id-card strong,
+.doctor-print-case-meta strong,
+.doctor-print-patient-grid strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.case-id-card {
+  display: grid;
+  gap: 6px;
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid var(--brand-border);
+  border-radius: 14px;
+  background: #f8fcff;
+}
+
+.case-id-card span {
+  color: var(--brand-muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.case-id-card strong {
+  color: var(--brand-navy-dark);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.92rem;
+}
+
+/* Contact page */
+
+.contact-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.contact-response-card {
+  display: grid;
+  gap: 12px;
+  align-self: start;
+  padding: 28px;
+  border: 1px solid var(--brand-border);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(10, 31, 48, 0.08);
+}
+
+.contact-response-card span,
+.contact-card-label {
+  color: var(--brand-muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.contact-response-card strong {
+  color: var(--brand-navy-dark);
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.contact-content-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 28px;
+  margin-top: 34px;
+}
+
+.contact-methods-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.contact-info-card {
+  display: grid;
+  gap: 8px;
+  padding: 22px;
+  border: 1px solid var(--brand-border);
+  border-radius: 20px;
+  background: #ffffff;
+  color: inherit;
+  text-decoration: none;
+}
+
+.contact-info-card:hover {
+  border-color: rgba(35, 112, 151, 0.35);
+  box-shadow: 0 18px 42px rgba(10, 31, 48, 0.08);
+}
+
+.contact-info-card h2 {
+  margin: 0;
+  color: var(--brand-navy-dark);
+  font-size: 1.1rem;
+}
+
+.contact-info-card p {
+  margin: 0;
+  color: var(--brand-muted);
+  overflow-wrap: anywhere;
+}
+
+.contact-form-panel {
+  display: grid;
+  gap: 18px;
+  padding: 30px;
+  border: 1px solid var(--brand-border);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(10, 31, 48, 0.08);
+}
+
+.contact-form-heading {
+  display: grid;
+  gap: 8px;
+}
+
+.contact-form-heading h2 {
+  margin: 0;
+  color: var(--brand-navy-dark);
+}
+
+.contact-form-heading p {
+  margin: 0;
+  color: var(--brand-muted);
+}
+
+.contact-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.contact-form-panel label {
+  display: grid;
+  gap: 8px;
+  color: var(--brand-navy-dark);
+  font-weight: 800;
+}
+
+.contact-form-panel input,
+.contact-form-panel textarea {
+  width: 100%;
+  border: 1px solid var(--brand-border);
+  border-radius: 14px;
+  padding: 13px 14px;
+  font: inherit;
+}
+
+.contact-form-panel textarea {
+  resize: vertical;
+}
+
+/* Doctor case mobile layout */
+
+@media (max-width: 920px) {
+  .doctor-workspace-grid,
+  .case-summary-grid,
+  .doctor-notes-grid,
+  .contact-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .case-summary-grid {
+    gap: 12px;
+  }
+
+  .case-summary-card {
+    padding: 16px;
+  }
+
+  .doctor-case-shell {
+    width: 100%;
+  }
+
+  .doctor-main-column,
+  .doctor-side-column,
+  .doctor-ai-sidebar {
+    min-width: 0;
+  }
+
+  .doctor-report-preview,
+  .doctor-report-preview-editable {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Tablet and mobile */
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 16px;
+  }
+
+  .topbar {
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .topbar-actions {
+    gap: 8px;
+  }
+
+  .products-menu-button {
+    min-height: 38px;
+    padding: 8px 12px;
+  }
+
+  .products-dropdown {
+    right: -58px;
+    min-width: 190px;
+  }
+
+  .site-footer {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 38px;
+    padding-top: 18px;
+  }
+
+  .patient-card,
+  .questionnaire-card,
+  .login-card,
+  .empty-state,
+  .admin-panel,
+  .report-section,
+  .contact-form-panel,
+  .contact-response-card {
+    padding: 22px;
+    border-radius: 18px;
+  }
+
+  .patient-start-card h1,
+  .patient-done-card h1,
+  .questionnaire-card h1,
+  .login-card h1,
+  .dashboard-header h1,
+  .case-header h1,
+  .contact-hero-copy h1,
+  .legal-hero-copy-pro h1 {
+    font-size: clamp(1.9rem, 9vw, 2.7rem);
+    line-height: 1.08;
+  }
+
+  .patient-start-lead,
+  .question-help-text,
+  .dashboard-subtitle,
+  .case-subtitle,
+  .contact-hero-copy p,
+  .legal-hero-copy-pro p {
+    font-size: 1rem;
+  }
+
+  .patient-intro-grid,
+  .patient-identity-grid,
+  .number-grid,
+  .home-step-grid-pro,
+  .home-benefit-list-pro,
+  .product-feature-grid-pro,
+  .team-capability-grid-pro,
+  .contact-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .question-nav,
+  .question-nav-pro,
+  .patient-start-actions,
+  .contact-quick-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .question-nav button,
+  .question-nav a,
+  .patient-start-actions button,
+  .patient-start-actions a,
+  .contact-quick-actions a,
+  .contact-form-panel button {
+    width: 100%;
+  }
+
+  .choice-button {
+    min-height: 56px;
+    padding: 14px 16px;
+  }
+
+  .questionnaire-progress-panel {
+    padding: 16px;
+  }
+
+  .questionnaire-progress-topline {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .case-table,
+  .admin-table {
+    min-width: 760px;
+  }
+}
+
+/* Small mobile */
+
+@media (max-width: 520px) {
+  .app-shell {
+    padding: 12px;
+  }
+
+  .brand-logo {
+    height: 40px;
+    max-width: 140px;
+  }
+
+  .patient-card,
+  .questionnaire-card,
+  .login-card,
+  .empty-state,
+  .admin-panel,
+  .report-section,
+  .contact-form-panel,
+  .contact-response-card {
+    padding: 18px;
+  }
+
+  .patient-info-card,
+  .patient-info-card-button,
+  .contact-info-card {
+    padding: 18px;
+  }
+
+  .joint-choice-image {
+    min-height: 120px;
+  }
+
+  .questionnaire-card h1 {
+    font-size: clamp(1.65rem, 8vw, 2.25rem);
+  }
+
+  .primary-button,
+  .secondary-button,
+  .danger-button,
+  .small-button {
+    min-height: 46px;
+    padding: 11px 16px;
+  }
+
+  .case-summary-card strong,
+  .metric-card strong {
+    font-size: 1rem;
+  }
+
+  .doctor-notes-grid {
+    gap: 12px;
+  }
+
+  .flag-card {
+    padding: 14px;
+  }
+}
+
+/* Very narrow phones */
+
+@media (max-width: 380px) {
+  .language-switch {
+    min-width: 72px;
+  }
+
+  .products-menu-button {
+    padding: 8px 10px;
+  }
+
+  .patient-card,
+  .questionnaire-card,
+  .login-card {
+    padding: 14px;
+  }
+
+  .case-id-card strong,
+  .case-summary-card strong,
+  .admin-table td,
+  .case-table td {
+    font-size: 0.86rem;
+  }
+}

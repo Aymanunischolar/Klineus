@@ -84,7 +84,7 @@ Ihr Klineus Zugangscode lautet:
 Sie können den Fragebogen über diesen Link fortsetzen:
 {resume_url}
 
-Bitte geben Sie dort Ihren Nachnamen und den vierstelligen Code ein.
+Bitte geben Sie dort Ihren Patientennamen und den vierstelligen Code ein.
 
 Viele Grüße
 Klineus
@@ -107,7 +107,7 @@ Klineus
         <a href="{safe_resume_url}">{safe_resume_url}</a>
       </p>
 
-      <p>Bitte geben Sie dort Ihren Nachnamen und den vierstelligen Code ein.</p>
+      <p>Bitte geben Sie dort Ihren Patientennamen und den vierstelligen Code ein.</p>
 
       <p>Viele Grüße<br />Klineus</p>
     </div>
@@ -131,36 +131,6 @@ def send_patient_submission_confirmation_email(
     safe_patient_name = escape(patient_name)
     safe_case_id = escape(case_id)
 
-    documents = documents_to_bring or []
-
-    if documents:
-        documents_text = "\n".join(
-            f"- {item.get('title', '')}: {item.get('description', '')}"
-            for item in documents
-        )
-
-        documents_html = "".join(
-            f"""
-            <li>
-              <strong>{escape(str(item.get("title", "")))}</strong><br />
-              <span>{escape(str(item.get("description", "")))}</span>
-            </li>
-            """
-            for item in documents
-        )
-    else:
-        documents_text = (
-            "- Falls vorhanden: aktuelle Arztbriefe, Röntgenbilder, Befunde "
-            "oder Laborwerte zum Termin mitbringen."
-        )
-
-        documents_html = """
-        <li>
-          <strong>Falls vorhanden</strong><br />
-          <span>Bitte bringen Sie aktuelle Arztbriefe, Röntgenbilder, Befunde oder Laborwerte zum Termin mit.</span>
-        </li>
-        """
-
     subject = "Klineus Fragebogen übermittelt"
 
     text_body = f"""Hallo {patient_name},
@@ -172,9 +142,8 @@ Fall-ID:
 
 Ihr Arzt kann die Angaben nun im Klineus Dashboard einsehen.
 
-Bitte bringen Sie zum Termin folgende Unterlagen mit:
-
-{documents_text}
+Hinweis für den Termin:
+Bitte bringen Sie vorhandene medizinische Unterlagen nur dann mit, wenn Ihre Praxis Sie darum bittet.
 
 Viele Grüße
 Klineus
@@ -195,11 +164,12 @@ Klineus
 
       <p>Ihr Arzt kann die Angaben nun im Klineus Dashboard einsehen.</p>
 
-      <h3 style="color: #102033;">Bitte zum Termin mitbringen</h3>
+      <h3 style="color: #102033;">Hinweis für den Termin</h3>
 
-      <ul>
-        {documents_html}
-      </ul>
+      <p>
+        Bitte bringen Sie vorhandene medizinische Unterlagen nur dann mit,
+        wenn Ihre Praxis Sie darum bittet.
+      </p>
 
       <p>Viele Grüße<br />Klineus</p>
     </div>

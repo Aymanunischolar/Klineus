@@ -14,10 +14,14 @@ function formatDate(value, language) {
     return "-";
   }
 
-  return new Intl.DateTimeFormat(language === "en" ? "en-US" : "de-DE", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(value));
+  try {
+    return new Intl.DateTimeFormat(language === "en" ? "en-US" : "de-DE", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(value));
+  } catch {
+    return "-";
+  }
 }
 
 function indicationLabel(indication) {
@@ -25,18 +29,42 @@ function indicationLabel(indication) {
     return "Hüft-TEP";
   }
 
-  return "Knie-TEP";
+  if (indication === "knee_tep") {
+    return "Knie-TEP";
+  }
+
+  return indication || "-";
+}
+
+function displayValue(value) {
+  if (
+    !value ||
+    value === "not-provided" ||
+    value === "not-provided@klineus.local"
+  ) {
+    return "-";
+  }
+
+  return value;
 }
 
 function patientDisplayName(item) {
-  const firstName = item?.patient_name || "";
-  const lastName = item?.patient_last_name || "";
+  const firstName = displayValue(item?.patient_name);
+  const lastName = displayValue(item?.patient_last_name);
 
-  if (firstName && lastName && !firstName.includes(lastName)) {
+  if (firstName !== "-" && lastName !== "-" && !firstName.includes(lastName)) {
     return `${firstName} ${lastName}`;
   }
 
-  return firstName || lastName || "-";
+  if (firstName !== "-") {
+    return firstName;
+  }
+
+  if (lastName !== "-") {
+    return lastName;
+  }
+
+  return "-";
 }
 
 function statusLabel(status, language) {
@@ -111,8 +139,7 @@ export default function DoctorDashboardPage() {
     navigate("/doctor/login");
   }
 
-  const hasAnyItems =
-    pendingSessions.length > 0 || completedCases.length > 0;
+  const hasAnyItems = pendingSessions.length > 0 || completedCases.length > 0;
 
   return (
     <AppShell>
@@ -194,9 +221,9 @@ export default function DoctorDashboardPage() {
                   <tr key={session.session_id}>
                     <td>{patientDisplayName(session)}</td>
 
-                    <td>{session.patient_email || "-"}</td>
+                    <td>{displayValue(session.patient_email)}</td>
 
-                    <td>{session.insurance_id || "-"}</td>
+                    <td>{displayValue(session.insurance_id)}</td>
 
                     <td>
                       <span className="indication-pill">
@@ -265,7 +292,7 @@ export default function DoctorDashboardPage() {
                   <tr key={patientCase.case_id}>
                     <td>{patientDisplayName(patientCase)}</td>
 
-                    <td>{patientCase.insurance_id || "-"}</td>
+                    <td>{displayValue(patientCase.insurance_id)}</td>
 
                     <td className="mono">
                       {patientCase.case_id
@@ -299,7 +326,9 @@ export default function DoctorDashboardPage() {
                           {t("openCase") || "Öffnen"}
                         </Link>
                       ) : (
-                        <span className="muted">Keine Fall-ID</span>
+                        <span className="muted">
+                          {localText(language, "Keine Fall-ID", "No case ID")}
+                        </span>
                       )}
                     </td>
                   </tr>

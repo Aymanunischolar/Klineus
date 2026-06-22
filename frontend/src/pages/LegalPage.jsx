@@ -4,10 +4,9 @@ import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
-
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"
+).replace(/\/$/, "");
 
 const fallbackCopy = {
   de: {
@@ -50,11 +49,11 @@ const fallbackCopy = {
           "Klineus stellt keine Diagnosen, trifft keine endgültigen Behandlungsentscheidungen und gibt keine Operationsempfehlungen.",
       },
       {
-  label: "Daten",
-  title: "Datenverarbeitung",
-  text:
-    "Patientenname und Versicherungsnummer dienen der ärztlichen Zuordnung. Direkte Identifikatoren sollen nicht an KI-Prompts übergeben werden.",
-},
+        label: "Daten",
+        title: "Datenverarbeitung",
+        text:
+          "Der Patientenname dient der ärztlichen Zuordnung. Direkte Identifikatoren sollen nicht an KI-Prompts übergeben werden.",
+      },
       {
         label: "KI",
         title: "KI-generierte Entwürfe",
@@ -114,12 +113,12 @@ const fallbackCopy = {
         text:
           "Klineus does not provide diagnoses, final treatment decisions or surgery recommendations.",
       },
-     {
-  label: "Data",
-  title: "Data handling",
-  text:
-    "Patient name and insurance ID are used for doctor-side identification. Direct identifiers should not be passed into AI prompts.",
-},
+      {
+        label: "Data",
+        title: "Data handling",
+        text:
+          "The patient name is used for doctor-side identification. Direct identifiers should not be passed into AI prompts.",
+      },
       {
         label: "AI",
         title: "AI-generated drafts",
@@ -142,19 +141,29 @@ const fallbackCopy = {
   },
 };
 
-
-function getText(value, language = "de", fallback = "") {
-  if (!value) {
-    return fallback;
-  }
-
-  if (typeof value === "string") {
-    return value;
-  }
-
-  return value[language] || value.de || value.en || fallback;
+function cleanLegalText(value) {
+  return String(value || "")
+    .replaceAll(
+      "Patientenname und Versicherungsnummer dienen der ärztlichen Zuordnung.",
+      "Der Patientenname dient der ärztlichen Zuordnung.",
+    )
+    .replaceAll(
+      "Patient name and insurance ID are used for doctor-side identification.",
+      "The patient name is used for doctor-side identification.",
+    );
 }
 
+function getText(value, language = "de", fallback = "") {
+  let result = fallback;
+
+  if (typeof value === "string") {
+    result = value;
+  } else if (value) {
+    result = value[language] || value.de || value.en || fallback;
+  }
+
+  return cleanLegalText(result);
+}
 
 function normalize(value) {
   return String(value || "")
@@ -162,7 +171,6 @@ function normalize(value) {
     .toLowerCase()
     .replace(/\s+/g, "-");
 }
-
 
 function findSection(sections, keys) {
   return sections.find((section) => {
@@ -186,7 +194,6 @@ function findSection(sections, keys) {
   });
 }
 
-
 function sectionCards(section, language, fallbackCards) {
   const items = section?.items || [];
 
@@ -204,17 +211,19 @@ function sectionCards(section, language, fallbackCards) {
   }));
 }
 
-
 function LegalCard({ card, index }) {
   return (
     <article className="legal-pro-card">
-      <span>{card.label || String(index + 1).padStart(2, "0")}</span>
-      <h3>{card.title}</h3>
-      <p>{card.text}</p>
+      <span>
+        {cleanLegalText(card.label) || String(index + 1).padStart(2, "0")}
+      </span>
+
+      <h3>{cleanLegalText(card.title)}</h3>
+
+      <p>{cleanLegalText(card.text)}</p>
     </article>
   );
 }
-
 
 export default function LegalPage() {
   const { language } = useLanguage();
@@ -277,19 +286,19 @@ export default function LegalPage() {
     const termsCards = sectionCards(
       termsSection,
       language,
-      fallbackCards.slice(0, 3)
+      fallbackCards.slice(0, 3),
     );
 
     const privacyCards = sectionCards(
       privacySection,
       language,
-      fallbackCards.slice(2, 4)
+      fallbackCards.slice(2, 4),
     );
 
     const clinicalCards = sectionCards(
       clinicalSection,
       language,
-      fallbackCards.slice(1, 6)
+      fallbackCards.slice(1, 6),
     );
 
     return {
@@ -298,29 +307,29 @@ export default function LegalPage() {
       description: getText(
         heroSection.subtitle || heroSection.body || page?.description,
         language,
-        text.description
+        text.description,
       ),
       termsTitle: getText(termsSection.title, language, text.termsTitle),
       termsIntro: getText(
         termsSection.subtitle || termsSection.body,
         language,
-        text.termsIntro
+        text.termsIntro,
       ),
       privacyTitle: getText(privacySection.title, language, text.privacyTitle),
       privacyIntro: getText(
         privacySection.subtitle || privacySection.body,
         language,
-        text.privacyIntro
+        text.privacyIntro,
       ),
       clinicalTitle: getText(
         clinicalSection.title,
         language,
-        text.clinicalTitle
+        text.clinicalTitle,
       ),
       clinicalIntro: getText(
         clinicalSection.subtitle || clinicalSection.body,
         language,
-        text.clinicalIntro
+        text.clinicalIntro,
       ),
       termsCards,
       privacyCards,
@@ -349,7 +358,9 @@ export default function LegalPage() {
 
           <aside className="legal-summary-pro">
             <span>{text.summaryLabel}</span>
+
             <strong>{text.summaryTitle}</strong>
+
             <p>{text.summaryText}</p>
           </aside>
         </section>
@@ -357,7 +368,9 @@ export default function LegalPage() {
         <section className="legal-section-pro" id="terms">
           <div className="legal-section-heading-pro">
             <p className="eyebrow">{text.termsNav}</p>
+
             <h2>{content.termsTitle}</h2>
+
             <p>{content.termsIntro}</p>
           </div>
 
@@ -372,10 +385,15 @@ export default function LegalPage() {
           </div>
         </section>
 
-        <section className="legal-section-pro legal-section-muted-pro" id="privacy">
+        <section
+          className="legal-section-pro legal-section-muted-pro"
+          id="privacy"
+        >
           <div className="legal-section-heading-pro">
             <p className="eyebrow">{text.privacyNav}</p>
+
             <h2>{content.privacyTitle}</h2>
+
             <p>{content.privacyIntro}</p>
           </div>
 
@@ -393,7 +411,9 @@ export default function LegalPage() {
         <section className="legal-section-pro" id="clinical">
           <div className="legal-section-heading-pro">
             <p className="eyebrow">{text.clinicalNav}</p>
+
             <h2>{content.clinicalTitle}</h2>
+
             <p>{content.clinicalIntro}</p>
           </div>
 
@@ -411,7 +431,9 @@ export default function LegalPage() {
         <section className="legal-contact-pro" id="contact">
           <div>
             <p className="eyebrow">Klineus</p>
+
             <h2>{text.contactTitle}</h2>
+
             <p>{text.contactText}</p>
           </div>
 

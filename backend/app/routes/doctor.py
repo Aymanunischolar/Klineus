@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth import get_current_doctor
 from app.report_service import (
-    calculate_bmi,
     derive_traffic_light,
     generate_documentation_flags,
     group_answers,
@@ -19,6 +18,35 @@ from app.storage import storage
 
 router = APIRouter(prefix="/doctor", tags=["doctor"])
 
+FALLBACK_PATIENT_VALUE = "not-provided"
+FALLBACK_PATIENT_EMAIL = "not-provided@klineus.local"
+
+
+def clean_string(value) -> str:
+    return str(value or "").strip()
+
+
+def is_fallback_patient_value(value) -> bool:
+    cleaned = clean_string(value).lower()
+
+    return cleaned in {
+        "",
+        FALLBACK_PATIENT_VALUE,
+        FALLBACK_PATIENT_EMAIL,
+    }
+
+
+def clean_patient_value(value, *, is_email: bool = False):
+    cleaned = clean_string(value)
+
+    if is_fallback_patient_value(cleaned):
+        return None
+
+    if is_email and cleaned.lower().endswith("@klineus.local"):
+        return None
+
+    return cleaned
+
 
 def get_case_metadata(case) -> dict:
     metadata = getattr(case, "metadata", None)
@@ -29,8 +57,11 @@ def get_case_metadata(case) -> dict:
     return {}
 
 
-def get_case_value(case, field_name: str, *metadata_keys: str):
-    direct_value = getattr(case, field_name, None)
+def get_case_value(case, field_name: str, *metadata_keys: str, is_email: bool = False):
+    direct_value = clean_patient_value(
+        getattr(case, field_name, None),
+        is_email=is_email,
+    )
 
     if direct_value:
         return direct_value
@@ -38,7 +69,10 @@ def get_case_value(case, field_name: str, *metadata_keys: str):
     metadata = get_case_metadata(case)
 
     for key in metadata_keys:
-        value = metadata.get(key)
+        value = clean_patient_value(
+            metadata.get(key),
+            is_email=is_email,
+        )
 
         if value:
             return value
@@ -53,6 +87,7 @@ def get_case_questionnaire_version(case) -> int | None:
         return direct_version
 
     metadata = get_case_metadata(case)
+
     metadata_version = (
         metadata.get("questionnaire_version")
         or metadata.get("questionnaireVersion")
@@ -82,20 +117,6 @@ def get_case_report_json(case) -> dict | None:
     return None
 
 
-def generate_case_flags(case):
-    try:
-        return generate_documentation_flags(case.answers, case.indication)
-    except TypeError:
-        return generate_documentation_flags(case.answers)
-
-
-def calculate_case_bmi(case):
-    try:
-        return calculate_bmi(case.answers, case.indication)
-    except TypeError:
-        return calculate_bmi(case.answers)
-
-
 def build_case_summary(case) -> PatientCaseSummary:
     return PatientCaseSummary(
         case_id=case.case_id,
@@ -123,6 +144,7 @@ def build_case_summary(case) -> PatientCaseSummary:
             "patient_email",
             "patientEmail",
             "email",
+            is_email=True,
         ),
         insurance_id=get_case_value(
             case,
@@ -157,10 +179,10 @@ def build_session_summary(session) -> PatientQuestionnaireSessionSummary:
         created_at=session.created_at,
         updated_at=session.updated_at,
         indication=session.indication,
-        patient_name=session.patient_name,
-        patient_last_name=session.patient_last_name,
-        patient_email=session.patient_email,
-        insurance_id=session.insurance_id,
+        patient_name=clean_patient_value(session.patient_name),
+        patient_last_name=clean_patient_value(session.patient_last_name),
+        patient_email=clean_patient_value(session.patient_email, is_email=True),
+        insurance_id=clean_patient_value(session.insurance_id),
         questionnaire_template_id=session.questionnaire_template_id,
         questionnaire_version=session.questionnaire_version,
         current_question_id=session.current_question_id,
@@ -174,6 +196,7 @@ def list_cases(
     _: str = Depends(get_current_doctor),
 ) -> list[PatientCaseSummary]:
     return [build_case_summary(case) for case in storage.list_cases()]
+
 
 @router.get("/worklist", response_model=DoctorWorklistResponse)
 def get_worklist(
@@ -193,6 +216,7 @@ def get_worklist(
         pending_sessions=pending_sessions,
         completed_cases=completed_cases,
     )
+
 
 @router.get("/cases/{case_id}", response_model=PatientCaseDetail)
 def get_case(
@@ -233,16 +257,12 @@ def get_case(
         report_generated_at=summary.report_generated_at,
         answers=case.answers,
         answer_groups=group_answers(case.answers),
-
-        # Keep both names so old and new frontend/schema versions work.
-        flags=documentation_flags,
         documentation_flags=documentation_flags,
-
         traffic_light=traffic_light,
         report_text=case.report_text,
         report_json=get_case_report_json(case),
-        bmi=calculate_bmi(case.answers, case.indication),
     )
+
 
 @router.delete("/cases/{case_id}", response_model=DeleteCaseResponse)
 def delete_case(
