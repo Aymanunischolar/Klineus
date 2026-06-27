@@ -73,8 +73,8 @@ export default function TeamPage() {
             <h1>
               {localText(
                 language,
-                "Klineus entsteht an der Schnittstelle von Medizin und Produktentwicklung.",
-                "Klineus is built at the intersection of medicine and product development.",
+                "Klineus verbindet Medizin und Technologie.",
+                "Klineus connects medicine and technology.",
               )}
             </h1>
 
@@ -140,7 +140,7 @@ export default function TeamPage() {
           <div className="team-principle-list-pro">
             {principles.map((principle) => (
               <article key={principle}>
-                <span>✓</span>
+                <span aria-hidden="true">✓</span>
                 <p>{principle}</p>
               </article>
             ))}

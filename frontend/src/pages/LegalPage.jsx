@@ -196,6 +196,29 @@ export default function LegalPage() {
           </div>
         </section>
 
+        <section className="legal-clean-note">
+          <div>
+            <p className="eyebrow">
+              {localText(language, "Hinweis", "Note")}
+            </p>
+
+            <h2>
+              {localText(
+                language,
+                "Vor Veröffentlichung rechtlich prüfen lassen.",
+                "Have this reviewed legally before publication.",
+              )}
+            </h2>
+          </div>
+
+          <p>
+            {localText(
+              language,
+              "Diese Seite ist gestalterisch vorbereitet. Die finalen rechtlichen Angaben müssen vor dem produktiven Einsatz durch eine qualifizierte Stelle geprüft und ergänzt werden.",
+              "This page is prepared visually. The final legal information must be reviewed and completed by a qualified party before production use.",
+            )}
+          </p>
+        </section>
       </main>
     </AppShell>
   );
