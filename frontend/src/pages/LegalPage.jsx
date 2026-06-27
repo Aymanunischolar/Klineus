@@ -115,17 +115,17 @@ export default function LegalPage() {
 
           <h1>
             {localText(
-              language,
-              "Impressum und Datenschutz",
-              "Imprint and Privacy",
+                language,
+                "Impressum und Datenschutz",
+                "Imprint and Privacy",
             )}
           </h1>
 
           <p>
             {localText(
-              language,
-              "Diese Angaben sind Platzhalter und müssen vor einem produktiven Einsatz rechtlich geprüft und vervollständigt werden.",
-              "This information is placeholder content and must be legally reviewed and completed before production use.",
+                language,
+                "Auf dieser Seite finden Sie die rechtlichen Informationen, das Impressum und die Datenschutzhinweise zur Nutzung von Klineus.",
+                "This page contains the legal information, imprint and privacy information for using Klineus.",
             )}
           </p>
 
@@ -199,23 +199,27 @@ export default function LegalPage() {
         <section className="legal-clean-note">
           <div>
             <p className="eyebrow">
-              {localText(language, "Hinweis", "Note")}
+              {localText(
+                  language,
+                  "Nutzungsbedingungen",
+                  "Terms and Conditions",
+              )}
             </p>
 
             <h2>
               {localText(
-                language,
-                "Vor Veröffentlichung rechtlich prüfen lassen.",
-                "Have this reviewed legally before publication.",
+                  language,
+                  "Unsere rechtlichen Informationen.",
+                  "Our terms and conditions.",
               )}
             </h2>
           </div>
 
           <p>
             {localText(
-              language,
-              "Diese Seite ist gestalterisch vorbereitet. Die finalen rechtlichen Angaben müssen vor dem produktiven Einsatz durch eine qualifizierte Stelle geprüft und ergänzt werden.",
-              "This page is prepared visually. The final legal information must be reviewed and completed by a qualified party before production use.",
+                language,
+                "Diese Seite informiert über die Nutzung von Klineus, die Anbieterangaben und den Umgang mit personenbezogenen Daten.",
+                "This page explains the use of Klineus, provider information and how personal data is handled.",
             )}
           </p>
         </section>
