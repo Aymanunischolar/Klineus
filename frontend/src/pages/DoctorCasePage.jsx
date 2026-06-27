@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
+import { normalizeGermanText } from "../utils/germanText.js";
 
 const FALLBACK_PATIENT_VALUE = "not-provided";
 const FALLBACK_PATIENT_EMAIL = "not-provided@klineus.local";
@@ -13,28 +14,7 @@ function localText(language, de, en) {
 }
 
 function cleanText(value) {
-  return String(value || "")
-    .replace(/^\s*Block\s+[A-Z]:\s*/i, "")
-    .replaceAll("aerztlich", "ärztlich")
-    .replaceAll("Aerztlich", "Ärztlich")
-    .replaceAll("Pruefung", "Prüfung")
-    .replaceAll("pruefung", "prüfung")
-    .replaceAll("Huefte", "Hüfte")
-    .replaceAll("Hueft", "Hüft")
-    .replaceAll("fuer", "für")
-    .replaceAll("moeglich", "möglich")
-    .replaceAll("vollstaendig", "vollständig")
-    .replaceAll("Vollstaendig", "Vollständig")
-    .replaceAll("unvollstaendig", "unvollständig")
-    .replaceAll("Roentgen", "Röntgen")
-    .replaceAll("Entzuendung", "Entzündung")
-    .replaceAll("Klaerung", "Klärung")
-    .replaceAll("Aufklaerung", "Aufklärung")
-    .replaceAll("Gespraech", "Gespräch")
-    .replaceAll("Arztgespraech", "Arztgespräch")
-    .replaceAll("Anaemie", "Anämie")
-    .replaceAll("Gelenkverschleiss", "Gelenkverschleiß")
-    .trim();
+  return normalizeGermanText(value);
 }
 
 function cleanPatientValue(value, { isEmail = false } = {}) {
@@ -330,15 +310,15 @@ function EditableReportTemplate({ text, language, onChange }) {
   const lines = text.split("\n");
 
   function updateLine(index, nextContent, prefix = "") {
-    const cleanContent = String(nextContent || "")
-      .replace(/\n+/g, " ")
-      .trim();
+  const cleanContent = cleanText(nextContent)
+    .replace(/\n+/g, " ")
+    .trim();
 
-    const nextLines = [...lines];
-    nextLines[index] = prefix ? `${prefix}${cleanContent}` : cleanContent;
+  const nextLines = [...lines];
+  nextLines[index] = prefix ? `${prefix}${cleanContent}` : cleanContent;
 
-    onChange(nextLines.join("\n"));
-  }
+  onChange(nextLines.join("\n"));
+}
 
   return (
     <article className="doctor-report-preview doctor-report-preview-editable">
