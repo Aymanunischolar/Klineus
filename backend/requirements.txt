@@ -5,3 +5,6 @@ pydantic-settings
 python-jose
 bcrypt
 requests
+sqlalchemy
+psycopg[binary]
+python-dotenv
