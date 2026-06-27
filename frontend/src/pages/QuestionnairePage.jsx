@@ -227,6 +227,12 @@ export default function QuestionnairePage() {
     ? Math.round(((currentIndex + 1) / visibleQuestions.length) * 100)
     : 0;
 
+  const currentCategory =
+    currentQuestion?.blockLabels?.[language] ||
+    currentQuestion?.blockLabels?.de ||
+    currentQuestion?.blockTitle ||
+    "";
+
   function updateAnswer(nextValue) {
     if (!currentQuestion) return;
 
@@ -424,9 +430,10 @@ export default function QuestionnairePage() {
     const nextQuestionId = nextVisibleQuestions[nextIndex]?.id || "";
 
     setCurrentIndex(nextIndex);
-setError("");
+    setError("");
 
-saveProgress(nextAnswers, nextQuestionId);
+    void saveProgress(nextAnswers, nextQuestionId);
+  }
 
   function handleBack() {
     setCurrentIndex((index) => Math.max(index - 1, 0));
@@ -441,57 +448,69 @@ saveProgress(nextAnswers, nextQuestionId);
 
   if (!currentQuestion) {
     return (
-  <AppShell compact hideNav>
-    <div className="questionnaire-language-bar">
-      <LanguageToggle />
-    </div>
+      <AppShell compact hideNav>
+        <div className="questionnaire-language-bar">
+          <LanguageToggle />
+        </div>
 
-    <section className="questionnaire-card questionnaire-card-pro">
-      <p className="form-error">
-        {localText(
-          language,
-          "Der Fragebogen konnte nicht geladen werden.",
-          "The questionnaire could not be loaded.",
-        )}
-      </p>
-    </section>
-  </AppShell>
-);
+        <section className="questionnaire-card questionnaire-card-pro">
+          <p className="form-error">
+            {localText(
+              language,
+              "Der Fragebogen konnte nicht geladen werden.",
+              "The questionnaire could not be loaded.",
+            )}
+          </p>
+        </section>
+      </AppShell>
+    );
   }
 
   return (
-  <AppShell compact hideNav>
-    <div className="questionnaire-language-bar">
-      <LanguageToggle />
-    </div>
+    <AppShell compact hideNav>
+      <div className="questionnaire-language-bar">
+        <LanguageToggle />
+      </div>
 
-    <section className="questionnaire-card questionnaire-card-pro">await saveProgress(nextAnswers, nextQuestionId);
+      <section className="questionnaire-card questionnaire-card-pro">
+        <div className="questionnaire-progress-panel questionnaire-progress-panel-clean">
+          <div className="questionnaire-progress-header-clean">
+            <span className="questionnaire-question-number-clean">
+              {localText(language, "Frage", "Question")} {currentIndex + 1}
+            </span>
 
-<div className="questionnaire-progress-panel questionnaire-progress-panel-clean">
-  <div
-      aria-label={localText(language, "Fortschritt", "Progress")}
-      aria-valuemax="100"
-      aria-valuemin="0"
-      aria-valuenow={progress}
-      className="questionnaire-progress-track-pro"
-      role="progressbar"
-  >
-    <div
-        className="questionnaire-progress-fill-pro"
-        style={{width: `${progress}%`}}
-    />
-  </div>
+            <span className="questionnaire-category-clean">
+              {currentCategory}
+            </span>
+          </div>
 
-  <div className="questionnaire-progress-footer questionnaire-progress-footer-clean">
-    <span>
-      {isSavingProgress
-          ? localText(language, "Speichert…", "Saving…")
-          : localText(
+          <div
+            aria-label={localText(language, "Fortschritt", "Progress")}
+            aria-valuemax="100"
+            aria-valuemin="0"
+            aria-valuenow={progress}
+            className="questionnaire-progress-track-pro"
+            role="progressbar"
+          >
+            <div
+              className="questionnaire-progress-fill-pro"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
 
-          )}
-    </span>
-  </div>
-</div>
+          <div className="questionnaire-progress-footer-clean-visible">
+            <span>
+              {isSavingProgress
+                ? localText(language, "Speichert…", "Saving…")
+                : localText(
+                    language,
+                    "Eine Frage pro Bildschirm",
+                    "One question per screen",
+                  )}
+            </span>
+          </div>
+        </div>
+
         <div className="questionnaire-question-shell">
           <h1>{getQuestionText(currentQuestion, language)}</h1>
 
@@ -549,4 +568,4 @@ saveProgress(nextAnswers, nextQuestionId);
       </section>
     </AppShell>
   );
-}}
+}
