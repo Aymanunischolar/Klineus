@@ -442,23 +442,31 @@ export default function QuestionnairePage() {
 
   if (!currentQuestion) {
     return (
-      <AppShell compact hideNav>
-        <section className="questionnaire-card questionnaire-card-pro">
-          <p className="form-error">
-            {localText(
-              language,
-              "Der Fragebogen konnte nicht geladen werden.",
-              "The questionnaire could not be loaded.",
-            )}
-          </p>
-        </section>
-      </AppShell>
-    );
+  <AppShell compact hideNav>
+    <div className="questionnaire-language-bar">
+      <LanguageToggle />
+    </div>
+
+    <section className="questionnaire-card questionnaire-card-pro">
+      <p className="form-error">
+        {localText(
+          language,
+          "Der Fragebogen konnte nicht geladen werden.",
+          "The questionnaire could not be loaded.",
+        )}
+      </p>
+    </section>
+  </AppShell>
+);
   }
 
   return (
-    <AppShell compact hideNav>
-      <section className="questionnaire-card questionnaire-card-pro">
+  <AppShell compact hideNav>
+    <div className="questionnaire-language-bar">
+      <LanguageToggle />
+    </div>
+
+    <section className="questionnaire-card questionnaire-card-pro">
 <div className="questionnaire-progress-panel questionnaire-progress-panel-clean">
   <div
       aria-label={localText(language, "Fortschritt", "Progress")}
