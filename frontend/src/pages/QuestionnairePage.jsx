@@ -478,9 +478,7 @@ export default function QuestionnairePage() {
       {isSavingProgress
           ? localText(language, "Speichert…", "Saving…")
           : localText(
-              language,
-              "Eine Frage pro Bildschirm",
-              "One question per screen",
+
           )}
     </span>
   </div>
