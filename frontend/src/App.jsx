@@ -24,7 +24,7 @@ function NotFoundPage() {
 
       <p>The page you are looking for does not exist or has moved.</p>
 
-      <a className="primary-button" href="/home">
+      <a className="primary-button" href="/">
         Back to home
       </a>
     </main>
@@ -34,10 +34,11 @@ function NotFoundPage() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/home" replace />} />
+      {/* Homepage */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/home" element={<Navigate to="/" replace />} />
 
       {/* Public website routes */}
-      <Route path="/home" element={<LandingPage />} />
       <Route path="/product" element={<ProductPage />} />
       <Route path="/team" element={<TeamPage />} />
       <Route path="/contact" element={<ContactPage />} />
@@ -68,9 +69,9 @@ export default function App() {
       <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
 
       {/* Remove old public questionnaire/prototype aliases */}
-      <Route path="/patient/questionnaire" element={<Navigate to="/home" replace />} />
-      <Route path="/questionnaire" element={<Navigate to="/home" replace />} />
-      <Route path="/prototype" element={<Navigate to="/home" replace />} />
+      <Route path="/patient/questionnaire" element={<Navigate to="/" replace />} />
+      <Route path="/questionnaire" element={<Navigate to="/" replace />} />
+      <Route path="/prototype" element={<Navigate to="/" replace />} />
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
