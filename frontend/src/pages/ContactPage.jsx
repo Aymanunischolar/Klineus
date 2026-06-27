@@ -32,22 +32,56 @@ export default function ContactPage() {
 
     const body = encodeURIComponent(
       [
-        `Name: ${form.name}`,
-        `Organisation: ${form.organization}`,
+        `Name: ${form.name || "-"}`,
+        `Organisation: ${form.organization || "-"}`,
         "",
         "Nachricht:",
-        form.message,
+        form.message || "-",
       ].join("\n"),
     );
 
     window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
   }
 
+  const contactDetails = [
+    {
+      label: localText(language, "E-Mail", "Email"),
+      value: CONTACT_EMAIL,
+      text: localText(
+        language,
+        "Für allgemeine Rückfragen und Kontaktanfragen.",
+        "For general questions and contact requests.",
+      ),
+    },
+    {
+      label: localText(language, "Standort", "Location"),
+      value: localText(language, "Deutschland", "Germany"),
+      text: localText(
+        language,
+        "Klineus ist für medizinische Einrichtungen in Deutschland vorbereitet.",
+        "Klineus is prepared for medical organizations in Germany.",
+      ),
+    },
+    {
+      label: localText(language, "Anliegen", "Topic"),
+      value: localText(
+        language,
+        "Pilotierung und Partnerschaft",
+        "Pilots and partnerships",
+      ),
+      text: localText(
+        language,
+        "Kontaktieren Sie uns für Pilotprojekte, Kooperationen oder Fragen.",
+        "Contact us for pilots, partnerships or questions.",
+      ),
+    },
+  ];
+
   return (
     <AppShell>
-      <main className="contact-page-pro">
-        <section className="contact-hero-pro">
-          <div className="contact-hero-copy-pro">
+      <main className="contact-clean-page">
+        <section className="contact-clean-hero">
+          <div className="contact-clean-hero-copy">
             <p className="eyebrow">
               {localText(language, "Kontakt", "Contact")}
             </p>
@@ -69,9 +103,9 @@ export default function ContactPage() {
             </p>
           </div>
 
-          <aside className="contact-info-card-pro">
+          <aside className="contact-clean-direct-card">
             <p className="eyebrow">
-              {localText(language, "Direkter Kontakt", "Direct contact")}
+              {localText(language, "Direkter Kontakt", "Direct Contact")}
             </p>
 
             <h2>{CONTACT_EMAIL}</h2>
@@ -90,31 +124,18 @@ export default function ContactPage() {
           </aside>
         </section>
 
-        <section className="contact-grid-pro">
-          <article className="contact-detail-card-pro">
-            <span>{localText(language, "E-Mail", "Email")}</span>
-            <strong>{CONTACT_EMAIL}</strong>
-          </article>
-
-          <article className="contact-detail-card-pro">
-            <span>{localText(language, "Standort", "Location")}</span>
-            <strong>{localText(language, "Deutschland", "Germany")}</strong>
-          </article>
-
-          <article className="contact-detail-card-pro">
-            <span>{localText(language, "Anliegen", "Topic")}</span>
-            <strong>
-              {localText(
-                language,
-                "Pilotierung und Partnerschaft",
-                "Pilots and partnerships",
-              )}
-            </strong>
-          </article>
+        <section className="contact-clean-details">
+          {contactDetails.map((detail) => (
+            <article className="contact-clean-detail-card" key={detail.label}>
+              <span>{detail.label}</span>
+              <strong>{detail.value}</strong>
+              <p>{detail.text}</p>
+            </article>
+          ))}
         </section>
 
-        <section className="contact-form-section-pro">
-          <div className="section-heading">
+        <section className="contact-clean-form-section">
+          <div className="contact-clean-form-copy">
             <p className="eyebrow">
               {localText(language, "Nachricht", "Message")}
             </p>
@@ -136,7 +157,7 @@ export default function ContactPage() {
             </p>
           </div>
 
-          <form className="contact-form-pro" onSubmit={handleSubmit}>
+          <form className="contact-clean-form" onSubmit={handleSubmit}>
             <label>
               <span>{localText(language, "Name", "Name")}</span>
 
@@ -182,7 +203,7 @@ export default function ContactPage() {
                   "Worum geht es?",
                   "How can we help?",
                 )}
-                rows={6}
+                rows={7}
                 value={form.message}
                 onChange={(event) =>
                   updateField("message", event.target.value)
@@ -190,10 +211,18 @@ export default function ContactPage() {
               />
             </label>
 
-            <div className="contact-form-actions">
+            <div className="contact-clean-actions">
               <button className="primary-button" type="submit">
                 {localText(language, "E-Mail vorbereiten", "Prepare email")}
               </button>
+
+              <p>
+                {localText(
+                  language,
+                  "Es werden keine Daten auf dieser Seite gespeichert. Die Nachricht wird über Ihr E-Mail-Programm vorbereitet.",
+                  "No data is stored on this page. The message is prepared through your email app.",
+                )}
+              </p>
             </div>
           </form>
         </section>
