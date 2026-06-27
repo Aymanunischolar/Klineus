@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
+import LanguageToggle from "../components/LanguageToggle.jsx";
 import QuestionInput from "../components/QuestionInput.jsx";
 import {
   defaultAnswer,
