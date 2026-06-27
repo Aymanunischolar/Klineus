@@ -77,35 +77,15 @@ export default function LandingPage() {
           <div className="home-hero-copy-pro">
             <p className="eyebrow">Klineus</p>
 
-            <h1>
-              {localText(
-                language,
-                "Klineus strukturiert medizinisch relevante Patientenangaben.",
-                "Klineus structures medically relevant patient information.",
-              )}
-            </h1>
+            <h1>Klineus</h1>
 
             <p>
               {localText(
                 language,
                 "Klineus unterstützt medizinische Einrichtungen dabei, Angaben vor einem Termin klarer zu erfassen, aufzubereiten und für die ärztliche Prüfung übersichtlich darzustellen.",
-                "Klineus helps medical organizations collect, prepare and present information clearly before an appointment for physician review.",
+                "Klineus helps medical organizations collect, prepare and present patient-related information clearly before an appointment for physician review.",
               )}
             </p>
-
-            <div className="home-trust-row-pro" aria-label="Klineus Merkmale">
-              <span>
-                {localText(language, "Strukturierte Erhebung", "Structured intake")}
-              </span>
-
-              <span>
-                {localText(language, "Ärztlich prüfbar", "Physician-reviewable")}
-              </span>
-
-              <span>
-                {localText(language, "Keine Diagnose", "No diagnosis")}
-              </span>
-            </div>
           </div>
 
           <div className="home-hero-media-pro">
@@ -119,17 +99,6 @@ export default function LandingPage() {
               )}
               loading="eager"
             />
-
-            <div className="home-hero-note-pro">
-              <strong>Klineus</strong>
-              <span>
-                {localText(
-                  language,
-                  "Unterstützung für strukturierte Vorbereitung.",
-                  "Support for structured preparation.",
-                )}
-              </span>
-            </div>
           </div>
         </section>
 

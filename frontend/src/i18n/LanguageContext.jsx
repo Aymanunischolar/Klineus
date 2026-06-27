@@ -1,53 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { normalizeGermanText } from "../utils/germanText.js";
 
 const STORAGE_KEY = "klineus_language";
 
 function cleanGermanText(value) {
-  return String(value || "")
-    .replace(/^\s*Block\s+[A-Z]:\s*/i, "")
-    .replaceAll("aerztliche", "ärztliche")
-    .replaceAll("aerztlicher", "ärztlicher")
-    .replaceAll("aerztlich", "ärztlich")
-    .replaceAll("Aerztliche", "Ärztliche")
-    .replaceAll("Aerztlicher", "Ärztlicher")
-    .replaceAll("Aerztlich", "Ärztlich")
-    .replaceAll("Pruefung", "Prüfung")
-    .replaceAll("pruefung", "prüfung")
-    .replaceAll("pruefen", "prüfen")
-    .replaceAll("geprueft", "geprüft")
-    .replaceAll("Kuerzliches", "Kürzliches")
-    .replaceAll("kuerzliches", "kürzliches")
-    .replaceAll("Kuerzliche", "Kürzliche")
-    .replaceAll("kuerzliche", "kürzliche")
-    .replaceAll("Huefte", "Hüfte")
-    .replaceAll("Hueft", "Hüft")
-    .replaceAll("fuer", "für")
-    .replaceAll("moeglich", "möglich")
-    .replaceAll("moegliche", "mögliche")
-    .replaceAll("regelmaessig", "regelmäßig")
-    .replaceAll("Regelmaessige", "Regelmäßige")
-    .replaceAll("vollstaendig", "vollständig")
-    .replaceAll("Vollstaendig", "Vollständig")
-    .replaceAll("unvollstaendig", "unvollständig")
-    .replaceAll("Einschraenkung", "Einschränkung")
-    .replaceAll("einschraenkung", "einschränkung")
-    .replaceAll("Alltagseinschraenkung", "Alltagseinschränkung")
-    .replaceAll("Roentgen", "Röntgen")
-    .replaceAll("Entzuendung", "Entzündung")
-    .replaceAll("Klaerung", "Klärung")
-    .replaceAll("klaeren", "klären")
-    .replaceAll("Arztgespraech", "Arztgespräch")
-    .replaceAll("Gespraech", "Gespräch")
-    .replaceAll("Anaemie", "Anämie")
-    .replaceAll("anaemie", "Anämie")
-    .replaceAll("bezueglich", "bezüglich")
-    .replaceAll("Fruehere", "Frühere")
-    .replaceAll("fruehere", "frühere")
-    .replaceAll("Gelenkverschleiss", "Gelenkverschleiß")
-    .replaceAll("Aufklaerung", "Aufklärung")
-    .trim();
+  return normalizeGermanText(value);
 }
-
 const translations = {
   de: {
     languageName: "Deutsch",
