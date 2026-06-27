@@ -131,20 +131,19 @@ export default function AppShell({
       <main className="main-content">{children}</main>
 
       {!compact && !hideNav ? (
-        <footer className="site-footer">
-          <Link to="/legal#terms">
-            {localText(language, "Impressum", "Imprint")}
-          </Link>
+<footer className="site-footer">
+  <Link to="/contact">
+    {localText(language, "Kontakt", "Contact")}
+  </Link>
 
-          <Link to="/legal#privacy">
-            {localText(language, "Datenschutz", "Privacy")}
-          </Link>
+  <Link to="/legal#terms">
+    {localText(language, "Impressum", "Imprint")}
+  </Link>
 
-          <Link to="/legal#privacy">
+  <Link to="/legal#privacy">
     {localText(language, "Datenschutz", "Privacy")}
   </Link>
-        </footer>
-      ) : null}
+</footer>) : null}
     </div>
   );
 }
