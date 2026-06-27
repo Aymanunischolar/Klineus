@@ -139,6 +139,10 @@ export default function AppShell({
           <Link to="/legal#privacy">
             {localText(language, "Datenschutz", "Privacy")}
           </Link>
+
+          <Link to="/legal#privacy">
+    {localText(language, "Datenschutz", "Privacy")}
+  </Link>
         </footer>
       ) : null}
     </div>
