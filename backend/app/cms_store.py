@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from dotenv import load_dotenv
+from psycopg import connect as postgres_connect
+from psycopg.rows import dict_row
 
 from app.seed_data import (
     DEFAULT_CONTENT_PAGES,
@@ -33,9 +38,16 @@ from app.schemas import (
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB_PATH = BASE_DIR / "data" / "klineus.sqlite3"
 
+load_dotenv(BASE_DIR / ".env")
+
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def get_database_url() -> str | None:
+    value = os.getenv("DATABASE_URL", "").strip()
+    return value or None
 
 
 def get_db_path() -> Path:
@@ -51,7 +63,109 @@ def refresh_seed_data_enabled() -> bool:
     }
 
 
-def connect() -> sqlite3.Connection:
+class ListCursor:
+    def __init__(self, rows: list[dict[str, Any]]) -> None:
+        self._rows = rows
+        self.rowcount = len(rows)
+
+    def fetchone(self) -> dict[str, Any] | None:
+        return self._rows[0] if self._rows else None
+
+    def fetchall(self) -> list[dict[str, Any]]:
+        return self._rows
+
+
+def adapt_sql_for_postgres(sql: str) -> str:
+    clean_sql = sql.strip()
+
+    clean_sql = re.sub(
+        r"^INSERT\s+OR\s+IGNORE\s+INTO",
+        "INSERT INTO",
+        clean_sql,
+        flags=re.IGNORECASE,
+    )
+
+    was_insert_or_ignore = not clean_sql.lower().startswith("insert or ignore") and bool(
+        re.match(r"^INSERT\s+INTO", clean_sql, flags=re.IGNORECASE)
+    )
+
+    original_had_insert_or_ignore = bool(
+        re.match(r"^INSERT\s+OR\s+IGNORE\s+INTO", sql.strip(), flags=re.IGNORECASE)
+    )
+
+    if original_had_insert_or_ignore:
+        clean_sql = clean_sql.rstrip(";")
+        clean_sql = f"{clean_sql} ON CONFLICT DO NOTHING"
+
+    clean_sql = clean_sql.replace("?", "%s")
+
+    return clean_sql
+
+
+class PostgresConnection:
+    def __init__(self, database_url: str) -> None:
+        self._connection = postgres_connect(database_url, row_factory=dict_row)
+
+    def __enter__(self) -> "PostgresConnection":
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        if exc_type:
+            self._connection.rollback()
+        else:
+            self._connection.commit()
+
+        self._connection.close()
+
+    def execute(self, sql: str, params: tuple[Any, ...] | list[Any] | None = None):
+        pragma_match = re.match(
+            r"^\s*PRAGMA\s+table_info\(([^)]+)\)\s*$",
+            sql,
+            flags=re.IGNORECASE,
+        )
+
+        if pragma_match:
+            table_name = pragma_match.group(1).strip().strip('"').strip("'")
+
+            cursor = self._connection.execute(
+                """
+                SELECT column_name AS name
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = %s
+                ORDER BY ordinal_position
+                """,
+                (table_name,),
+            )
+
+            return ListCursor(cursor.fetchall())
+
+        adapted_sql = adapt_sql_for_postgres(sql)
+        return self._connection.execute(adapted_sql, tuple(params or ()))
+
+    def executescript(self, script: str) -> None:
+        statements = [
+            statement.strip()
+            for statement in script.split(";")
+            if statement.strip()
+        ]
+
+        for statement in statements:
+            self.execute(statement)
+
+    def commit(self) -> None:
+        self._connection.commit()
+
+    def close(self) -> None:
+        self._connection.close()
+
+
+def connect():
+    database_url = get_database_url()
+
+    if database_url:
+        return PostgresConnection(database_url)
+
     db_path = get_db_path()
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
