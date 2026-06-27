@@ -458,43 +458,33 @@ export default function QuestionnairePage() {
   return (
     <AppShell compact hideNav>
       <section className="questionnaire-card questionnaire-card-pro">
-        <div className="questionnaire-progress-panel">
-          <div className="questionnaire-progress-topline questionnaire-progress-topline-clean">
-            <span>
-              {localText(language, "Frage", "Question")} {currentIndex + 1}{" "}
-              {localText(language, "von", "of")} {visibleQuestions.length}
-            </span>
-          </div>
+<div className="questionnaire-progress-panel questionnaire-progress-panel-clean">
+  <div
+      aria-label={localText(language, "Fortschritt", "Progress")}
+      aria-valuemax="100"
+      aria-valuemin="0"
+      aria-valuenow={progress}
+      className="questionnaire-progress-track-pro"
+      role="progressbar"
+  >
+    <div
+        className="questionnaire-progress-fill-pro"
+        style={{width: `${progress}%`}}
+    />
+  </div>
 
-          <div
-            aria-label={localText(language, "Fortschritt", "Progress")}
-            aria-valuemax="100"
-            aria-valuemin="0"
-            aria-valuenow={progress}
-            className="questionnaire-progress-track-pro"
-            role="progressbar"
-          >
-            <div
-              className="questionnaire-progress-fill-pro"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          <div className="questionnaire-progress-footer">
-            <span>{progress}%</span>
-
-            <span>
-              {isSavingProgress
-                ? localText(language, "Speichert…", "Saving…")
-                : localText(
-                    language,
-                    "Eine Frage pro Bildschirm",
-                    "One question per screen",
-                  )}
-            </span>
-          </div>
-        </div>
-
+  <div className="questionnaire-progress-footer questionnaire-progress-footer-clean">
+    <span>
+      {isSavingProgress
+          ? localText(language, "Speichert…", "Saving…")
+          : localText(
+              language,
+              "Eine Frage pro Bildschirm",
+              "One question per screen",
+          )}
+    </span>
+  </div>
+</div>
         <div className="questionnaire-question-shell">
           <h1>{getQuestionText(currentQuestion, language)}</h1>
 
