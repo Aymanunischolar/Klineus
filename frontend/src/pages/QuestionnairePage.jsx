@@ -423,11 +423,10 @@ export default function QuestionnairePage() {
     );
     const nextQuestionId = nextVisibleQuestions[nextIndex]?.id || "";
 
-    await saveProgress(nextAnswers, nextQuestionId);
-
     setCurrentIndex(nextIndex);
-    setError("");
-  }
+setError("");
+
+saveProgress(nextAnswers, nextQuestionId);
 
   function handleBack() {
     setCurrentIndex((index) => Math.max(index - 1, 0));
@@ -466,7 +465,8 @@ export default function QuestionnairePage() {
       <LanguageToggle />
     </div>
 
-    <section className="questionnaire-card questionnaire-card-pro">
+    <section className="questionnaire-card questionnaire-card-pro">await saveProgress(nextAnswers, nextQuestionId);
+
 <div className="questionnaire-progress-panel questionnaire-progress-panel-clean">
   <div
       aria-label={localText(language, "Fortschritt", "Progress")}
@@ -549,4 +549,4 @@ export default function QuestionnairePage() {
       </section>
     </AppShell>
   );
-}
+}}
