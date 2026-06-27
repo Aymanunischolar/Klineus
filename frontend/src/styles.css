@@ -12301,3 +12301,33 @@ a[href="/doctor/login"] {
     grid-template-columns: 1fr;
   }
 }
+
+/* Patient questionnaire language toggle only */
+.questionnaire-language-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: min(920px, 100%);
+  margin: 0 auto 18px;
+  padding: 0 4px;
+}
+
+.questionnaire-language-bar .language-toggle {
+  margin-left: auto;
+}
+
+.app-shell-hidden-nav .topbar,
+.app-shell-hidden-nav .site-footer {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .questionnaire-language-bar {
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .questionnaire-language-bar .language-toggle {
+    margin-left: 0;
+  }
+}
