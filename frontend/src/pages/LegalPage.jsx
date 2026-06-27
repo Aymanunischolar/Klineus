@@ -8,10 +8,107 @@ function localText(language, de, en) {
 export default function LegalPage() {
   const { language } = useLanguage();
 
+  const imprintCards = [
+    {
+      label: localText(language, "Anbieter", "Provider"),
+      title: "Klineus",
+      text: localText(
+        language,
+        "Die vollständigen Angaben zur verantwortlichen Person oder Gesellschaft müssen vor Veröffentlichung ergänzt werden.",
+        "The full details of the responsible person or company must be added before publication.",
+      ),
+    },
+    {
+      label: localText(language, "Kontakt", "Contact"),
+      title: "contact@klineus.de",
+      text: localText(
+        language,
+        "Für allgemeine Rückfragen erreichen Sie Klineus per E-Mail.",
+        "For general questions, Klineus can be reached by email.",
+      ),
+    },
+    {
+      label: localText(
+        language,
+        "Verantwortlich für den Inhalt",
+        "Responsible for content",
+      ),
+      title: "Klineus",
+      text: localText(
+        language,
+        "Diese Angabe muss vor produktivem Einsatz rechtlich geprüft und ergänzt werden.",
+        "This information must be legally reviewed and completed before production use.",
+      ),
+    },
+  ];
+
+  const privacyCards = [
+    {
+      label: localText(language, "Datensparsamkeit", "Data minimization"),
+      title: localText(
+        language,
+        "Nur erforderliche Angaben",
+        "Only required information",
+      ),
+      text: localText(
+        language,
+        "Es sollen nur Informationen erhoben werden, die für den jeweiligen medizinischen Ablauf erforderlich sind.",
+        "Only information required for the relevant medical workflow should be collected.",
+      ),
+    },
+    {
+      label: localText(
+        language,
+        "Ärztliche Zuordnung",
+        "Physician-side assignment",
+      ),
+      title: localText(
+        language,
+        "Patientenname und Fallinformationen",
+        "Patient name and case information",
+      ),
+      text: localText(
+        language,
+        "Patientenname und Fallinformationen dienen der Zuordnung im ärztlichen Arbeitsablauf.",
+        "Patient name and case information are used for assignment within the physician workflow.",
+      ),
+    },
+    {
+      label: localText(language, "KI-Verarbeitung", "AI processing"),
+      title: localText(
+        language,
+        "Keine direkten Identifikatoren in Prompts",
+        "No direct identifiers in prompts",
+      ),
+      text: localText(
+        language,
+        "Direkte Identifikatoren sollen nicht an KI-Prompts übergeben werden.",
+        "Direct identifiers should not be passed into AI prompts.",
+      ),
+    },
+    {
+      label: localText(
+        language,
+        "Prüfung vor Produktivbetrieb",
+        "Review before production use",
+      ),
+      title: localText(
+        language,
+        "Rechtliche und technische Prüfung",
+        "Legal and technical review",
+      ),
+      text: localText(
+        language,
+        "Vor produktivem Einsatz müssen Datenschutz, IT-Sicherheit, regulatorische Einordnung und klinische Validierung geprüft werden.",
+        "Before production use, privacy, IT security, regulatory classification and clinical validation must be reviewed.",
+      ),
+    },
+  ];
+
   return (
     <AppShell>
-      <main className="legal-page-pro">
-        <section className="legal-hero-pro">
+      <main className="legal-clean-page">
+        <section className="legal-clean-hero">
           <p className="eyebrow">
             {localText(language, "Rechtliches", "Legal")}
           </p>
@@ -31,172 +128,96 @@ export default function LegalPage() {
               "This information is placeholder content and must be legally reviewed and completed before production use.",
             )}
           </p>
-        </section>
 
-        <section id="terms" className="legal-section-pro">
-          <p className="eyebrow">
-            {localText(language, "Impressum", "Imprint")}
-          </p>
+          <div className="legal-clean-anchor-row">
+            <a href="#terms">
+              {localText(language, "Impressum", "Imprint")}
+            </a>
 
-          <h2>{localText(language, "Impressum", "Imprint")}</h2>
-
-          <div className="legal-card-grid-pro">
-            <article className="legal-card-pro">
-              <span>{localText(language, "Anbieter", "Provider")}</span>
-              <strong>Klineus</strong>
-              <p>
-                {localText(
-                  language,
-                  "Die vollständigen Angaben zur verantwortlichen Person oder Gesellschaft müssen vor Veröffentlichung ergänzt werden.",
-                  "The full details of the responsible person or company must be added before publication.",
-                )}
-              </p>
-            </article>
-
-            <article className="legal-card-pro">
-              <span>{localText(language, "Kontakt", "Contact")}</span>
-              <strong>contact@klineus.de</strong>
-              <p>
-                {localText(
-                  language,
-                  "Für allgemeine Rückfragen erreichen Sie Klineus per E-Mail.",
-                  "For general questions, Klineus can be reached by email.",
-                )}
-              </p>
-            </article>
-
-            <article className="legal-card-pro">
-              <span>
-                {localText(
-                  language,
-                  "Verantwortlich für den Inhalt",
-                  "Responsible for content",
-                )}
-              </span>
-              <strong>Klineus</strong>
-              <p>
-                {localText(
-                  language,
-                  "Diese Angabe muss vor produktivem Einsatz rechtlich geprüft und ergänzt werden.",
-                  "This information must be legally reviewed and completed before production use.",
-                )}
-              </p>
-            </article>
+            <a href="#privacy">
+              {localText(language, "Datenschutz", "Privacy")}
+            </a>
           </div>
         </section>
 
-        <section id="privacy" className="legal-section-pro">
-          <p className="eyebrow">
-            {localText(language, "Datenschutz", "Privacy")}
-          </p>
+        <section id="terms" className="legal-clean-section">
+          <div className="legal-clean-section-heading">
+            <p className="eyebrow">
+              {localText(language, "Impressum", "Imprint")}
+            </p>
 
-          <h2>{localText(language, "Datenschutz", "Privacy")}</h2>
+            <h2>{localText(language, "Impressum", "Imprint")}</h2>
 
-          <p className="legal-section-intro-pro">
+            <p>
+              {localText(
+                language,
+                "Informationen zum Anbieter und zur Kontaktaufnahme.",
+                "Information about the provider and contact details.",
+              )}
+            </p>
+          </div>
+
+          <div className="legal-clean-card-grid legal-clean-card-grid-3">
+            {imprintCards.map((card) => (
+              <article className="legal-clean-card" key={card.label}>
+                <span>{card.label}</span>
+                <strong>{card.title}</strong>
+                <p>{card.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="privacy" className="legal-clean-section">
+          <div className="legal-clean-section-heading">
+            <p className="eyebrow">
+              {localText(language, "Datenschutz", "Privacy")}
+            </p>
+
+            <h2>{localText(language, "Datenschutz", "Privacy")}</h2>
+
+            <p>
+              {localText(
+                language,
+                "Klineus verarbeitet Daten zweckgebunden zur strukturierten Vorbereitung medizinischer Informationen und zur ärztlichen Zuordnung.",
+                "Klineus processes data for the purpose of structured preparation of medical information and physician-side assignment.",
+              )}
+            </p>
+          </div>
+
+          <div className="legal-clean-card-grid">
+            {privacyCards.map((card) => (
+              <article className="legal-clean-card" key={card.label}>
+                <span>{card.label}</span>
+                <strong>{card.title}</strong>
+                <p>{card.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="legal-clean-note">
+          <div>
+            <p className="eyebrow">
+              {localText(language, "Hinweis", "Note")}
+            </p>
+
+            <h2>
+              {localText(
+                language,
+                "Vor Veröffentlichung rechtlich prüfen lassen.",
+                "Have this reviewed legally before publication.",
+              )}
+            </h2>
+          </div>
+
+          <p>
             {localText(
               language,
-              "Klineus verarbeitet Daten zweckgebunden zur strukturierten Vorbereitung medizinischer Informationen und zur ärztlichen Zuordnung.",
-              "Klineus processes data for the purpose of structured preparation of medical information and physician-side assignment.",
+              "Diese Seite ist gestalterisch vorbereitet. Die finalen rechtlichen Angaben müssen vor dem produktiven Einsatz durch eine qualifizierte Stelle geprüft und ergänzt werden.",
+              "This page is prepared visually. The final legal information must be reviewed and completed by a qualified party before production use.",
             )}
           </p>
-
-          <div className="legal-card-grid-pro">
-            <article className="legal-card-pro">
-              <span>
-                {localText(language, "Datensparsamkeit", "Data minimization")}
-              </span>
-
-              <strong>
-                {localText(
-                  language,
-                  "Nur erforderliche Angaben",
-                  "Only required information",
-                )}
-              </strong>
-
-              <p>
-                {localText(
-                  language,
-                  "Es sollen nur Informationen erhoben werden, die für den jeweiligen medizinischen Ablauf erforderlich sind.",
-                  "Only information required for the relevant medical workflow should be collected.",
-                )}
-              </p>
-            </article>
-
-            <article className="legal-card-pro">
-              <span>
-                {localText(
-                  language,
-                  "Ärztliche Zuordnung",
-                  "Physician-side assignment",
-                )}
-              </span>
-
-              <strong>
-                {localText(
-                  language,
-                  "Patientenname und Fallinformationen",
-                  "Patient name and case information",
-                )}
-              </strong>
-
-              <p>
-                {localText(
-                  language,
-                  "Patientenname und Fallinformationen dienen der Zuordnung im ärztlichen Arbeitsablauf.",
-                  "Patient name and case information are used for assignment within the physician workflow.",
-                )}
-              </p>
-            </article>
-
-            <article className="legal-card-pro">
-              <span>
-                {localText(language, "KI-Verarbeitung", "AI processing")}
-              </span>
-
-              <strong>
-                {localText(
-                  language,
-                  "Keine direkten Identifikatoren in Prompts",
-                  "No direct identifiers in prompts",
-                )}
-              </strong>
-
-              <p>
-                {localText(
-                  language,
-                  "Direkte Identifikatoren sollen nicht an KI-Prompts übergeben werden.",
-                  "Direct identifiers should not be passed into AI prompts.",
-                )}
-              </p>
-            </article>
-
-            <article className="legal-card-pro">
-              <span>
-                {localText(
-                  language,
-                  "Prüfung vor Produktivbetrieb",
-                  "Review before production use",
-                )}
-              </span>
-
-              <strong>
-                {localText(
-                  language,
-                  "Rechtliche und technische Prüfung",
-                  "Legal and technical review",
-                )}
-              </strong>
-
-              <p>
-                {localText(
-                  language,
-                  "Vor produktivem Einsatz müssen Datenschutz, IT-Sicherheit, regulatorische Einordnung und klinische Validierung geprüft werden.",
-                  "Before production use, privacy, IT security, regulatory classification and clinical validation must be reviewed.",
-                )}
-              </p>
-            </article>
-          </div>
         </section>
       </main>
     </AppShell>
