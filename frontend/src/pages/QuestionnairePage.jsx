@@ -21,6 +21,13 @@ function localText(language, de, en) {
   return language === "en" ? en : de;
 }
 
+function formatIndication(value) {
+  if (value === "hip_tep") {
+    return "Hüfte-TEP";
+  }
+
+  return "Knie-TEP";
+}
 function normalizeIndication(value) {
   const normalized = String(value || "")
     .trim()
@@ -475,58 +482,68 @@ export default function QuestionnairePage() {
       <section className="questionnaire-card questionnaire-card-pro">
         <div className="questionnaire-progress-panel questionnaire-progress-panel-clean">
           <div className="questionnaire-progress-header-clean">
-            <span className="questionnaire-question-number-clean">
-              {localText(language, "Frage", "Question")} {currentIndex + 1}
-            </span>
+            <div>
+      <span className="questionnaire-kicker">
+        {formatIndication(indication)} Fragebogen
+      </span>
 
-            <span className="questionnaire-category-clean">
-              {currentCategory}
-            </span>
+              <strong className="questionnaire-block-title">
+                {currentCategory}
+              </strong>
+            </div>
+
+            <span className="questionnaire-step-pill">
+      {localText(language, "Schritt", "Step")} {currentIndex + 1}{" "}
+              {localText(language, "von", "of")} {visibleQuestions.length}
+    </span>
           </div>
 
           <div
-            aria-label={localText(language, "Fortschritt", "Progress")}
-            aria-valuemax="100"
-            aria-valuemin="0"
-            aria-valuenow={progress}
-            className="questionnaire-progress-track-pro"
-            role="progressbar"
+              aria-label={localText(language, "Fortschritt", "Progress")}
+              aria-valuemax="100"
+              aria-valuemin="0"
+              aria-valuenow={progress}
+              className="questionnaire-progress-track-pro"
+              role="progressbar"
           >
             <div
-              className="questionnaire-progress-fill-pro"
-              style={{ width: `${progress}%` }}
+                className="questionnaire-progress-fill-pro"
+                style={{width: `${progress}%`}}
             />
           </div>
 
           <div className="questionnaire-progress-footer-clean-visible">
+            <span>{progress}%</span>
+
             <span>
-              {isSavingProgress
-                ? localText(language, "Speichert…", "Saving…")
-                : localText(
-                    language,
-                    "Eine Frage pro Bildschirm",
-                    "One question per screen",
-                  )}
-            </span>
+      {isSavingProgress
+          ? localText(language, "Speichert…", "Saving…")
+          : localText(
+              language,
+              "Eine Frage pro Bildschirm",
+              "One question per screen",
+          )}
+    </span>
           </div>
         </div>
-
         <div className="questionnaire-question-shell">
+          <p className="question-id">{currentQuestion.id}</p>
+
           <h1>{getQuestionText(currentQuestion, language)}</h1>
 
           {currentQuestion.helpText?.[language] ||
           currentQuestion.helpText?.de ? (
-            <p className="question-help-text">
-              {currentQuestion.helpText?.[language] ||
-                currentQuestion.helpText?.de}
-            </p>
+              <p className="question-help-text">
+                {currentQuestion.helpText?.[language] ||
+                    currentQuestion.helpText?.de}
+              </p>
           ) : null}
 
           <QuestionInput
-            language={language}
-            question={currentQuestion}
-            value={value}
-            onChange={updateAnswer}
+              language={language}
+              question={currentQuestion}
+              value={value}
+              onChange={updateAnswer}
           />
         </div>
 
@@ -535,19 +552,19 @@ export default function QuestionnairePage() {
 
         <div className="question-nav question-nav-pro">
           <button
-            className="secondary-button"
-            disabled={currentIndex === 0 || isSubmitting}
-            type="button"
-            onClick={handleBack}
+              className="secondary-button"
+              disabled={currentIndex === 0 || isSubmitting}
+              type="button"
+              onClick={handleBack}
           >
             {t("back") || localText(language, "Zurück", "Back")}
           </button>
 
           <button
-            className="secondary-button questionnaire-cancel-button"
-            disabled={isSubmitting}
-            type="button"
-            onClick={handleCancel}
+              className="secondary-button questionnaire-cancel-button"
+              disabled={isSubmitting}
+              type="button"
+              onClick={handleCancel}
           >
             {localText(language, "Abbrechen", "Cancel")}
           </button>

@@ -13446,3 +13446,124 @@ a[href="/doctor/login"] {
     grid-template-columns: 1fr !important;
   }
 }
+
+.questionnaire-kicker {
+  display: block;
+  color: #0b8da3;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.questionnaire-block-title {
+  display: block;
+  margin-top: 4px;
+  color: #082b57;
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.questionnaire-step-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 9px 18px;
+  border: 1px solid rgba(160, 215, 226, 0.9);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0b8da3;
+  font-size: 0.92rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.question-id {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 0 24px;
+  border-radius: 999px;
+  background: #e7f6f6;
+  color: #0b8da3;
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.questionnaire-progress-header-clean {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.questionnaire-progress-footer-clean-visible {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .questionnaire-progress-header-clean {
+    flex-direction: column;
+  }
+}
+
+/* Final questionnaire question-size fix */
+
+.questionnaire-question-shell h1,
+.questionnaire-card h1,
+.questionnaire-card-pro h1 {
+  max-width: 820px;
+  font-size: clamp(1.75rem, 3.2vw, 2.65rem) !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.045em !important;
+  margin-bottom: 28px !important;
+}
+
+.questionnaire-question-shell {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.choice-grid {
+  max-width: 820px;
+}
+
+.choice-button {
+  font-size: 0.98rem !important;
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .questionnaire-question-shell h1,
+  .questionnaire-card h1,
+  .questionnaire-card-pro h1 {
+    font-size: clamp(1.65rem, 4.2vw, 2.25rem) !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 560px) {
+  .questionnaire-question-shell h1,
+  .questionnaire-card h1,
+  .questionnaire-card-pro h1 {
+    font-size: 1.55rem !important;
+    line-height: 1.18 !important;
+    letter-spacing: -0.03em !important;
+  }
+
+  .choice-button {
+    min-height: 50px !important;
+    font-size: 0.95rem !important;
+  }
+}
+
