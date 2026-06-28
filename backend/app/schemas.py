@@ -1,8 +1,7 @@
 from datetime import date, datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, EmailStr, Field
 
 UserRole = Literal["admin", "receptionist", "doctor"]
 CaseStatus = Literal["pending", "completed", "review_done", "closed"]
@@ -89,7 +88,13 @@ class AppUserListResponse(BaseModel):
 class UpdateAppUserStatusRequest(BaseModel):
     is_active: bool
 
+class UpdateAppUserPasswordRequest(BaseModel):
+    password: str = Field(min_length=6)
 
+
+class DeleteAppUserResponse(BaseModel):
+    user_id: str
+    deleted: bool
 # ---------------------------------------------------------------------------
 # Shared CMS content
 # ---------------------------------------------------------------------------

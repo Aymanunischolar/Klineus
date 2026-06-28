@@ -15,11 +15,15 @@ from app.email_service import (
     send_patient_questionnaire_reminder_email,
 )
 from app.schemas import (
+    AppUserListResponse,
     AppUserResponse,
     CreateDoctorRequest,
     CreateReceptionInviteRequest,
+    DeleteAppUserResponse,
     ReceptionInviteListResponse,
     ReceptionInviteResponse,
+    UpdateAppUserPasswordRequest,
+    UpdateAppUserStatusRequest,
 )
 from app.storage import storage
 
@@ -29,7 +33,8 @@ router = APIRouter(prefix="/reception", tags=["reception"])
 
 def build_invite_url(invite_token: str) -> str:
     settings = get_settings()
-    public_url = settings.app_public_url.rstrip("/")
+    public_url = settings.app_public_url.rstrip()
+    public_url = public_url.rstrip("/")
     return f"{public_url}/patient/invite/{invite_token}"
 
 
@@ -50,9 +55,32 @@ def app_user_to_response(user) -> AppUserResponse:
     )
 
 
+def get_doctor_or_404(user_id: str):
+    user = storage.get_app_user(user_id)
+
+    if not user or user.role != "doctor":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Doctor user not found.",
+        )
+
+    return user
+
+
 # ---------------------------------------------------------------------------
 # Doctor account management by receptionist
 # ---------------------------------------------------------------------------
+
+@router.get("/doctors", response_model=AppUserListResponse)
+def list_doctor_users(
+    current_user: str = Depends(get_current_receptionist_or_admin),
+) -> AppUserListResponse:
+    doctors = storage.list_app_users(role="doctor")
+
+    return AppUserListResponse(
+        users=[app_user_to_response(user) for user in doctors]
+    )
+
 
 @router.post(
     "/doctors",
@@ -78,6 +106,65 @@ def create_doctor_user(
         )
 
     return app_user_to_response(user)
+
+
+@router.patch("/doctors/{user_id}/status", response_model=AppUserResponse)
+def update_doctor_status(
+    user_id: str,
+    request: UpdateAppUserStatusRequest,
+    current_user: str = Depends(get_current_receptionist_or_admin),
+) -> AppUserResponse:
+    get_doctor_or_404(user_id)
+
+    updated_user = storage.update_app_user_status(
+        user_id=user_id,
+        is_active=request.is_active,
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Doctor user not found.",
+        )
+
+    return app_user_to_response(updated_user)
+
+
+@router.patch("/doctors/{user_id}/password", response_model=AppUserResponse)
+def update_doctor_password(
+    user_id: str,
+    request: UpdateAppUserPasswordRequest,
+    current_user: str = Depends(get_current_receptionist_or_admin),
+) -> AppUserResponse:
+    get_doctor_or_404(user_id)
+
+    updated_user = storage.update_app_user_password(
+        user_id=user_id,
+        password_hash=hash_password(request.password),
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Doctor user not found.",
+        )
+
+    return app_user_to_response(updated_user)
+
+
+@router.delete("/doctors/{user_id}", response_model=DeleteAppUserResponse)
+def delete_doctor_user(
+    user_id: str,
+    current_user: str = Depends(get_current_receptionist_or_admin),
+) -> DeleteAppUserResponse:
+    get_doctor_or_404(user_id)
+
+    deleted = storage.delete_app_user(user_id)
+
+    return DeleteAppUserResponse(
+        user_id=user_id,
+        deleted=deleted,
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -306,6 +306,50 @@ class SQLiteCaseStorage:
 
         return self.get_app_user(user_id)
 
+    def update_app_user_password(
+        self,
+        *,
+        user_id: str,
+        password_hash: str,
+    ) -> AppUser | None:
+        existing_user = self.get_app_user(user_id)
+
+        if not existing_user:
+            return None
+
+        now = utc_now()
+
+        with self._lock:
+            with connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE app_users
+                    SET password_hash = ?,
+                        updated_at = ?
+                    WHERE user_id = ?
+                    """,
+                    (
+                        password_hash,
+                        now.isoformat(),
+                        user_id,
+                    ),
+                )
+
+        return self.get_app_user(user_id)
+
+    def delete_app_user(self, user_id: str) -> bool:
+        with self._lock:
+            with connect() as connection:
+                cursor = connection.execute(
+                    """
+                    DELETE FROM app_users
+                    WHERE user_id = ?
+                    """,
+                    (user_id,),
+                )
+
+            return cursor.rowcount > 0
+
     # ---------------------------------------------------------------------
     # Patient cases and questionnaire sessions
     # ---------------------------------------------------------------------

@@ -319,7 +319,7 @@ export default function ReceptionDashboardPage() {
       <main className="reception-dashboard">
         <section className="reception-hero">
           <div>
-            <p className="reception-kicker">Reception Dashboard</p>
+            <p className="reception-kicker">Dashboard</p>
             <h1>Klinik-Management</h1>
             <p>
               Verwalten Sie Patienteneinladungen, Fragebogenstatus und Arztzugänge
@@ -328,13 +328,7 @@ export default function ReceptionDashboardPage() {
           </div>
 
           <div className="reception-hero-actions">
-            <button
-              type="button"
-              className="reception-secondary-btn"
-              onClick={() => navigate("/doctor/login")}
-            >
-              Doctor Login
-            </button>
+
 
             <button type="button" className="reception-secondary-btn" onClick={logout}>
               Logout
