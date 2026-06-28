@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import LanguageToggle from "../components/LanguageToggle.jsx";
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
@@ -774,725 +774,728 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <AppShell>
-      <section className="admin-dashboard-header">
-        <div>
-          <p className="eyebrow">{text.eyebrow}</p>
-          <h1>{text.title}</h1>
+      <AppShell compact hideNav>
+        <div className="admin-language-only">
+          <LanguageToggle/>
         </div>
+        <section className="admin-dashboard-header">
+          <div>
+            <p className="eyebrow">{text.eyebrow}</p>
+            <h1>{text.title}</h1>
+          </div>
 
-        <div className="admin-header-actions">
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={loadAdminData}
-          >
-            {text.refresh}
-          </button>
+          <div className="admin-header-actions">
+            <button
+                className="secondary-button"
+                type="button"
+                onClick={loadAdminData}
+            >
+              {text.refresh}
+            </button>
 
-          <button className="secondary-button" type="button" onClick={logout}>
-            {text.logout}
-          </button>
-        </div>
-      </section>
-
-      <nav className="admin-tabs">
-        {tabs.map(([key, label]) => (
-          <button
-            key={key}
-            className={activeTab === key ? "active" : ""}
-            type="button"
-            onClick={() => setActiveTab(key)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      {status === "loading" ? (
-        <section className="empty-state">
-          <p>{text.loading}</p>
+            <button className="secondary-button" type="button" onClick={logout}>
+              {text.logout}
+            </button>
+          </div>
         </section>
-      ) : null}
 
-      {status === "error" ? (
-        <section className="empty-state">
-          <h2>{text.errorTitle}</h2>
-          <p>{error}</p>
+        <nav className="admin-tabs">
+          {tabs.map(([key, label]) => (
+              <button
+                  key={key}
+                  className={activeTab === key ? "active" : ""}
+                  type="button"
+                  onClick={() => setActiveTab(key)}
+              >
+                {label}
+              </button>
+          ))}
+        </nav>
 
-          <button
-            className="primary-button"
-            type="button"
-            onClick={loadAdminData}
-          >
-            {text.refresh}
-          </button>
-        </section>
-      ) : null}
+        {status === "loading" ? (
+            <section className="empty-state">
+              <p>{text.loading}</p>
+            </section>
+        ) : null}
 
-      {status === "success" && config ? (
-        <>
-          {activeTab === "overview" ? (
-            <div className="admin-layout">
-              <section className="admin-stat-grid">
-                <StatCard
-                  label={text.totalCases}
-                  value={analytics.total_cases || 0}
-                />
-                <StatCard
-                  label={text.completedCases}
-                  value={analytics.completed_cases || 0}
-                />
-                <StatCard
-                  label={text.generatedReports}
-                  value={analytics.generated_reports || 0}
-                />
-                <StatCard
-                  label={text.editedReports}
-                  value={analytics.edited_reports || 0}
-                />
-                <StatCard
-                  label={text.avgFillTime}
-                  value={formatSeconds(analytics.average_fill_duration_seconds)}
-                />
-                <StatCard
-                  label={text.avgPageLoad}
-                  value={formatMs(analytics.average_page_load_ms)}
-                />
-                <StatCard
-                  label={text.avgQuestions}
-                  value={formatNumber(analytics.average_question_count)}
-                />
-                <StatCard
-                  label={text.contentPages}
-                  value={analytics.content_page_count || 0}
-                />
-                <StatCard
-                  label={text.mediaAssets}
-                  value={analytics.media_asset_count || 0}
-                />
-                <StatCard
-                  label={text.questionnaireCount}
-                  value={analytics.questionnaire_count || 0}
-                />
-                <StatCard
-                  label={text.questionCount}
-                  value={analytics.question_count || 0}
-                />
-                <StatCard
-                  label={text.aiRequests}
-                  value={aiAnalytics.total_requests || 0}
-                />
-                <StatCard
-                  label={text.aiFailures}
-                  value={aiAnalytics.failed_requests || 0}
-                />
-                <StatCard
-                  label={text.aiAvgTime}
-                  value={formatMs(aiAnalytics.average_response_time_ms)}
-                />
-                <StatCard
-                  label={text.apiRequests}
-                  value={apiAnalytics.total_requests || 0}
-                />
-                <StatCard
-                  label={text.apiErrors}
-                  value={apiAnalytics.error_requests || 0}
-                />
-                <StatCard
-                  label={text.apiAvgTime}
-                  value={formatMs(apiAnalytics.average_response_time_ms)}
-                />
-              </section>
+        {status === "error" ? (
+            <section className="empty-state">
+              <h2>{text.errorTitle}</h2>
+              <p>{error}</p>
 
-              <section className="admin-panel">
-                <h2>{text.formTypeStats}</h2>
+              <button
+                  className="primary-button"
+                  type="button"
+                  onClick={loadAdminData}
+              >
+                {text.refresh}
+              </button>
+            </section>
+        ) : null}
 
-                {(analytics.form_type_stats || []).length ? (
-                  <div className="admin-table-wrap">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>{text.indication}</th>
-                          <th>{text.submitted}</th>
-                          <th>{text.aiGenerated}</th>
-                          <th>{text.aiEdited}</th>
-                          <th>{text.avgFillTime}</th>
-                          <th>{text.avgPageLoad}</th>
-                          <th>{text.avgQuestions}</th>
-                        </tr>
-                      </thead>
+        {status === "success" && config ? (
+            <>
+              {activeTab === "overview" ? (
+                  <div className="admin-layout">
+                    <section className="admin-stat-grid">
+                      <StatCard
+                          label={text.totalCases}
+                          value={analytics.total_cases || 0}
+                      />
+                      <StatCard
+                          label={text.completedCases}
+                          value={analytics.completed_cases || 0}
+                      />
+                      <StatCard
+                          label={text.generatedReports}
+                          value={analytics.generated_reports || 0}
+                      />
+                      <StatCard
+                          label={text.editedReports}
+                          value={analytics.edited_reports || 0}
+                      />
+                      <StatCard
+                          label={text.avgFillTime}
+                          value={formatSeconds(analytics.average_fill_duration_seconds)}
+                      />
+                      <StatCard
+                          label={text.avgPageLoad}
+                          value={formatMs(analytics.average_page_load_ms)}
+                      />
+                      <StatCard
+                          label={text.avgQuestions}
+                          value={formatNumber(analytics.average_question_count)}
+                      />
+                      <StatCard
+                          label={text.contentPages}
+                          value={analytics.content_page_count || 0}
+                      />
+                      <StatCard
+                          label={text.mediaAssets}
+                          value={analytics.media_asset_count || 0}
+                      />
+                      <StatCard
+                          label={text.questionnaireCount}
+                          value={analytics.questionnaire_count || 0}
+                      />
+                      <StatCard
+                          label={text.questionCount}
+                          value={analytics.question_count || 0}
+                      />
+                      <StatCard
+                          label={text.aiRequests}
+                          value={aiAnalytics.total_requests || 0}
+                      />
+                      <StatCard
+                          label={text.aiFailures}
+                          value={aiAnalytics.failed_requests || 0}
+                      />
+                      <StatCard
+                          label={text.aiAvgTime}
+                          value={formatMs(aiAnalytics.average_response_time_ms)}
+                      />
+                      <StatCard
+                          label={text.apiRequests}
+                          value={apiAnalytics.total_requests || 0}
+                      />
+                      <StatCard
+                          label={text.apiErrors}
+                          value={apiAnalytics.error_requests || 0}
+                      />
+                      <StatCard
+                          label={text.apiAvgTime}
+                          value={formatMs(apiAnalytics.average_response_time_ms)}
+                      />
+                    </section>
 
-                      <tbody>
-                        {(analytics.form_type_stats || []).map((row) => (
-                          <tr key={row.indication}>
-                            <td>{row.label}</td>
-                            <td>{row.submitted_cases}</td>
-                            <td>{row.generated_reports}</td>
-                            <td>{row.edited_reports}</td>
-                            <td>
-                              {formatSeconds(row.average_fill_duration_seconds)}
-                            </td>
-                            <td>{formatMs(row.average_page_load_ms)}</td>
-                            <td>{formatNumber(row.average_question_count)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <section className="admin-panel">
+                      <h2>{text.formTypeStats}</h2>
+
+                      {(analytics.form_type_stats || []).length ? (
+                          <div className="admin-table-wrap">
+                            <table className="admin-table">
+                              <thead>
+                              <tr>
+                                <th>{text.indication}</th>
+                                <th>{text.submitted}</th>
+                                <th>{text.aiGenerated}</th>
+                                <th>{text.aiEdited}</th>
+                                <th>{text.avgFillTime}</th>
+                                <th>{text.avgPageLoad}</th>
+                                <th>{text.avgQuestions}</th>
+                              </tr>
+                              </thead>
+
+                              <tbody>
+                              {(analytics.form_type_stats || []).map((row) => (
+                                  <tr key={row.indication}>
+                                    <td>{row.label}</td>
+                                    <td>{row.submitted_cases}</td>
+                                    <td>{row.generated_reports}</td>
+                                    <td>{row.edited_reports}</td>
+                                    <td>
+                                      {formatSeconds(row.average_fill_duration_seconds)}
+                                    </td>
+                                    <td>{formatMs(row.average_page_load_ms)}</td>
+                                    <td>{formatNumber(row.average_question_count)}</td>
+                                  </tr>
+                              ))}
+                              </tbody>
+                            </table>
+                          </div>
+                      ) : (
+                          <p className="muted-text">{text.noData}</p>
+                      )}
+                    </section>
+
+                    <section className="admin-panel">
+                      <h2>{text.statusCodes}</h2>
+
+                      {statusCodeRows.length ? (
+                          <div className="admin-status-grid">
+                            {statusCodeRows.map(([code, count]) => (
+                                <article key={code}>
+                                  <span>{code}</span>
+                                  <strong>{count}</strong>
+                                </article>
+                            ))}
+                          </div>
+                      ) : (
+                          <p className="muted-text">{text.noData}</p>
+                      )}
+                    </section>
+
+                    <section className="admin-panel">
+                      <h2>{text.recentCases}</h2>
+
+                      {(analytics.recent_cases || []).length ? (
+                          <div className="admin-table-wrap">
+                            <table className="admin-table">
+                              <thead>
+                              <tr>
+                                <th>{text.patient}</th>
+                                <th>{text.caseId}</th>
+                                <th>{text.indication}</th>
+                                <th>{text.version}</th>
+                                <th>{text.created}</th>
+                                <th>{text.status}</th>
+                              </tr>
+                              </thead>
+
+                              <tbody>
+                              {(analytics.recent_cases || []).map((patientCase) => (
+                                  <tr key={patientCase.case_id}>
+                                    <td>
+                                      <strong>{patientDisplayName(patientCase)}</strong>
+                                    </td>
+
+                                    <td className="mono">
+                                      {patientCase.case_id
+                                          ? patientCase.case_id.slice(0, 8)
+                                          : "—"}
+                                    </td>
+
+                                    <td>
+                                      {getIndicationLabel(
+                                          patientCase.indication,
+                                          language,
+                                      )}
+                                    </td>
+
+                                    <td>
+                                      {patientCase.questionnaire_version
+                                          ? `v${patientCase.questionnaire_version}`
+                                          : "—"}
+                                    </td>
+
+                                    <td>{formatDate(patientCase.created_at, language)}</td>
+
+                                    <td>{patientCase.status || "—"}</td>
+                                  </tr>
+                              ))}
+                              </tbody>
+                            </table>
+                          </div>
+                      ) : (
+                          <p className="muted-text">{text.noData}</p>
+                      )}
+                    </section>
                   </div>
-                ) : (
-                  <p className="muted-text">{text.noData}</p>
-                )}
-              </section>
+              ) : null}
 
-              <section className="admin-panel">
-                <h2>{text.statusCodes}</h2>
-
-                {statusCodeRows.length ? (
-                  <div className="admin-status-grid">
-                    {statusCodeRows.map(([code, count]) => (
-                      <article key={code}>
-                        <span>{code}</span>
-                        <strong>{count}</strong>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="muted-text">{text.noData}</p>
-                )}
-              </section>
-
-              <section className="admin-panel">
-                <h2>{text.recentCases}</h2>
-
-                {(analytics.recent_cases || []).length ? (
-                  <div className="admin-table-wrap">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>{text.patient}</th>
-                          <th>{text.caseId}</th>
-                          <th>{text.indication}</th>
-                          <th>{text.version}</th>
-                          <th>{text.created}</th>
-                          <th>{text.status}</th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {(analytics.recent_cases || []).map((patientCase) => (
-                          <tr key={patientCase.case_id}>
-                            <td>
-                              <strong>{patientDisplayName(patientCase)}</strong>
-                            </td>
-
-                            <td className="mono">
-                              {patientCase.case_id
-                                ? patientCase.case_id.slice(0, 8)
-                                : "—"}
-                            </td>
-
-                            <td>
-                              {getIndicationLabel(
-                                patientCase.indication,
-                                language,
-                              )}
-                            </td>
-
-                            <td>
-                              {patientCase.questionnaire_version
-                                ? `v${patientCase.questionnaire_version}`
-                                : "—"}
-                            </td>
-
-                            <td>{formatDate(patientCase.created_at, language)}</td>
-
-                            <td>{patientCase.status || "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="muted-text">{text.noData}</p>
-                )}
-              </section>
-            </div>
-          ) : null}
-
-          {activeTab === "users" ? (
-            <div className="admin-layout">
-              <section className="admin-panel">
-                <div className="admin-panel-header">
-                  <div>
-                    <h2>{text.createReceptionist}</h2>
-                    <p>
-                      Erstellen Sie einen separaten Login für die Rezeption. Das
-                      Passwort wird gehasht in der Datenbank gespeichert.
-                    </p>
-                  </div>
-                </div>
-
-                {error ? <p className="form-error">{error}</p> : null}
-                {notice ? <p className="form-notice">{notice}</p> : null}
-
-                <form className="admin-form-grid" onSubmit={createReceptionistUser}>
-                  <label>
-                    <span>{text.username}</span>
-                    <input
-                      type="text"
-                      minLength={3}
-                      value={receptionistForm.username}
-                      onChange={(event) =>
-                        setReceptionistForm((current) => ({
-                          ...current,
-                          username: event.target.value,
-                        }))
-                      }
-                      required
-                      placeholder="rezeption01"
-                      autoComplete="username"
-                    />
-                  </label>
-
-                  <label>
-                    <span>{text.password}</span>
-                    <input
-                      type="password"
-                      minLength={6}
-                      value={receptionistForm.password}
-                      onChange={(event) =>
-                        setReceptionistForm((current) => ({
-                          ...current,
-                          password: event.target.value,
-                        }))
-                      }
-                      required
-                      placeholder="Mindestens 6 Zeichen"
-                      autoComplete="new-password"
-                    />
-                  </label>
-
-                  <label>
-                    <span>{text.fullName}</span>
-                    <input
-                      type="text"
-                      value={receptionistForm.full_name}
-                      onChange={(event) =>
-                        setReceptionistForm((current) => ({
-                          ...current,
-                          full_name: event.target.value,
-                        }))
-                      }
-                      placeholder="z. B. Rezeption Klinik A"
-                    />
-                  </label>
-
-                  <button
-                    type="submit"
-                    className="primary-button"
-                    disabled={actionStatus === "saving"}
-                  >
-                    {actionStatus === "saving" ? text.saving : text.createUser}
-                  </button>
-                </form>
-              </section>
-
-              <section className="admin-panel">
-                <h2>Benutzerübersicht</h2>
-
-                {(config.users || []).length ? (
-                  <div className="admin-table-wrap">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>{text.username}</th>
-                          <th>{text.fullName}</th>
-                          <th>{text.role}</th>
-                          <th>Status</th>
-                          <th>{text.created}</th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {(config.users || []).map((user) => (
-                          <tr key={user.user_id}>
-                            <td>
-                              <strong>{user.username}</strong>
-                            </td>
-                            <td>{user.full_name || "—"}</td>
-                            <td>{user.role}</td>
-                            <td>{user.is_active ? text.active : text.inactive}</td>
-                            <td>{formatDate(user.created_at, language)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="muted-text">{text.noData}</p>
-                )}
-              </section>
-            </div>
-          ) : null}
-
-          {activeTab === "cms" ? (
-            <div className="admin-layout">
-              <JsonEditor
-                title={text.siteSettings}
-                hint={text.jsonHint}
-                value={siteJson}
-                onChange={setSiteJson}
-                onSave={saveSiteSettings}
-                saveLabel={text.save}
-                saving={actionStatus === "saving"}
-                error={error}
-                notice={notice}
-              />
-
-              <section className="admin-panel">
-                <div className="admin-panel-header">
-                  <div>
-                    <h2>{text.pageEditor}</h2>
-                    <p>{text.jsonHint}</p>
-                  </div>
-
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={() => loadPage("__new__")}
-                  >
-                    {text.newPage}
-                  </button>
-                </div>
-
-                <div className="admin-list-grid">
-                  {(config.pages || []).map((page) => (
-                    <article key={page.slug} className="admin-list-card">
-                      <div>
-                        <strong>{page.slug}</strong>
-                        <span>
-                          {page.is_published ? text.published : text.unpublished}
-                        </span>
+              {activeTab === "users" ? (
+                  <div className="admin-layout">
+                    <section className="admin-panel">
+                      <div className="admin-panel-header">
+                        <div>
+                          <h2>{text.createReceptionist}</h2>
+                          <p>
+                            Erstellen Sie einen separaten Login für die Rezeption. Das
+                            Passwort wird gehasht in der Datenbank gespeichert.
+                          </p>
+                        </div>
                       </div>
 
-                      <button
-                        className="small-button"
-                        type="button"
-                        onClick={() => loadPage(page.slug)}
-                      >
-                        {text.edit}
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              </section>
+                      {error ? <p className="form-error">{error}</p> : null}
+                      {notice ? <p className="form-notice">{notice}</p> : null}
 
-              {pageJson ? (
-                <JsonEditor
-                  title={`${text.pageEditor}: ${selectedPageSlug}`}
-                  hint={text.jsonHint}
-                  value={pageJson}
-                  onChange={setPageJson}
-                  onSave={savePage}
-                  saveLabel={text.save}
-                  saving={actionStatus === "saving"}
-                  error={error}
-                  notice={notice}
-                  actions={
-                    selectedPageSlug && selectedPageSlug !== "__new__" ? (
-                      <button
-                        className="secondary-button danger-button"
-                        type="button"
-                        disabled={actionStatus === "saving"}
-                        onClick={deletePage}
-                      >
-                        {text.delete}
-                      </button>
-                    ) : null
-                  }
-                />
+                      <form className="admin-form-grid" onSubmit={createReceptionistUser}>
+                        <label>
+                          <span>{text.username}</span>
+                          <input
+                              type="text"
+                              minLength={3}
+                              value={receptionistForm.username}
+                              onChange={(event) =>
+                                  setReceptionistForm((current) => ({
+                                    ...current,
+                                    username: event.target.value,
+                                  }))
+                              }
+                              required
+                              placeholder="rezeption01"
+                              autoComplete="username"
+                          />
+                        </label>
+
+                        <label>
+                          <span>{text.password}</span>
+                          <input
+                              type="password"
+                              minLength={6}
+                              value={receptionistForm.password}
+                              onChange={(event) =>
+                                  setReceptionistForm((current) => ({
+                                    ...current,
+                                    password: event.target.value,
+                                  }))
+                              }
+                              required
+                              placeholder="Mindestens 6 Zeichen"
+                              autoComplete="new-password"
+                          />
+                        </label>
+
+                        <label>
+                          <span>{text.fullName}</span>
+                          <input
+                              type="text"
+                              value={receptionistForm.full_name}
+                              onChange={(event) =>
+                                  setReceptionistForm((current) => ({
+                                    ...current,
+                                    full_name: event.target.value,
+                                  }))
+                              }
+                              placeholder="z. B. Rezeption Klinik A"
+                          />
+                        </label>
+
+                        <button
+                            type="submit"
+                            className="primary-button"
+                            disabled={actionStatus === "saving"}
+                        >
+                          {actionStatus === "saving" ? text.saving : text.createUser}
+                        </button>
+                      </form>
+                    </section>
+
+                    <section className="admin-panel">
+                      <h2>Benutzerübersicht</h2>
+
+                      {(config.users || []).length ? (
+                          <div className="admin-table-wrap">
+                            <table className="admin-table">
+                              <thead>
+                              <tr>
+                                <th>{text.username}</th>
+                                <th>{text.fullName}</th>
+                                <th>{text.role}</th>
+                                <th>Status</th>
+                                <th>{text.created}</th>
+                              </tr>
+                              </thead>
+
+                              <tbody>
+                              {(config.users || []).map((user) => (
+                                  <tr key={user.user_id}>
+                                    <td>
+                                      <strong>{user.username}</strong>
+                                    </td>
+                                    <td>{user.full_name || "—"}</td>
+                                    <td>{user.role}</td>
+                                    <td>{user.is_active ? text.active : text.inactive}</td>
+                                    <td>{formatDate(user.created_at, language)}</td>
+                                  </tr>
+                              ))}
+                              </tbody>
+                            </table>
+                          </div>
+                      ) : (
+                          <p className="muted-text">{text.noData}</p>
+                      )}
+                    </section>
+                  </div>
               ) : null}
-            </div>
-          ) : null}
 
-          {activeTab === "media" ? (
-            <div className="admin-layout">
-              <section className="admin-panel">
-                <h2>{text.mediaEditor}</h2>
-
-                {error ? <p className="form-error">{error}</p> : null}
-                {notice ? <p className="form-notice">{notice}</p> : null}
-
-                <div className="admin-form-grid">
-                  <label>
-                    <span>{text.mediaKey}</span>
-                    <input
-                      value={mediaForm.key}
-                      onChange={(event) =>
-                        setMediaForm((current) => ({
-                          ...current,
-                          key: event.target.value,
-                        }))
-                      }
+              {activeTab === "cms" ? (
+                  <div className="admin-layout">
+                    <JsonEditor
+                        title={text.siteSettings}
+                        hint={text.jsonHint}
+                        value={siteJson}
+                        onChange={setSiteJson}
+                        onSave={saveSiteSettings}
+                        saveLabel={text.save}
+                        saving={actionStatus === "saving"}
+                        error={error}
+                        notice={notice}
                     />
-                  </label>
 
-                  <label>
-                    <span>{text.mediaPath}</span>
-                    <input
-                      placeholder="/static/images/example.png"
-                      value={mediaForm.path}
-                      onChange={(event) =>
-                        setMediaForm((current) => ({
-                          ...current,
-                          path: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
+                    <section className="admin-panel">
+                      <div className="admin-panel-header">
+                        <div>
+                          <h2>{text.pageEditor}</h2>
+                          <p>{text.jsonHint}</p>
+                        </div>
 
-                  <label>
-                    <span>{text.mediaKind}</span>
-                    <select
-                      value={mediaForm.kind}
-                      onChange={(event) =>
-                        setMediaForm((current) => ({
-                          ...current,
-                          kind: event.target.value,
-                        }))
-                      }
-                    >
-                      <option value="image">image</option>
-                      <option value="icon">icon</option>
-                      <option value="logo">logo</option>
-                      <option value="document">document</option>
-                    </select>
-                  </label>
+                        <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={() => loadPage("__new__")}
+                        >
+                          {text.newPage}
+                        </button>
+                      </div>
 
-                  <label>
-                    <span>{text.mediaAltDe}</span>
-                    <input
-                      value={mediaForm.alt_de}
-                      onChange={(event) =>
-                        setMediaForm((current) => ({
-                          ...current,
-                          alt_de: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
+                      <div className="admin-list-grid">
+                        {(config.pages || []).map((page) => (
+                            <article key={page.slug} className="admin-list-card">
+                              <div>
+                                <strong>{page.slug}</strong>
+                                <span>
+                          {page.is_published ? text.published : text.unpublished}
+                        </span>
+                              </div>
 
-                  <label>
-                    <span>{text.mediaAltEn}</span>
-                    <input
-                      value={mediaForm.alt_en}
-                      onChange={(event) =>
-                        setMediaForm((current) => ({
-                          ...current,
-                          alt_en: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                </div>
-
-                <button
-                  className="primary-button"
-                  disabled={actionStatus === "saving"}
-                  type="button"
-                  onClick={saveMedia}
-                >
-                  {actionStatus === "saving" ? text.saving : text.addOrUpdateMedia}
-                </button>
-              </section>
-
-              <section className="admin-panel">
-                <h2>{text.mediaAssets}</h2>
-
-                {(config.media || []).length ? (
-                  <div className="admin-table-wrap">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>{text.mediaKey}</th>
-                          <th>{text.mediaPath}</th>
-                          <th>{text.mediaKind}</th>
-                          <th>{text.edit}</th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {(config.media || []).map((asset) => (
-                          <tr key={asset.id || asset.key}>
-                            <td>{asset.key}</td>
-                            <td>{asset.path}</td>
-                            <td>{asset.kind}</td>
-                            <td>
                               <button
-                                className="small-button"
-                                type="button"
-                                onClick={() => startEditMedia(asset)}
+                                  className="small-button"
+                                  type="button"
+                                  onClick={() => loadPage(page.slug)}
                               >
                                 {text.edit}
                               </button>
-                            </td>
-                          </tr>
+                            </article>
                         ))}
-                      </tbody>
-                    </table>
+                      </div>
+                    </section>
+
+                    {pageJson ? (
+                        <JsonEditor
+                            title={`${text.pageEditor}: ${selectedPageSlug}`}
+                            hint={text.jsonHint}
+                            value={pageJson}
+                            onChange={setPageJson}
+                            onSave={savePage}
+                            saveLabel={text.save}
+                            saving={actionStatus === "saving"}
+                            error={error}
+                            notice={notice}
+                            actions={
+                              selectedPageSlug && selectedPageSlug !== "__new__" ? (
+                                  <button
+                                      className="secondary-button danger-button"
+                                      type="button"
+                                      disabled={actionStatus === "saving"}
+                                      onClick={deletePage}
+                                  >
+                                    {text.delete}
+                                  </button>
+                              ) : null
+                            }
+                        />
+                    ) : null}
                   </div>
-                ) : (
-                  <p className="muted-text">{text.noData}</p>
-                )}
-              </section>
-            </div>
-          ) : null}
-
-          {activeTab === "questionnaires" ? (
-            <div className="admin-layout">
-              <section className="admin-panel">
-                <h2>{text.questionnaireEditor}</h2>
-
-                <label>
-                  <span>{text.selectQuestionnaire}</span>
-                  <select
-                    value={selectedQuestionnaire}
-                    onChange={(event) => loadQuestionnaire(event.target.value)}
-                  >
-                    <option value="">—</option>
-                    {(config.questionnaires || []).map((questionnaire) => (
-                      <option
-                        key={questionnaire.indication}
-                        value={questionnaire.indication}
-                      >
-                        {getIndicationLabel(questionnaire.indication, language)}
-                        {" "}
-                        v{questionnaire.version}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </section>
-
-              {questionnaireJson ? (
-                <JsonEditor
-                  title={text.questionnaireEditor}
-                  hint={text.jsonHint}
-                  value={questionnaireJson}
-                  onChange={setQuestionnaireJson}
-                  onSave={() => saveQuestionnaire()}
-                  saveLabel={text.save}
-                  saving={actionStatus === "saving"}
-                  error={error}
-                  notice={notice}
-                  actions={
-                    <>
-                      <button
-                        className="secondary-button"
-                        type="button"
-                        disabled={actionStatus === "saving"}
-                        onClick={() => saveQuestionnaire({ increaseVersion: true })}
-                      >
-                        {text.increaseVersion}
-                      </button>
-
-                      <button
-                        className="secondary-button"
-                        type="button"
-                        disabled={actionStatus === "saving"}
-                        onClick={toggleQuestionnairePublish}
-                      >
-                        {questionnairePublishLabel}
-                      </button>
-                    </>
-                  }
-                />
               ) : null}
-            </div>
-          ) : null}
 
-          {activeTab === "logs" ? (
-            <div className="admin-layout">
-              <section className="admin-panel">
-                <h2>{text.apiLogs}</h2>
+              {activeTab === "media" ? (
+                  <div className="admin-layout">
+                    <section className="admin-panel">
+                      <h2>{text.mediaEditor}</h2>
 
-                {(config.apiLogs || []).length ? (
-                  <div className="admin-table-wrap">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>{text.level}</th>
-                          <th>{text.method}</th>
-                          <th>{text.path}</th>
-                          <th>{text.response}</th>
-                          <th>{text.duration}</th>
-                          <th>{text.message}</th>
-                          <th>{text.created}</th>
-                        </tr>
-                      </thead>
+                      {error ? <p className="form-error">{error}</p> : null}
+                      {notice ? <p className="form-notice">{notice}</p> : null}
 
-                      <tbody>
-                        {(config.apiLogs || []).map((log) => (
-                          <tr key={log.id}>
-                            <td>{log.level}</td>
-                            <td>{log.method || "—"}</td>
-                            <td>{log.path || "—"}</td>
-                            <td>{log.status_code || "—"}</td>
-                            <td>{formatMs(log.duration_ms)}</td>
-                            <td>{log.message}</td>
-                            <td>{formatDate(log.created_at, language)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                      <div className="admin-form-grid">
+                        <label>
+                          <span>{text.mediaKey}</span>
+                          <input
+                              value={mediaForm.key}
+                              onChange={(event) =>
+                                  setMediaForm((current) => ({
+                                    ...current,
+                                    key: event.target.value,
+                                  }))
+                              }
+                          />
+                        </label>
+
+                        <label>
+                          <span>{text.mediaPath}</span>
+                          <input
+                              placeholder="/static/images/example.png"
+                              value={mediaForm.path}
+                              onChange={(event) =>
+                                  setMediaForm((current) => ({
+                                    ...current,
+                                    path: event.target.value,
+                                  }))
+                              }
+                          />
+                        </label>
+
+                        <label>
+                          <span>{text.mediaKind}</span>
+                          <select
+                              value={mediaForm.kind}
+                              onChange={(event) =>
+                                  setMediaForm((current) => ({
+                                    ...current,
+                                    kind: event.target.value,
+                                  }))
+                              }
+                          >
+                            <option value="image">image</option>
+                            <option value="icon">icon</option>
+                            <option value="logo">logo</option>
+                            <option value="document">document</option>
+                          </select>
+                        </label>
+
+                        <label>
+                          <span>{text.mediaAltDe}</span>
+                          <input
+                              value={mediaForm.alt_de}
+                              onChange={(event) =>
+                                  setMediaForm((current) => ({
+                                    ...current,
+                                    alt_de: event.target.value,
+                                  }))
+                              }
+                          />
+                        </label>
+
+                        <label>
+                          <span>{text.mediaAltEn}</span>
+                          <input
+                              value={mediaForm.alt_en}
+                              onChange={(event) =>
+                                  setMediaForm((current) => ({
+                                    ...current,
+                                    alt_en: event.target.value,
+                                  }))
+                              }
+                          />
+                        </label>
+                      </div>
+
+                      <button
+                          className="primary-button"
+                          disabled={actionStatus === "saving"}
+                          type="button"
+                          onClick={saveMedia}
+                      >
+                        {actionStatus === "saving" ? text.saving : text.addOrUpdateMedia}
+                      </button>
+                    </section>
+
+                    <section className="admin-panel">
+                      <h2>{text.mediaAssets}</h2>
+
+                      {(config.media || []).length ? (
+                          <div className="admin-table-wrap">
+                            <table className="admin-table">
+                              <thead>
+                              <tr>
+                                <th>{text.mediaKey}</th>
+                                <th>{text.mediaPath}</th>
+                                <th>{text.mediaKind}</th>
+                                <th>{text.edit}</th>
+                              </tr>
+                              </thead>
+
+                              <tbody>
+                              {(config.media || []).map((asset) => (
+                                  <tr key={asset.id || asset.key}>
+                                    <td>{asset.key}</td>
+                                    <td>{asset.path}</td>
+                                    <td>{asset.kind}</td>
+                                    <td>
+                                      <button
+                                          className="small-button"
+                                          type="button"
+                                          onClick={() => startEditMedia(asset)}
+                                      >
+                                        {text.edit}
+                                      </button>
+                                    </td>
+                                  </tr>
+                              ))}
+                              </tbody>
+                            </table>
+                          </div>
+                      ) : (
+                          <p className="muted-text">{text.noData}</p>
+                      )}
+                    </section>
                   </div>
-                ) : (
-                  <p className="muted-text">{text.noData}</p>
-                )}
-              </section>
+              ) : null}
 
-              <section className="admin-panel">
-                <h2>{text.aiLogs}</h2>
+              {activeTab === "questionnaires" ? (
+                  <div className="admin-layout">
+                    <section className="admin-panel">
+                      <h2>{text.questionnaireEditor}</h2>
 
-                {(config.aiLogs || []).length ? (
-                  <div className="admin-table-wrap">
-                    <table className="admin-table">
-                      <thead>
-                        <tr>
-                          <th>{text.status}</th>
-                          <th>{text.model}</th>
-                          <th>{text.duration}</th>
-                          <th>{text.caseId}</th>
-                          <th>{text.errorMessage}</th>
-                          <th>{text.created}</th>
-                        </tr>
-                      </thead>
+                      <label>
+                        <span>{text.selectQuestionnaire}</span>
+                        <select
+                            value={selectedQuestionnaire}
+                            onChange={(event) => loadQuestionnaire(event.target.value)}
+                        >
+                          <option value="">—</option>
+                          {(config.questionnaires || []).map((questionnaire) => (
+                              <option
+                                  key={questionnaire.indication}
+                                  value={questionnaire.indication}
+                              >
+                                {getIndicationLabel(questionnaire.indication, language)}
+                                {" "}
+                                v{questionnaire.version}
+                              </option>
+                          ))}
+                        </select>
+                      </label>
+                    </section>
 
-                      <tbody>
-                        {(config.aiLogs || []).map((log) => (
-                          <tr key={log.id}>
-                            <td>{log.status}</td>
-                            <td>{log.model || "—"}</td>
-                            <td>{formatMs(log.duration_ms)}</td>
-                            <td className="mono">
-                              {log.case_id ? log.case_id.slice(0, 8) : "—"}
-                            </td>
-                            <td>{log.error_message || "—"}</td>
-                            <td>{formatDate(log.created_at, language)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    {questionnaireJson ? (
+                        <JsonEditor
+                            title={text.questionnaireEditor}
+                            hint={text.jsonHint}
+                            value={questionnaireJson}
+                            onChange={setQuestionnaireJson}
+                            onSave={() => saveQuestionnaire()}
+                            saveLabel={text.save}
+                            saving={actionStatus === "saving"}
+                            error={error}
+                            notice={notice}
+                            actions={
+                              <>
+                                <button
+                                    className="secondary-button"
+                                    type="button"
+                                    disabled={actionStatus === "saving"}
+                                    onClick={() => saveQuestionnaire({increaseVersion: true})}
+                                >
+                                  {text.increaseVersion}
+                                </button>
+
+                                <button
+                                    className="secondary-button"
+                                    type="button"
+                                    disabled={actionStatus === "saving"}
+                                    onClick={toggleQuestionnairePublish}
+                                >
+                                  {questionnairePublishLabel}
+                                </button>
+                              </>
+                            }
+                        />
+                    ) : null}
                   </div>
-                ) : (
-                  <p className="muted-text">{text.noData}</p>
-                )}
-              </section>
-            </div>
-          ) : null}
-        </>
-      ) : null}
-    </AppShell>
+              ) : null}
+
+              {activeTab === "logs" ? (
+                  <div className="admin-layout">
+                    <section className="admin-panel">
+                      <h2>{text.apiLogs}</h2>
+
+                      {(config.apiLogs || []).length ? (
+                          <div className="admin-table-wrap">
+                            <table className="admin-table">
+                              <thead>
+                              <tr>
+                                <th>{text.level}</th>
+                                <th>{text.method}</th>
+                                <th>{text.path}</th>
+                                <th>{text.response}</th>
+                                <th>{text.duration}</th>
+                                <th>{text.message}</th>
+                                <th>{text.created}</th>
+                              </tr>
+                              </thead>
+
+                              <tbody>
+                              {(config.apiLogs || []).map((log) => (
+                                  <tr key={log.id}>
+                                    <td>{log.level}</td>
+                                    <td>{log.method || "—"}</td>
+                                    <td>{log.path || "—"}</td>
+                                    <td>{log.status_code || "—"}</td>
+                                    <td>{formatMs(log.duration_ms)}</td>
+                                    <td>{log.message}</td>
+                                    <td>{formatDate(log.created_at, language)}</td>
+                                  </tr>
+                              ))}
+                              </tbody>
+                            </table>
+                          </div>
+                      ) : (
+                          <p className="muted-text">{text.noData}</p>
+                      )}
+                    </section>
+
+                    <section className="admin-panel">
+                      <h2>{text.aiLogs}</h2>
+
+                      {(config.aiLogs || []).length ? (
+                          <div className="admin-table-wrap">
+                            <table className="admin-table">
+                              <thead>
+                              <tr>
+                                <th>{text.status}</th>
+                                <th>{text.model}</th>
+                                <th>{text.duration}</th>
+                                <th>{text.caseId}</th>
+                                <th>{text.errorMessage}</th>
+                                <th>{text.created}</th>
+                              </tr>
+                              </thead>
+
+                              <tbody>
+                              {(config.aiLogs || []).map((log) => (
+                                  <tr key={log.id}>
+                                    <td>{log.status}</td>
+                                    <td>{log.model || "—"}</td>
+                                    <td>{formatMs(log.duration_ms)}</td>
+                                    <td className="mono">
+                                      {log.case_id ? log.case_id.slice(0, 8) : "—"}
+                                    </td>
+                                    <td>{log.error_message || "—"}</td>
+                                    <td>{formatDate(log.created_at, language)}</td>
+                                  </tr>
+                              ))}
+                              </tbody>
+                            </table>
+                          </div>
+                      ) : (
+                          <p className="muted-text">{text.noData}</p>
+                      )}
+                    </section>
+                  </div>
+              ) : null}
+            </>
+        ) : null}
+      </AppShell>
   );
 }

@@ -12855,3 +12855,17 @@ a[href="/doctor/login"] {
     grid-template-columns: 1fr;
   }
 }
+
+.admin-language-only {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 28px;
+}
+
+.admin-language-only .language-toggle {
+  margin-left: auto;
+}
+
+.app-shell-hidden-nav .main-content {
+  padding-top: 0;
+}
