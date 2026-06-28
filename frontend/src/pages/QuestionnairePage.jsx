@@ -493,7 +493,7 @@ export default function QuestionnairePage() {
             </div>
 
             <span className="questionnaire-step-pill">
-      {localText(language, "Schritt", "Step")} {currentIndex + 1}{" "}
+      {localText(language, "Frage", "Step")} {currentIndex + 1}{" "}
               {localText(language, "von", "of")} {visibleQuestions.length}
     </span>
           </div>
@@ -564,7 +564,6 @@ export default function QuestionnairePage() {
               className="secondary-button questionnaire-cancel-button"
               disabled={isSubmitting}
               type="button"
-              onClick={handleCancel}
           >
             {localText(language, "Abbrechen", "Cancel")}
           </button>
