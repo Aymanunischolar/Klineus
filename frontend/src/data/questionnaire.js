@@ -136,25 +136,19 @@ function makeQuestionnaire({
         title: blockTitleDe,
         labels: label(blockTitleDe, blockTitleEn),
         questions: block.questions.map((question, questionIndex) => {
-          const {
-            notesByValue,
-            notesByValueEn,
-            textDe,
-            textEn,
-            ...questionData
-          } = question;
-
-          const questionTextDe = cleanQuestionnaireText(textDe);
-          const questionTextEn = cleanBlockPrefix(textEn || textDe);
-          const questionType = questionData.type;
+          const questionTextDe = cleanQuestionnaireText(question.textDe);
+          const questionTextEn = cleanBlockPrefix(
+            question.textEn || question.textDe,
+          );
+          const questionType = question.type;
 
           return {
             required: true,
             includeInAi: true,
             piiCategory: "none",
-            min: questionType === "slider" ? 0 : questionData.min,
-            max: questionType === "slider" ? 10 : questionData.max,
-            ...questionData,
+            min: questionType === "slider" ? 0 : question.min,
+            max: questionType === "slider" ? 10 : question.max,
+            ...question,
             textDe: questionTextDe,
             textEn: questionTextEn,
             text: questionTextDe,
@@ -249,7 +243,6 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
             ["Schwellung", "Swelling"],
             ["Etwas anderes", "Something else"],
           ]),
-          showIf: { questionId: "A2", equals: "Ja" },
         },
         {
           id: "A7",
@@ -360,7 +353,6 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
             ["Einlagen oder spezielle Schuhe", "Insoles or special shoes"],
             ["Empfehlung zur Gewichtsabnahme", "Recommendation to lose weight"],
             ["Sonstige Behandlung", "Other treatment"],
-            ["Keine", "None"],
           ]),
           showIf: { questionId: "C1", equals: "Ja" },
         },
@@ -426,8 +418,15 @@ export const kneeTepQuestionnaire = makeQuestionnaire({
           id: "D2",
           textDe: "Wurde Ihnen bereits einmal eine Knieprothese empfohlen?",
           textEn: "Has a knee replacement ever been recommended to you?",
-          type: "single",
-          options: common.yesNoUnknown,
+          type: "single_with_text",
+          options: options([
+            ["Ja", "Yes"],
+            ["Nein", "No"],
+            ["Weiß ich nicht", "I don’t know"],
+          ]),
+          detailsIf: ["Ja"],
+          detailsLabel: "Für welche Seite?",
+          detailsLabels: label("Für welche Seite?", "Which side?"),
         },
       ],
     },
@@ -725,7 +724,6 @@ export const hipTepQuestionnaire = makeQuestionnaire({
             ["Die Hüfte fühlt sich schwach an", "The hip feels weak"],
             ["Etwas anderes", "Something else"],
           ]),
-          showIf: { questionId: "A2", equals: "Ja" },
         },
         {
           id: "A7",
@@ -768,6 +766,7 @@ export const hipTepQuestionnaire = makeQuestionnaire({
             "Since when have your hip symptoms significantly limited your everyday life?",
           type: "single",
           options: common.duration,
+          showIf: { questionId: "B1", gte: 3 },
         },
         {
           id: "B3",
@@ -842,7 +841,6 @@ export const hipTepQuestionnaire = makeQuestionnaire({
             ["Spritzen in die Hüfte", "Injections into the hip"],
             ["Gehstock oder andere Hilfsmittel", "Walking stick or other aids"],
             ["Sonstige Behandlung", "Other treatment"],
-            ["Keine", "None"],
           ]),
           showIf: { questionId: "C1", equals: "Ja" },
         },
@@ -1015,18 +1013,22 @@ export const hipTepQuestionnaire = makeQuestionnaire({
           textDe: "Haben Sie Diabetes oder erhöhte Blutzuckerwerte?",
           textEn: "Do you have diabetes or elevated blood sugar levels?",
           type: "single_with_text",
-          options: common.yesNoUnknown,
+          options: options([
+            ["Ja", "Yes"],
+            ["Nein", "No"],
+            ["Weiß ich nicht", "I don’t know"],
+          ]),
           detailsIf: ["Ja"],
-          detailsLabel: "Diabetes-Typ und HbA1c Wert",
+          detailsLabel: "Diabetes-Typ / HbA1c-Wert, falls bekannt",
           detailsLabels: label(
-            "Diabetes-Typ und HbA1c Wert",
-            "Diabetes type and HbA1c value",
+            "Diabetes-Typ / HbA1c-Wert, falls bekannt",
+            "Diabetes type / HbA1c value, if known",
           ),
           notesByValue: {
-            Ja: "Bitte bringen Sie falls vorhanden Ihre letzten Laborergebnisse, insbesondere den HbA1c-Wert, zum Termin mit.",
+            Ja: "Bitte bringen Sie falls vorhanden die letzten Laborergebnisse zum Termin mit.",
           },
           notesByValueEn: {
-            Ja: "Please bring your latest lab results, especially the HbA1c value, to your appointment if available.",
+            Ja: "Please bring your latest lab results to the appointment if available.",
           },
         },
         {
@@ -1178,6 +1180,14 @@ function answerMatches(answer, condition) {
     return raw !== condition.not;
   }
 
+  if (Object.prototype.hasOwnProperty.call(condition, "gte")) {
+    return Number(raw) >= Number(condition.gte);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(condition, "lte")) {
+    return Number(raw) <= Number(condition.lte);
+  }
+
   return true;
 }
 
@@ -1250,6 +1260,21 @@ export function getAnswerLabel(answer, language = "de", noAnswer = "keine Angabe
     if (Object.prototype.hasOwnProperty.call(answer, "value")) {
       const main = answer.value || noAnswer;
       return answer.detail ? `${main}: ${answer.detail}` : main;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(answer, "packs_per_day") ||
+      Object.prototype.hasOwnProperty.call(answer, "smoking_years") ||
+      Object.prototype.hasOwnProperty.call(answer, "stopped_since")
+    ) {
+      const parts = [];
+
+      if (answer.value) parts.push(answer.value);
+      if (answer.packs_per_day) parts.push(`Packungen/Tag: ${answer.packs_per_day}`);
+      if (answer.smoking_years) parts.push(`Raucherjahre: ${answer.smoking_years}`);
+      if (answer.stopped_since) parts.push(`Aufgehört seit: ${answer.stopped_since}`);
+
+      return parts.length ? parts.join(", ") : noAnswer;
     }
 
     const height = answer.height_cm;
