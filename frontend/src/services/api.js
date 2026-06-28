@@ -300,8 +300,13 @@ export const api = {
     }),
 
   // -------------------------------------------------------------------------
-  // Receptionist portal
+  // Receptionist portal - doctor account management
   // -------------------------------------------------------------------------
+
+  listDoctorUsers: () =>
+    request("/reception/doctors", {
+      auth: "reception",
+    }),
 
   createDoctorUser: (payload) =>
     request("/reception/doctors", {
@@ -313,6 +318,34 @@ export const api = {
         full_name: cleanString(payload.full_name) || null,
       },
     }),
+
+  updateDoctorStatus: (userId, isActive) =>
+    request(`/reception/doctors/${encodeURIComponent(userId)}/status`, {
+      method: "PATCH",
+      auth: "reception",
+      body: {
+        is_active: Boolean(isActive),
+      },
+    }),
+
+  updateDoctorPassword: (userId, password) =>
+    request(`/reception/doctors/${encodeURIComponent(userId)}/password`, {
+      method: "PATCH",
+      auth: "reception",
+      body: {
+        password: cleanString(password),
+      },
+    }),
+
+  deleteDoctorUser: (userId) =>
+    request(`/reception/doctors/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+      auth: "reception",
+    }),
+
+  // -------------------------------------------------------------------------
+  // Receptionist portal - patient invites
+  // -------------------------------------------------------------------------
 
   createReceptionInvite: (payload) =>
     request("/reception/invites", {

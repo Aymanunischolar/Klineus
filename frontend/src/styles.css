@@ -12807,3 +12807,51 @@ a[href="/doctor/login"] {
     flex-direction: column;
   }
 }
+
+.doctor-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.doctor-users-table {
+  min-width: 920px;
+}
+
+.password-reset-box {
+  display: grid;
+  gap: 10px;
+  min-width: 260px;
+}
+
+.password-reset-box input {
+  width: 100%;
+  border: 1px solid #d8e4ef;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fff;
+  color: #0b2b52;
+  font: inherit;
+  outline: none;
+}
+
+.password-reset-box input:focus {
+  border-color: #0b8da3;
+  box-shadow: 0 0 0 4px rgba(13, 148, 169, 0.12);
+}
+
+.reception-primary-btn.small {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 980px) {
+  .doctor-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .doctor-stats {
+    grid-template-columns: 1fr;
+  }
+}

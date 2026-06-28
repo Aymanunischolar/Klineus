@@ -87,6 +87,8 @@ export default function ReceptionDashboardPage() {
   const [doctorForm, setDoctorForm] = useState(EMPTY_DOCTOR_FORM);
 
   const [invites, setInvites] = useState([]);
+  const [doctorUsers, setDoctorUsers] = useState([]);
+
   const [filters, setFilters] = useState({
     search: "",
     status: "",
@@ -94,9 +96,15 @@ export default function ReceptionDashboardPage() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
+
   const [savingInvite, setSavingInvite] = useState(false);
   const [savingDoctor, setSavingDoctor] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState("");
+
+  const [resetPasswordUserId, setResetPasswordUserId] = useState("");
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
+
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [createdInvite, setCreatedInvite] = useState(null);
@@ -113,8 +121,16 @@ export default function ReceptionDashboardPage() {
     }
 
     loadInvites();
+    loadDoctorUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasReceptionToken, navigate]);
+
+  useEffect(() => {
+    if (activeTab === "doctors") {
+      loadDoctorUsers();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const dashboardStats = useMemo(() => {
     const total = invites.length;
@@ -141,6 +157,18 @@ export default function ReceptionDashboardPage() {
     };
   }, [invites]);
 
+  const doctorStats = useMemo(() => {
+    const total = doctorUsers.length;
+    const active = doctorUsers.filter((user) => user.is_active).length;
+    const inactive = total - active;
+
+    return {
+      total,
+      active,
+      inactive,
+    };
+  }, [doctorUsers]);
+
   async function loadInvites(nextFilters = filters) {
     setLoading(true);
     setError("");
@@ -152,6 +180,20 @@ export default function ReceptionDashboardPage() {
       setError(loadError?.message || "Einladungen konnten nicht geladen werden.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadDoctorUsers() {
+    setDoctorsLoading(true);
+    setError("");
+
+    try {
+      const response = await api.listDoctorUsers();
+      setDoctorUsers(response?.users || []);
+    } catch (loadError) {
+      setError(loadError?.message || "Arzt-Logins konnten nicht geladen werden.");
+    } finally {
+      setDoctorsLoading(false);
     }
   }
 
@@ -226,10 +268,76 @@ export default function ReceptionDashboardPage() {
       setCreatedDoctor(response);
       setSuccessMessage("Arzt-Login wurde erfolgreich erstellt.");
       setDoctorForm(EMPTY_DOCTOR_FORM);
+      await loadDoctorUsers();
     } catch (submitError) {
       setError(submitError?.message || "Arzt-Login konnte nicht erstellt werden.");
     } finally {
       setSavingDoctor(false);
+    }
+  }
+
+  async function handleDoctorStatusChange(userId, nextIsActive) {
+    setActionLoadingId(`doctor-status-${userId}`);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      await api.updateDoctorStatus(userId, nextIsActive);
+      setSuccessMessage(
+        nextIsActive
+          ? "Arzt-Login wurde aktiviert."
+          : "Arzt-Login wurde deaktiviert.",
+      );
+      await loadDoctorUsers();
+    } catch (actionError) {
+      setError(actionError?.message || "Status konnte nicht geändert werden.");
+    } finally {
+      setActionLoadingId("");
+    }
+  }
+
+  async function handleDoctorPasswordReset(userId) {
+    if (!resetPasswordValue || resetPasswordValue.trim().length < 6) {
+      setError("Das neue Passwort muss mindestens 6 Zeichen haben.");
+      return;
+    }
+
+    setActionLoadingId(`doctor-password-${userId}`);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      await api.updateDoctorPassword(userId, resetPasswordValue);
+      setSuccessMessage("Passwort wurde geändert.");
+      setResetPasswordUserId("");
+      setResetPasswordValue("");
+      await loadDoctorUsers();
+    } catch (actionError) {
+      setError(actionError?.message || "Passwort konnte nicht geändert werden.");
+    } finally {
+      setActionLoadingId("");
+    }
+  }
+
+  async function handleDoctorDelete(userId, username) {
+    const confirmed = window.confirm(
+      `Möchten Sie den Arzt-Login "${username}" wirklich löschen?`,
+    );
+
+    if (!confirmed) return;
+
+    setActionLoadingId(`doctor-delete-${userId}`);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      await api.deleteDoctorUser(userId);
+      setSuccessMessage("Arzt-Login wurde gelöscht.");
+      await loadDoctorUsers();
+    } catch (actionError) {
+      setError(actionError?.message || "Arzt-Login konnte nicht gelöscht werden.");
+    } finally {
+      setActionLoadingId("");
     }
   }
 
@@ -319,7 +427,7 @@ export default function ReceptionDashboardPage() {
       <main className="reception-dashboard">
         <section className="reception-hero">
           <div>
-            <p className="reception-kicker">Dashboard</p>
+            <p className="reception-kicker">Reception Dashboard</p>
             <h1>Klinik-Management</h1>
             <p>
               Verwalten Sie Patienteneinladungen, Fragebogenstatus und Arztzugänge
@@ -328,7 +436,13 @@ export default function ReceptionDashboardPage() {
           </div>
 
           <div className="reception-hero-actions">
-
+            <button
+              type="button"
+              className="reception-secondary-btn"
+              onClick={() => navigate("/doctor/login")}
+            >
+              Doctor Login
+            </button>
 
             <button type="button" className="reception-secondary-btn" onClick={logout}>
               Logout
@@ -359,7 +473,7 @@ export default function ReceptionDashboardPage() {
               className={activeTab === "doctors" ? "active" : ""}
               onClick={() => setActiveTab("doctors")}
             >
-              Arzt-Zugang
+              Arzt-Zugänge
             </button>
           </div>
 
@@ -562,97 +676,286 @@ export default function ReceptionDashboardPage() {
         ) : null}
 
         {activeTab === "doctors" ? (
-          <section className="reception-grid">
-            <form className="reception-card" onSubmit={handleCreateDoctor}>
+          <>
+            <section className="reception-stats doctor-stats">
+              <article>
+                <span>Arzt-Logins</span>
+                <strong>{doctorStats.total}</strong>
+                <p>Gesamt erstellt</p>
+              </article>
+
+              <article>
+                <span>Aktiv</span>
+                <strong>{doctorStats.active}</strong>
+                <p>Können sich einloggen</p>
+              </article>
+
+              <article>
+                <span>Deaktiviert</span>
+                <strong>{doctorStats.inactive}</strong>
+                <p>Login gesperrt</p>
+              </article>
+            </section>
+
+            <section className="reception-grid">
+              <form className="reception-card" onSubmit={handleCreateDoctor}>
+                <div className="reception-card-header">
+                  <div>
+                    <span>Arzt-Zugang</span>
+                    <h2>Neuen Login erstellen</h2>
+                  </div>
+                </div>
+
+                <div className="reception-form-grid single">
+                  <label>
+                    Benutzername
+                    <input
+                      type="text"
+                      value={doctorForm.username}
+                      onChange={(event) =>
+                        updateDoctorForm("username", event.target.value)
+                      }
+                      required
+                      minLength={3}
+                      placeholder="z. B. doctor01"
+                      autoComplete="username"
+                    />
+                  </label>
+
+                  <label>
+                    Passwort
+                    <input
+                      type="password"
+                      value={doctorForm.password}
+                      onChange={(event) =>
+                        updateDoctorForm("password", event.target.value)
+                      }
+                      required
+                      minLength={6}
+                      placeholder="Mindestens 6 Zeichen"
+                      autoComplete="new-password"
+                    />
+                  </label>
+
+                  <label>
+                    Name des Arztes
+                    <input
+                      type="text"
+                      value={doctorForm.full_name}
+                      onChange={(event) =>
+                        updateDoctorForm("full_name", event.target.value)
+                      }
+                      placeholder="z. B. Dr. Müller"
+                    />
+                  </label>
+                </div>
+
+                <div className="reception-form-actions">
+                  <button
+                    type="submit"
+                    className="reception-primary-btn"
+                    disabled={savingDoctor}
+                  >
+                    {savingDoctor ? "Wird erstellt..." : "Arzt-Login erstellen"}
+                  </button>
+                </div>
+              </form>
+
+              <aside className="reception-card">
+                <div className="reception-card-header">
+                  <div>
+                    <span>Sicherheit</span>
+                    <h2>Hinweis</h2>
+                  </div>
+                </div>
+
+                {createdDoctor ? (
+                  <div className="reception-result-box">
+                    <p>Arzt-Zugang wurde erstellt:</p>
+                    <p>
+                      <strong>Benutzername:</strong> {createdDoctor.username}
+                    </p>
+                    <p>
+                      <strong>Rolle:</strong> {createdDoctor.role}
+                    </p>
+                    <p>Das Passwort wird aus Sicherheitsgründen nicht erneut angezeigt.</p>
+                  </div>
+                ) : (
+                  <p className="reception-muted">
+                    Der Benutzername muss eindeutig sein. Das Passwort wird gehasht
+                    in der Datenbank gespeichert. Bestehende Arzt-Logins können unten
+                    verwaltet werden.
+                  </p>
+                )}
+              </aside>
+            </section>
+
+            <section className="reception-card">
               <div className="reception-card-header">
                 <div>
-                  <span>Arzt-Zugang</span>
-                  <h2>Login-Daten erstellen</h2>
+                  <span>Benutzerverwaltung</span>
+                  <h2>Erstellte Arzt-Logins</h2>
                 </div>
-              </div>
 
-              <div className="reception-form-grid single">
-                <label>
-                  Benutzername
-                  <input
-                    type="text"
-                    value={doctorForm.username}
-                    onChange={(event) =>
-                      updateDoctorForm("username", event.target.value)
-                    }
-                    required
-                    minLength={3}
-                    placeholder="z. B. doctor01"
-                    autoComplete="username"
-                  />
-                </label>
-
-                <label>
-                  Passwort
-                  <input
-                    type="password"
-                    value={doctorForm.password}
-                    onChange={(event) =>
-                      updateDoctorForm("password", event.target.value)
-                    }
-                    required
-                    minLength={6}
-                    placeholder="Mindestens 6 Zeichen"
-                    autoComplete="new-password"
-                  />
-                </label>
-
-                <label>
-                  Name des Arztes
-                  <input
-                    type="text"
-                    value={doctorForm.full_name}
-                    onChange={(event) =>
-                      updateDoctorForm("full_name", event.target.value)
-                    }
-                    placeholder="z. B. Dr. Müller"
-                  />
-                </label>
-              </div>
-
-              <div className="reception-form-actions">
                 <button
-                  type="submit"
-                  className="reception-primary-btn"
-                  disabled={savingDoctor}
+                  type="button"
+                  className="reception-secondary-btn"
+                  onClick={loadDoctorUsers}
+                  disabled={doctorsLoading}
                 >
-                  {savingDoctor ? "Wird erstellt..." : "Arzt-Login erstellen"}
+                  Aktualisieren
                 </button>
               </div>
-            </form>
 
-            <aside className="reception-card">
-              <div className="reception-card-header">
-                <div>
-                  <span>Sicherheit</span>
-                  <h2>Hinweis</h2>
-                </div>
-              </div>
+              {doctorsLoading ? (
+                <p className="reception-muted">Arzt-Logins werden geladen...</p>
+              ) : null}
 
-              {createdDoctor ? (
-                <div className="reception-result-box">
-                  <p>Arzt-Zugang wurde erstellt:</p>
-                  <p>
-                    <strong>Benutzername:</strong> {createdDoctor.username}
-                  </p>
-                  <p>
-                    <strong>Rolle:</strong> {createdDoctor.role}
-                  </p>
-                  <p>Das Passwort wird aus Sicherheitsgründen nicht erneut angezeigt.</p>
+              {!doctorsLoading && doctorUsers.length === 0 ? (
+                <p className="reception-muted">Noch keine Arzt-Logins erstellt.</p>
+              ) : null}
+
+              {!doctorsLoading && doctorUsers.length > 0 ? (
+                <div className="reception-table-wrap">
+                  <table className="reception-table doctor-users-table">
+                    <thead>
+                      <tr>
+                        <th>Benutzer</th>
+                        <th>Status</th>
+                        <th>Erstellt</th>
+                        <th>Passwort ändern</th>
+                        <th>Aktionen</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {doctorUsers.map((doctor) => (
+                        <tr key={doctor.user_id}>
+                          <td>
+                            <div className="patient-cell">
+                              <strong>{doctor.username}</strong>
+                              <span>{doctor.full_name || "Kein Name hinterlegt"}</span>
+                              <small>Rolle: {doctor.role}</small>
+                            </div>
+                          </td>
+
+                          <td>
+                            <span
+                              className={`reception-status ${
+                                doctor.is_active ? "status-success" : "status-muted"
+                              }`}
+                            >
+                              {doctor.is_active ? "Aktiv" : "Deaktiviert"}
+                            </span>
+                          </td>
+
+                          <td>
+                            <div className="sent-cell">
+                              <span>{formatDateTime(doctor.created_at)}</span>
+                              <small>Update: {formatDateTime(doctor.updated_at)}</small>
+                            </div>
+                          </td>
+
+                          <td>
+                            {resetPasswordUserId === doctor.user_id ? (
+                              <div className="password-reset-box">
+                                <input
+                                  type="password"
+                                  value={resetPasswordValue}
+                                  onChange={(event) =>
+                                    setResetPasswordValue(event.target.value)
+                                  }
+                                  placeholder="Neues Passwort"
+                                  minLength={6}
+                                  autoComplete="new-password"
+                                />
+
+                                <div className="reception-row-actions">
+                                  <button
+                                    type="button"
+                                    className="reception-primary-btn small"
+                                    onClick={() =>
+                                      handleDoctorPasswordReset(doctor.user_id)
+                                    }
+                                    disabled={
+                                      actionLoadingId ===
+                                      `doctor-password-${doctor.user_id}`
+                                    }
+                                  >
+                                    Speichern
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className="reception-secondary-btn small"
+                                    onClick={() => {
+                                      setResetPasswordUserId("");
+                                      setResetPasswordValue("");
+                                    }}
+                                  >
+                                    Abbrechen
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className="reception-secondary-btn small"
+                                onClick={() => {
+                                  setResetPasswordUserId(doctor.user_id);
+                                  setResetPasswordValue("");
+                                }}
+                              >
+                                Passwort ändern
+                              </button>
+                            )}
+                          </td>
+
+                          <td>
+                            <div className="reception-row-actions">
+                              <button
+                                type="button"
+                                className="reception-secondary-btn small"
+                                onClick={() =>
+                                  handleDoctorStatusChange(
+                                    doctor.user_id,
+                                    !doctor.is_active,
+                                  )
+                                }
+                                disabled={
+                                  actionLoadingId ===
+                                  `doctor-status-${doctor.user_id}`
+                                }
+                              >
+                                {doctor.is_active ? "Deaktivieren" : "Aktivieren"}
+                              </button>
+
+                              <button
+                                type="button"
+                                className="reception-danger-btn small"
+                                onClick={() =>
+                                  handleDoctorDelete(
+                                    doctor.user_id,
+                                    doctor.username,
+                                  )
+                                }
+                                disabled={
+                                  actionLoadingId ===
+                                  `doctor-delete-${doctor.user_id}`
+                                }
+                              >
+                                Löschen
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              ) : (
-                <p className="reception-muted">
-                  Der Benutzername muss eindeutig sein. Das Passwort wird gehasht
-                  in der Datenbank gespeichert.
-                </p>
-              )}
-            </aside>
-          </section>
+              ) : null}
+            </section>
+          </>
         ) : null}
 
         {activeTab === "patients" ? (
