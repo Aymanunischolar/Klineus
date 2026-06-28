@@ -1,20 +1,23 @@
 from __future__ import annotations
 
 import secrets
-from datetime import date
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.auth import get_current_doctor
+from app.auth import (
+    get_current_receptionist_or_admin,
+    hash_password,
+)
 from app.config import get_settings
 from app.email_service import (
     send_patient_invitation_email,
     send_patient_questionnaire_reminder_email,
 )
 from app.schemas import (
+    AppUserResponse,
+    CreateDoctorRequest,
     CreateReceptionInviteRequest,
-    ReceptionInviteDetail,
     ReceptionInviteListResponse,
     ReceptionInviteResponse,
 )
@@ -34,6 +37,53 @@ def generate_invite_token() -> str:
     return secrets.token_urlsafe(32)
 
 
+def app_user_to_response(user) -> AppUserResponse:
+    return AppUserResponse(
+        user_id=user.user_id,
+        username=user.username,
+        role=user.role,
+        full_name=user.full_name,
+        is_active=user.is_active,
+        created_by=user.created_by,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Doctor account management by receptionist
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/doctors",
+    response_model=AppUserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_doctor_user(
+    request: CreateDoctorRequest,
+    current_user: str = Depends(get_current_receptionist_or_admin),
+) -> AppUserResponse:
+    user = storage.create_app_user(
+        username=request.username,
+        password_hash=hash_password(request.password),
+        role="doctor",
+        full_name=request.full_name,
+        created_by=current_user,
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Username already exists or doctor data is invalid.",
+        )
+
+    return app_user_to_response(user)
+
+
+# ---------------------------------------------------------------------------
+# Patient invite workflow
+# ---------------------------------------------------------------------------
+
 @router.post(
     "/invites",
     response_model=ReceptionInviteResponse,
@@ -41,7 +91,7 @@ def generate_invite_token() -> str:
 )
 def create_reception_invite(
     request: CreateReceptionInviteRequest,
-    current_user: str = Depends(get_current_doctor),
+    current_user: str = Depends(get_current_receptionist_or_admin),
 ) -> ReceptionInviteResponse:
     invite_token = generate_invite_token()
     invite_url = build_invite_url(invite_token)
@@ -78,7 +128,7 @@ def create_reception_invite(
 
 @router.get("/invites", response_model=ReceptionInviteListResponse)
 def list_reception_invites(
-    current_user: str = Depends(get_current_doctor),
+    current_user: str = Depends(get_current_receptionist_or_admin),
     search: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
     appointment_date: str | None = Query(default=None),
@@ -98,7 +148,7 @@ def list_reception_invites(
 )
 def resend_reception_invite(
     session_id: str,
-    current_user: str = Depends(get_current_doctor),
+    current_user: str = Depends(get_current_receptionist_or_admin),
 ) -> ReceptionInviteResponse:
     session = storage.get_questionnaire_session(session_id)
 
@@ -142,7 +192,7 @@ def resend_reception_invite(
 )
 def send_reception_invite_reminder(
     session_id: str,
-    current_user: str = Depends(get_current_doctor),
+    current_user: str = Depends(get_current_receptionist_or_admin),
 ) -> ReceptionInviteResponse:
     session = storage.get_questionnaire_session(session_id)
 
@@ -189,7 +239,7 @@ def send_reception_invite_reminder(
 @router.delete("/invites/{session_id}")
 def delete_reception_invite(
     session_id: str,
-    current_user: str = Depends(get_current_doctor),
+    current_user: str = Depends(get_current_receptionist_or_admin),
 ) -> dict[str, Any]:
     deleted = storage.delete_questionnaire_session(session_id)
 

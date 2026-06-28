@@ -4,8 +4,8 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-UserRole = Literal["doctor", "admin"]
-CaseStatus = Literal["pending", "completed"]
+UserRole = Literal["admin", "receptionist", "doctor"]
+CaseStatus = Literal["pending", "completed", "review_done", "closed"]
 ReportStatus = Literal["not_generated", "generated", "edited"]
 FlagLevel = Literal["green", "orange", "red"]
 
@@ -38,11 +38,11 @@ LocalizedText = dict[str, str]
 
 
 # ---------------------------------------------------------------------------
-# Auth
+# Auth / users
 # ---------------------------------------------------------------------------
 
 class LoginRequest(BaseModel):
-    email: str
+    username: str
     password: str
 
 
@@ -50,6 +50,44 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     role: UserRole
+
+
+class AppUserResponse(BaseModel):
+    user_id: str
+    username: str
+    role: UserRole
+    full_name: str | None = None
+    is_active: bool = True
+    created_by: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class CreateAppUserRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=60)
+    password: str = Field(min_length=6, max_length=120)
+    role: UserRole
+    full_name: str | None = None
+
+
+class CreateReceptionistRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=60)
+    password: str = Field(min_length=6, max_length=120)
+    full_name: str | None = None
+
+
+class CreateDoctorRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=60)
+    password: str = Field(min_length=6, max_length=120)
+    full_name: str | None = None
+
+
+class AppUserListResponse(BaseModel):
+    users: list[AppUserResponse] = Field(default_factory=list)
+
+
+class UpdateAppUserStatusRequest(BaseModel):
+    is_active: bool
 
 
 # ---------------------------------------------------------------------------
@@ -366,6 +404,7 @@ class PatientInviteLookupResponse(BaseModel):
     answers: list[QuestionnaireAnswer] = Field(default_factory=list)
     current_question_id: str | None = None
 
+
 class StartPatientQuestionnaireRequest(BaseModel):
     patient_name: str
     indication: Indication
@@ -507,6 +546,10 @@ class PatientCaseDetail(PatientCaseSummary):
     traffic_light: TrafficLightAssessment | None = None
     report_text: str | None = None
     report_json: dict[str, Any] | None = None
+
+
+class UpdateCaseStatusRequest(BaseModel):
+    status: CaseStatus
 
 
 class GenerateReportResponse(BaseModel):

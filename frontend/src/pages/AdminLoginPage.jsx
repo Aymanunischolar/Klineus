@@ -13,7 +13,7 @@ export default function AdminLoginPage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
 
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,13 +21,13 @@ export default function AdminLoginPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const cleanEmail = email.trim();
+    const cleanUsername = username.trim();
 
     setIsSubmitting(true);
     setError("");
 
     try {
-      const data = await api.login(cleanEmail, password);
+      const data = await api.login(cleanUsername, password);
 
       if (data.role !== "admin") {
         setError(
@@ -69,23 +69,23 @@ export default function AdminLoginPage() {
           <p>
             {localText(
               language,
-              "Melden Sie sich an, um Website-Inhalte, Fragebögen, Medien und Auswertungen zu verwalten.",
-              "Sign in to manage website content, questionnaires, media and analytics.",
+              "Melden Sie sich an, um Website-Inhalte, Fragebögen, Medien, Auswertungen und Benutzerzugänge zu verwalten.",
+              "Sign in to manage website content, questionnaires, media, analytics and user access.",
             )}
           </p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
-            <span>{localText(language, "E-Mail", "Email")}</span>
+            <span>{localText(language, "Benutzername", "Username")}</span>
 
             <input
-              autoComplete="email"
-              placeholder="admin@klineus.local"
-              type="email"
-              value={email}
+              autoComplete="username"
+              placeholder="admin"
+              type="text"
+              value={username}
               onChange={(event) => {
-                setEmail(event.target.value);
+                setUsername(event.target.value);
                 setError("");
               }}
             />

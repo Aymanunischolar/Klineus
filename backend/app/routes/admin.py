@@ -12,16 +12,19 @@ from app.analytics_store import (
     list_ai_logs,
     list_api_logs,
 )
-from app.auth import get_current_admin
+from app.auth import get_current_admin, hash_password
 from app.schemas import (
     AdminQuestion,
     AiLogEntry,
     AnalyticsSummary,
     ApiLogEntry,
+    AppUserListResponse,
+    AppUserResponse,
     ContentPageDetail,
     ContentPageListResponse,
     CreateAdminQuestionRequest,
     CreateLanguageRequest,
+    CreateReceptionistRequest,
     FormTypeStats,
     LanguageDefinition,
     MediaAsset,
@@ -31,6 +34,7 @@ from app.schemas import (
     QuestionnaireOption,
     QuestionnaireTemplateDetail,
     SiteSettings,
+    UpdateAppUserStatusRequest,
     UpsertContentPageRequest,
     UpsertMediaAssetRequest,
     UpsertQuestionnaireTemplateRequest,
@@ -60,6 +64,19 @@ def to_plain_data(value: Any) -> dict[str, Any]:
         return value.dict()
 
     return dict(value)
+
+
+def app_user_to_response(user) -> AppUserResponse:
+    return AppUserResponse(
+        user_id=user.user_id,
+        username=user.username,
+        role=user.role,
+        full_name=user.full_name,
+        is_active=user.is_active,
+        created_by=user.created_by,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+    )
 
 
 def clean_string(value: Any) -> str:
@@ -263,6 +280,66 @@ def build_form_type_stats(cases) -> list[FormTypeStats]:
 
 
 # ---------------------------------------------------------------------------
+# Admin user management
+# ---------------------------------------------------------------------------
+
+@router.get("/users", response_model=AppUserListResponse)
+def list_users(
+    role: str | None = Query(default=None),
+) -> AppUserListResponse:
+    users = storage.list_app_users(role=role)
+
+    return AppUserListResponse(
+        users=[app_user_to_response(user) for user in users]
+    )
+
+
+@router.post(
+    "/users/receptionists",
+    response_model=AppUserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_receptionist_user(
+    request: CreateReceptionistRequest,
+    current_admin: str = Depends(get_current_admin),
+) -> AppUserResponse:
+    user = storage.create_app_user(
+        username=request.username,
+        password_hash=hash_password(request.password),
+        role="receptionist",
+        full_name=request.full_name,
+        created_by=current_admin,
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Username already exists or user data is invalid.",
+        )
+
+    return app_user_to_response(user)
+
+
+@router.patch("/users/{user_id}/status", response_model=AppUserResponse)
+def update_user_status(
+    user_id: str,
+    request: UpdateAppUserStatusRequest,
+) -> AppUserResponse:
+    user = storage.update_app_user_status(
+        user_id=user_id,
+        is_active=request.is_active,
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    return app_user_to_response(user)
+
+
+# ---------------------------------------------------------------------------
 # Languages
 # ---------------------------------------------------------------------------
 
@@ -298,8 +375,6 @@ def update_site_settings(request: UpsertSiteSettingsRequest) -> SiteSettings:
 
 # ---------------------------------------------------------------------------
 # Media assets
-# These store file paths only.
-# Example: /static/images/knee.png
 # ---------------------------------------------------------------------------
 
 @router.get("/media", response_model=list[MediaAsset])
@@ -492,7 +567,6 @@ def delete_questionnaire(identifier: str) -> dict[str, bool | str]:
 
 # ---------------------------------------------------------------------------
 # Backwards-compatible admin questions
-# Later the admin UI will edit full questionnaire templates directly.
 # ---------------------------------------------------------------------------
 
 @router.get("/questions", response_model=list[AdminQuestion])

@@ -5,15 +5,37 @@ from datetime import datetime, timezone
 from typing import Any, Literal
 
 
-CaseStatus = Literal["pending", "completed"]
+CaseStatus = Literal["pending", "completed", "review_done", "closed"]
 ReportStatus = Literal["not_generated", "generated", "edited"]
 FlagLevel = Literal["green", "orange", "red"]
-UserRole = Literal["doctor", "admin"]
-QuestionnaireSessionStatus = Literal["in_progress", "completed", "abandoned"]
+
+UserRole = Literal["admin", "receptionist", "doctor"]
+
+QuestionnaireSessionStatus = Literal[
+    "invited",
+    "in_progress",
+    "completed",
+    "abandoned",
+]
 
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+@dataclass
+class AppUser:
+    user_id: str
+    username: str
+    password_hash: str
+    role: UserRole
+
+    full_name: str | None = None
+    is_active: bool = True
+    created_by: str | None = None
+
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
 
 
 @dataclass

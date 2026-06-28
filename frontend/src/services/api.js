@@ -9,6 +9,10 @@ function getDoctorToken() {
   return window.localStorage.getItem("klineus_doctor_token");
 }
 
+function getReceptionToken() {
+  return window.localStorage.getItem("klineus_reception_token");
+}
+
 function getAdminToken() {
   return window.localStorage.getItem("klineus_admin_token");
 }
@@ -69,6 +73,26 @@ export function assetUrl(path, fallback = "") {
   return value;
 }
 
+function resolveToken(auth) {
+  if (!auth) {
+    return null;
+  }
+
+  if (auth === "admin") {
+    return getAdminToken();
+  }
+
+  if (auth === "reception") {
+    return getReceptionToken();
+  }
+
+  if (auth === "doctor") {
+    return getDoctorToken();
+  }
+
+  return getDoctorToken() || getReceptionToken() || getAdminToken();
+}
+
 async function request(path, options = {}) {
   const headers = {
     "Content-Type": "application/json",
@@ -76,8 +100,7 @@ async function request(path, options = {}) {
   };
 
   if (options.auth) {
-    const token =
-      options.auth === "admin" ? getAdminToken() : getDoctorToken();
+    const token = resolveToken(options.auth);
 
     if (token) {
       headers.Authorization = `Bearer ${token}`;
@@ -144,11 +167,11 @@ export const api = {
   // Auth
   // -------------------------------------------------------------------------
 
-  login: (email, password) =>
+  login: (username, password) =>
     request("/auth/login", {
       method: "POST",
       body: {
-        email,
+        username,
         password,
       },
     }),
@@ -278,13 +301,23 @@ export const api = {
 
   // -------------------------------------------------------------------------
   // Receptionist portal
-  // Uses current doctor login token for MVP.
   // -------------------------------------------------------------------------
+
+  createDoctorUser: (payload) =>
+    request("/reception/doctors", {
+      method: "POST",
+      auth: "reception",
+      body: {
+        username: cleanString(payload.username),
+        password: cleanString(payload.password),
+        full_name: cleanString(payload.full_name) || null,
+      },
+    }),
 
   createReceptionInvite: (payload) =>
     request("/reception/invites", {
       method: "POST",
-      auth: true,
+      auth: "reception",
       body: {
         patient_name: cleanString(payload.patient_name),
         patient_last_name: cleanString(payload.patient_last_name),
@@ -318,26 +351,26 @@ export const api = {
     const queryString = params.toString();
 
     return request(`/reception/invites${queryString ? `?${queryString}` : ""}`, {
-      auth: true,
+      auth: "reception",
     });
   },
 
   resendReceptionInvite: (sessionId) =>
     request(`/reception/invites/${encodeURIComponent(sessionId)}/resend`, {
       method: "POST",
-      auth: true,
+      auth: "reception",
     }),
 
   sendReceptionReminder: (sessionId) =>
     request(`/reception/invites/${encodeURIComponent(sessionId)}/reminder`, {
       method: "POST",
-      auth: true,
+      auth: "reception",
     }),
 
   deleteReceptionInvite: (sessionId) =>
     request(`/reception/invites/${encodeURIComponent(sessionId)}`, {
       method: "DELETE",
-      auth: true,
+      auth: "reception",
     }),
 
   // -------------------------------------------------------------------------
@@ -346,23 +379,23 @@ export const api = {
 
   getDoctorWorklist: () =>
     request("/doctor/worklist", {
-      auth: true,
+      auth: "doctor",
     }),
 
   listCases: () =>
     request("/doctor/cases", {
-      auth: true,
+      auth: "doctor",
     }),
 
   getCase: (caseId) =>
     request(`/doctor/cases/${encodeURIComponent(caseId)}`, {
-      auth: true,
+      auth: "doctor",
     }),
 
   deleteCase: (caseId) =>
     request(`/doctor/cases/${encodeURIComponent(caseId)}`, {
       method: "DELETE",
-      auth: true,
+      auth: "doctor",
     }),
 
   // -------------------------------------------------------------------------
@@ -372,16 +405,54 @@ export const api = {
   generateReport: (caseId) =>
     request(`/reports/${encodeURIComponent(caseId)}/generate`, {
       method: "POST",
-      auth: true,
+      auth: "doctor",
     }),
 
   saveReport: (caseId, reportText, reportJson = null) =>
     request(`/reports/${encodeURIComponent(caseId)}`, {
       method: "PUT",
-      auth: true,
+      auth: "doctor",
       body: {
         report_text: reportText,
         report_json: reportJson,
+      },
+    }),
+
+  // -------------------------------------------------------------------------
+  // Admin user management
+  // -------------------------------------------------------------------------
+
+  listUsers: (role = "") => {
+    const params = new URLSearchParams();
+
+    if (role) {
+      params.set("role", role);
+    }
+
+    const queryString = params.toString();
+
+    return request(`/admin/users${queryString ? `?${queryString}` : ""}`, {
+      auth: "admin",
+    });
+  },
+
+  createReceptionistUser: (payload) =>
+    request("/admin/users/receptionists", {
+      method: "POST",
+      auth: "admin",
+      body: {
+        username: cleanString(payload.username),
+        password: cleanString(payload.password),
+        full_name: cleanString(payload.full_name) || null,
+      },
+    }),
+
+  updateUserStatus: (userId, isActive) =>
+    request(`/admin/users/${encodeURIComponent(userId)}/status`, {
+      method: "PATCH",
+      auth: "admin",
+      body: {
+        is_active: Boolean(isActive),
       },
     }),
 
@@ -400,6 +471,7 @@ export const api = {
       aiLogs,
       languages,
       extraQuestions,
+      usersResponse,
     ] = await Promise.all([
       request("/admin/analytics", { auth: "admin" }),
       request("/admin/site-settings", { auth: "admin" }),
@@ -410,6 +482,7 @@ export const api = {
       request("/admin/ai-logs", { auth: "admin" }),
       request("/admin/languages", { auth: "admin" }),
       request("/admin/questions", { auth: "admin" }),
+      request("/admin/users", { auth: "admin" }),
     ]);
 
     return {
@@ -422,6 +495,7 @@ export const api = {
       aiLogs: aiLogs || [],
       languages: languages || [],
       extra_questions: extraQuestions || [],
+      users: usersResponse?.users || [],
     };
   },
 

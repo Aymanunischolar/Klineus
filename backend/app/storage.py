@@ -13,7 +13,7 @@ from app.cms_store import (
     loads,
     upsert_language as cms_upsert_language,
 )
-from app.models import PatientCase, PatientQuestionnaireSession, utc_now
+from app.models import AppUser, PatientCase, PatientQuestionnaireSession, utc_now
 from app.schemas import AdminQuestion, LanguageDefinition, ReceptionInviteDetail
 
 
@@ -42,6 +42,24 @@ class SQLiteCaseStorage:
         with connect() as connection:
             connection.executescript(
                 """
+                CREATE TABLE IF NOT EXISTS app_users (
+                    user_id TEXT PRIMARY KEY,
+                    username TEXT NOT NULL UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    full_name TEXT,
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_by TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_app_users_username
+                ON app_users(username);
+
+                CREATE INDEX IF NOT EXISTS idx_app_users_role
+                ON app_users(role);
+
                 CREATE TABLE IF NOT EXISTS patient_cases (
                     case_id TEXT PRIMARY KEY,
                     patient_name TEXT,
@@ -96,9 +114,9 @@ class SQLiteCaseStorage:
                 """
             )
 
-            columns = get_columns(connection, "patient_cases")
+            case_columns = get_columns(connection, "patient_cases")
 
-            migrations = {
+            case_migrations = {
                 "patient_name": "ALTER TABLE patient_cases ADD COLUMN patient_name TEXT",
                 "patient_last_name": "ALTER TABLE patient_cases ADD COLUMN patient_last_name TEXT",
                 "patient_email": "ALTER TABLE patient_cases ADD COLUMN patient_email TEXT",
@@ -115,8 +133,8 @@ class SQLiteCaseStorage:
                 "report_generated_at": "ALTER TABLE patient_cases ADD COLUMN report_generated_at TEXT",
             }
 
-            for column_name, statement in migrations.items():
-                if column_name not in columns:
+            for column_name, statement in case_migrations.items():
+                if column_name not in case_columns:
                     connection.execute(statement)
 
             connection.execute(
@@ -126,6 +144,171 @@ class SQLiteCaseStorage:
                 WHERE updated_at IS NULL
                 """
             )
+
+    # ---------------------------------------------------------------------
+    # App users
+    # ---------------------------------------------------------------------
+
+    def _row_to_app_user(self, row: sqlite3.Row) -> AppUser:
+        return AppUser(
+            user_id=row["user_id"],
+            username=row["username"],
+            password_hash=row["password_hash"],
+            role=row["role"],
+            full_name=row["full_name"],
+            is_active=bool(row["is_active"]),
+            created_by=row["created_by"],
+            created_at=parse_datetime(row["created_at"]) or utc_now(),
+            updated_at=parse_datetime(row["updated_at"]) or utc_now(),
+        )
+
+    def create_app_user(
+        self,
+        *,
+        username: str,
+        password_hash: str,
+        role: str,
+        full_name: str | None = None,
+        created_by: str | None = None,
+    ) -> AppUser | None:
+        clean_username = username.strip().lower()
+        clean_role = role.strip().lower()
+        clean_full_name = full_name.strip() if full_name else None
+        now = utc_now()
+
+        if not clean_username or clean_role not in {"admin", "receptionist", "doctor"}:
+            return None
+
+        user = AppUser(
+            user_id=str(uuid4()),
+            username=clean_username,
+            password_hash=password_hash,
+            role=clean_role,
+            full_name=clean_full_name,
+            is_active=True,
+            created_by=created_by,
+            created_at=now,
+            updated_at=now,
+        )
+
+        with self._lock:
+            with connect() as connection:
+                try:
+                    connection.execute(
+                        """
+                        INSERT INTO app_users (
+                            user_id,
+                            username,
+                            password_hash,
+                            role,
+                            full_name,
+                            is_active,
+                            created_by,
+                            created_at,
+                            updated_at
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            user.user_id,
+                            user.username,
+                            user.password_hash,
+                            user.role,
+                            user.full_name,
+                            1 if user.is_active else 0,
+                            user.created_by,
+                            user.created_at.isoformat(),
+                            user.updated_at.isoformat(),
+                        ),
+                    )
+                except sqlite3.IntegrityError:
+                    return None
+
+        return user
+
+    def get_app_user_by_username(self, username: str) -> AppUser | None:
+        clean_username = username.strip().lower()
+
+        if not clean_username:
+            return None
+
+        with connect() as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM app_users
+                WHERE username = ?
+                """,
+                (clean_username,),
+            ).fetchone()
+
+        return self._row_to_app_user(row) if row else None
+
+    def get_app_user(self, user_id: str) -> AppUser | None:
+        with connect() as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM app_users
+                WHERE user_id = ?
+                """,
+                (user_id,),
+            ).fetchone()
+
+        return self._row_to_app_user(row) if row else None
+
+    def list_app_users(self, role: str | None = None) -> list[AppUser]:
+        query = """
+            SELECT *
+            FROM app_users
+        """
+        params: list[Any] = []
+
+        if role:
+            query += " WHERE role = ?"
+            params.append(role.strip().lower())
+
+        query += " ORDER BY created_at DESC"
+
+        with connect() as connection:
+            rows = connection.execute(query, tuple(params)).fetchall()
+
+        return [self._row_to_app_user(row) for row in rows]
+
+    def update_app_user_status(
+        self,
+        *,
+        user_id: str,
+        is_active: bool,
+    ) -> AppUser | None:
+        existing_user = self.get_app_user(user_id)
+
+        if not existing_user:
+            return None
+
+        now = utc_now()
+
+        with self._lock:
+            with connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE app_users
+                    SET is_active = ?,
+                        updated_at = ?
+                    WHERE user_id = ?
+                    """,
+                    (
+                        1 if is_active else 0,
+                        now.isoformat(),
+                        user_id,
+                    ),
+                )
+
+        return self.get_app_user(user_id)
+
+    # ---------------------------------------------------------------------
+    # Patient cases and questionnaire sessions
+    # ---------------------------------------------------------------------
 
     def _row_to_case(self, row: sqlite3.Row) -> PatientCase:
         metadata = loads(row["metadata_json"], {})
@@ -1042,6 +1225,10 @@ class SQLiteCaseStorage:
                 )
 
             return cursor.rowcount > 0
+
+    # ---------------------------------------------------------------------
+    # Languages and extra admin questions
+    # ---------------------------------------------------------------------
 
     def list_languages(self) -> list[LanguageDefinition]:
         return cms_list_languages()

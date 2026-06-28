@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
@@ -11,9 +11,12 @@ function localText(language, de, en) {
 
 export default function DoctorLoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { language, t } = useLanguage();
 
-  const [email, setEmail] = useState("");
+  const isReceptionLogin = location.pathname.startsWith("/reception");
+
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,13 +24,13 @@ export default function DoctorLoginPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const cleanEmail = email.trim();
+    const cleanUsername = username.trim();
 
     setIsSubmitting(true);
     setError("");
 
     try {
-      const data = await api.login(cleanEmail, password);
+      const data = await api.login(cleanUsername, password);
 
       if (data.role === "admin") {
         window.localStorage.setItem("klineus_admin_token", data.access_token);
@@ -35,8 +38,25 @@ export default function DoctorLoginPage() {
         return;
       }
 
-      window.localStorage.setItem("klineus_doctor_token", data.access_token);
-      navigate("/doctor/dashboard");
+      if (data.role === "receptionist") {
+        window.localStorage.setItem("klineus_reception_token", data.access_token);
+        navigate("/reception/dashboard");
+        return;
+      }
+
+      if (data.role === "doctor") {
+        window.localStorage.setItem("klineus_doctor_token", data.access_token);
+        navigate("/doctor/dashboard");
+        return;
+      }
+
+      setError(
+        localText(
+          language,
+          "Dieses Konto hat keine gültige Rolle.",
+          "This account does not have a valid role.",
+        ),
+      );
     } catch (loginError) {
       setError(
         loginError?.message ||
@@ -56,33 +76,43 @@ export default function DoctorLoginPage() {
       <section className="login-card auth-card">
         <div className="auth-card-header">
           <p className="eyebrow">
-            {t("doctorArea") || localText(language, "Arztbereich", "Doctor area")}
+            {isReceptionLogin
+              ? localText(language, "Rezeption", "Reception")
+              : t("doctorArea") || localText(language, "Arztbereich", "Doctor area")}
           </p>
 
           <h1>
-            {t("loginTitle") || localText(language, "Anmelden", "Sign in")}
+            {isReceptionLogin
+              ? localText(language, "Rezeption anmelden", "Reception sign in")
+              : t("loginTitle") || localText(language, "Anmelden", "Sign in")}
           </h1>
 
           <p>
-            {localText(
-              language,
-              "Melden Sie sich an, um eingereichte Patientenfälle und Dokumentationsentwürfe ärztlich zu prüfen.",
-              "Sign in to review submitted patient cases and documentation drafts.",
-            )}
+            {isReceptionLogin
+              ? localText(
+                  language,
+                  "Melden Sie sich an, um Patienteneinladungen und Arztzugänge zu verwalten.",
+                  "Sign in to manage patient invitations and doctor accounts.",
+                )
+              : localText(
+                  language,
+                  "Melden Sie sich an, um eingereichte Patientenfälle und Dokumentationsentwürfe ärztlich zu prüfen.",
+                  "Sign in to review submitted patient cases and documentation drafts.",
+                )}
           </p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
-            <span>{t("email") || "E-Mail"}</span>
+            <span>{localText(language, "Benutzername", "Username")}</span>
 
             <input
-              autoComplete="email"
-              placeholder="doctor@klineus.local"
-              type="email"
-              value={email}
+              autoComplete="username"
+              placeholder={isReceptionLogin ? "rezeption01" : "doctor01"}
+              type="text"
+              value={username}
               onChange={(event) => {
-                setEmail(event.target.value);
+                setUsername(event.target.value);
                 setError("");
               }}
             />
