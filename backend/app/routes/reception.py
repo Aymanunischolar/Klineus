@@ -1,0 +1,199 @@
+from __future__ import annotations
+
+import secrets
+from datetime import date
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from app.auth import get_current_doctor
+from app.config import get_settings
+from app.email_service import (
+    send_patient_invitation_email,
+    send_patient_questionnaire_reminder_email,
+)
+from app.schemas import (
+    CreateReceptionInviteRequest,
+    ReceptionInviteDetail,
+    ReceptionInviteListResponse,
+    ReceptionInviteResponse,
+)
+from app.storage import storage
+
+
+router = APIRouter(prefix="/reception", tags=["reception"])
+
+
+def build_invite_url(invite_token: str) -> str:
+    settings = get_settings()
+    public_url = settings.app_public_url.rstrip("/")
+    return f"{public_url}/patient/invite/{invite_token}"
+
+
+def generate_invite_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+@router.post(
+    "/invites",
+    response_model=ReceptionInviteResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_reception_invite(
+    request: CreateReceptionInviteRequest,
+    current_user: str = Depends(get_current_doctor),
+) -> ReceptionInviteResponse:
+    invite_token = generate_invite_token()
+    invite_url = build_invite_url(invite_token)
+
+    session = storage.create_reception_invite(
+        indication=request.indication,
+        patient_name=request.patient_name,
+        patient_last_name=request.patient_last_name or request.patient_name,
+        patient_email=request.patient_email,
+        insurance_id=request.insurance_id,
+        patient_age=request.patient_age,
+        appointment_date=request.appointment_date.isoformat(),
+        invite_token=invite_token,
+        created_by=current_user,
+    )
+
+    email_sent = send_patient_invitation_email(
+        to_email=request.patient_email,
+        patient_name=request.patient_name,
+        invite_url=invite_url,
+        appointment_date=request.appointment_date.isoformat(),
+    )
+
+    if email_sent:
+        storage.mark_invitation_sent(session.session_id)
+
+    return ReceptionInviteResponse(
+        session_id=session.session_id,
+        invite_token=invite_token,
+        invite_url=invite_url,
+        email_sent=email_sent,
+    )
+
+
+@router.get("/invites", response_model=ReceptionInviteListResponse)
+def list_reception_invites(
+    current_user: str = Depends(get_current_doctor),
+    search: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    appointment_date: str | None = Query(default=None),
+) -> ReceptionInviteListResponse:
+    invites = storage.list_reception_invites(
+        search=search,
+        status_filter=status_filter,
+        appointment_date=appointment_date,
+    )
+
+    return ReceptionInviteListResponse(invites=invites)
+
+
+@router.post(
+    "/invites/{session_id}/resend",
+    response_model=ReceptionInviteResponse,
+)
+def resend_reception_invite(
+    session_id: str,
+    current_user: str = Depends(get_current_doctor),
+) -> ReceptionInviteResponse:
+    session = storage.get_questionnaire_session(session_id)
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invite not found.",
+        )
+
+    invite_token = session.metadata.get("invite_token")
+
+    if not invite_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This session does not have an invite token.",
+        )
+
+    invite_url = build_invite_url(invite_token)
+
+    email_sent = send_patient_invitation_email(
+        to_email=session.patient_email,
+        patient_name=session.patient_name,
+        invite_url=invite_url,
+        appointment_date=session.metadata.get("appointment_date"),
+    )
+
+    if email_sent:
+        storage.mark_invitation_sent(session.session_id)
+
+    return ReceptionInviteResponse(
+        session_id=session.session_id,
+        invite_token=invite_token,
+        invite_url=invite_url,
+        email_sent=email_sent,
+    )
+
+
+@router.post(
+    "/invites/{session_id}/reminder",
+    response_model=ReceptionInviteResponse,
+)
+def send_reception_invite_reminder(
+    session_id: str,
+    current_user: str = Depends(get_current_doctor),
+) -> ReceptionInviteResponse:
+    session = storage.get_questionnaire_session(session_id)
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invite not found.",
+        )
+
+    if session.status == "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Questionnaire is already completed.",
+        )
+
+    invite_token = session.metadata.get("invite_token")
+
+    if not invite_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This session does not have an invite token.",
+        )
+
+    invite_url = build_invite_url(invite_token)
+
+    email_sent = send_patient_questionnaire_reminder_email(
+        to_email=session.patient_email,
+        patient_name=session.patient_name,
+        invite_url=invite_url,
+        appointment_date=session.metadata.get("appointment_date"),
+    )
+
+    if email_sent:
+        storage.mark_reminder_sent(session.session_id)
+
+    return ReceptionInviteResponse(
+        session_id=session.session_id,
+        invite_token=invite_token,
+        invite_url=invite_url,
+        email_sent=email_sent,
+    )
+
+
+@router.delete("/invites/{session_id}")
+def delete_reception_invite(
+    session_id: str,
+    current_user: str = Depends(get_current_doctor),
+) -> dict[str, Any]:
+    deleted = storage.delete_questionnaire_session(session_id)
+
+    return {
+        "session_id": session_id,
+        "deleted": deleted,
+    }

@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from app.analytics_store import init_analytics_tables, log_api_event
 from app.cms_store import init_db
 from app.config import get_settings
-from app.routes import admin, auth, doctor, patient, reports
+from app.routes import admin, auth, doctor, patient, reception, reports
 
 
 settings = get_settings()
@@ -93,6 +93,7 @@ async def api_logging_middleware(request: Request, call_next):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
+    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1):\d+$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -101,8 +102,6 @@ app.add_middleware(
 
 # ---------------------------------------------------------------------------
 # Static files
-# Database stores only paths like:
-# /static/images/knee.png
 # ---------------------------------------------------------------------------
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -124,6 +123,7 @@ app.mount(
 app.include_router(auth.router)
 app.include_router(patient.router)
 app.include_router(doctor.router)
+app.include_router(reception.router)
 app.include_router(reports.router)
 app.include_router(admin.router)
 

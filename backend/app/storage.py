@@ -14,7 +14,7 @@ from app.cms_store import (
     upsert_language as cms_upsert_language,
 )
 from app.models import PatientCase, PatientQuestionnaireSession, utc_now
-from app.schemas import AdminQuestion, LanguageDefinition
+from app.schemas import AdminQuestion, LanguageDefinition, ReceptionInviteDetail
 
 
 def parse_datetime(value: str | None) -> datetime | None:
@@ -181,9 +181,158 @@ class SQLiteCaseStorage:
             completed_at=parse_datetime(row["completed_at"]),
         )
 
-    # -----------------------------------------------------------------------
-    # Patient questionnaire sessions: pause / resume flow
-    # -----------------------------------------------------------------------
+    def _get_case_by_session_id(self, session_id: str) -> PatientCase | None:
+        with connect() as connection:
+            row = connection.execute(
+                """
+                SELECT *
+                FROM patient_cases
+                WHERE session_id = ?
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                (session_id,),
+            ).fetchone()
+
+        return self._row_to_case(row) if row else None
+
+    def _session_to_reception_invite_detail(
+        self,
+        session: PatientQuestionnaireSession,
+    ) -> ReceptionInviteDetail:
+        metadata = session.metadata or {}
+        case = self._get_case_by_session_id(session.session_id)
+
+        invite_token = metadata.get("invite_token")
+        appointment_date = metadata.get("appointment_date")
+        patient_age = metadata.get("patient_age")
+        invite_status = metadata.get("invite_status") or "invited"
+
+        if session.status == "completed":
+            invite_status = "completed"
+        elif session.answers:
+            invite_status = "in_progress"
+
+        invite_url = None
+
+        if invite_token:
+            invite_url = f"/patient/invite/{invite_token}"
+
+        return ReceptionInviteDetail(
+            session_id=session.session_id,
+            created_at=session.created_at,
+            updated_at=session.updated_at,
+            indication=session.indication,
+            patient_name=session.patient_name,
+            patient_last_name=session.patient_last_name,
+            patient_age=patient_age,
+            patient_email=session.patient_email,
+            insurance_id=session.insurance_id,
+            appointment_date=appointment_date,
+            invite_token=invite_token,
+            invite_url=invite_url,
+            invite_status=invite_status,
+            status=session.status,
+            answer_count=len(session.answers or []),
+            last_invitation_sent_at=metadata.get("last_invitation_sent_at"),
+            last_reminder_sent_at=metadata.get("last_reminder_sent_at"),
+            completed_at=session.completed_at,
+            case_id=case.case_id if case else None,
+            case_status=case.status if case else None,
+            report_status=case.report_status if case else None,
+        )
+
+    def create_reception_invite(
+        self,
+        *,
+        indication: str,
+        patient_name: str,
+        patient_last_name: str,
+        patient_email: str,
+        insurance_id: str,
+        patient_age: int | None,
+        appointment_date: str,
+        invite_token: str,
+        created_by: str,
+    ) -> PatientQuestionnaireSession:
+        now = utc_now()
+
+        clean_patient_name = patient_name.strip()
+        clean_patient_last_name = patient_last_name.strip() or clean_patient_name
+
+        metadata = {
+            "invite_token": invite_token,
+            "invite_status": "invited",
+            "appointment_date": appointment_date,
+            "patient_age": patient_age,
+            "created_by": created_by,
+            "created_from": "reception_dashboard",
+        }
+
+        session = PatientQuestionnaireSession(
+            session_id=str(uuid4()),
+            resume_code="",
+            indication=indication,
+            patient_name=clean_patient_name,
+            patient_last_name=clean_patient_last_name,
+            patient_email=patient_email.strip(),
+            insurance_id=insurance_id.strip(),
+            answers=[],
+            metadata=metadata,
+            questionnaire_template_id=None,
+            questionnaire_version=None,
+            current_question_id=None,
+            status="invited",
+            created_at=now,
+            updated_at=now,
+            completed_at=None,
+        )
+
+        with self._lock:
+            with connect() as connection:
+                connection.execute(
+                    """
+                    INSERT INTO patient_questionnaire_sessions (
+                        session_id,
+                        resume_code,
+                        indication,
+                        patient_name,
+                        patient_last_name,
+                        patient_email,
+                        insurance_id,
+                        questionnaire_template_id,
+                        questionnaire_version,
+                        answers_json,
+                        metadata_json,
+                        current_question_id,
+                        status,
+                        created_at,
+                        updated_at,
+                        completed_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        session.session_id,
+                        session.resume_code,
+                        session.indication,
+                        session.patient_name,
+                        session.patient_last_name,
+                        session.patient_email,
+                        session.insurance_id,
+                        session.questionnaire_template_id,
+                        session.questionnaire_version,
+                        dumps(session.answers),
+                        dumps(session.metadata),
+                        session.current_question_id,
+                        session.status,
+                        session.created_at.isoformat(),
+                        session.updated_at.isoformat(),
+                        None,
+                    ),
+                )
+
+        return session
 
     def create_questionnaire_session(
         self,
@@ -265,6 +414,32 @@ class SQLiteCaseStorage:
 
         return session
 
+    def get_questionnaire_session_by_invite_token(
+        self,
+        invite_token: str,
+    ) -> PatientQuestionnaireSession | None:
+        clean_token = invite_token.strip()
+
+        if not clean_token:
+            return None
+
+        with connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT *
+                FROM patient_questionnaire_sessions
+                WHERE status IN ('invited', 'in_progress', 'completed')
+                ORDER BY created_at DESC
+                """
+            ).fetchall()
+
+        for row in rows:
+            session = self._row_to_session(row)
+            if session.metadata.get("invite_token") == clean_token:
+                return session
+
+        return None
+
     def get_questionnaire_session(
         self,
         session_id: str,
@@ -302,6 +477,161 @@ class SQLiteCaseStorage:
             rows = connection.execute(query, tuple(params)).fetchall()
 
         return [self._row_to_session(row) for row in rows]
+
+    def list_reception_invites(
+        self,
+        *,
+        search: str | None = None,
+        status_filter: str | None = None,
+        appointment_date: str | None = None,
+    ) -> list[ReceptionInviteDetail]:
+        sessions = self.list_questionnaire_sessions()
+
+        search_text = str(search or "").strip().lower()
+        status_text = str(status_filter or "").strip().lower()
+        appointment_text = str(appointment_date or "").strip()
+
+        details: list[ReceptionInviteDetail] = []
+
+        for session in sessions:
+            metadata = session.metadata or {}
+
+            if not metadata.get("invite_token"):
+                continue
+
+            detail = self._session_to_reception_invite_detail(session)
+
+            if search_text:
+                haystack = " ".join(
+                    [
+                        detail.patient_name or "",
+                        detail.patient_last_name or "",
+                        detail.patient_email or "",
+                        detail.insurance_id or "",
+                    ]
+                ).lower()
+
+                if search_text not in haystack:
+                    continue
+
+            if status_text and detail.invite_status.lower() != status_text:
+                continue
+
+            if appointment_text and detail.appointment_date != appointment_text:
+                continue
+
+            details.append(detail)
+
+        return details
+
+    def mark_invitation_sent(self, session_id: str) -> PatientQuestionnaireSession | None:
+        session = self.get_questionnaire_session(session_id)
+
+        if not session:
+            return None
+
+        now = utc_now()
+        metadata = {
+            **(session.metadata or {}),
+            "invite_status": "invited",
+            "last_invitation_sent_at": now.isoformat(),
+        }
+
+        with self._lock:
+            with connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE patient_questionnaire_sessions
+                    SET metadata_json = ?,
+                        updated_at = ?
+                    WHERE session_id = ?
+                    """,
+                    (
+                        dumps(metadata),
+                        now.isoformat(),
+                        session_id,
+                    ),
+                )
+
+        return self.get_questionnaire_session(session_id)
+
+    def mark_reminder_sent(self, session_id: str) -> PatientQuestionnaireSession | None:
+        session = self.get_questionnaire_session(session_id)
+
+        if not session:
+            return None
+
+        now = utc_now()
+        metadata = {
+            **(session.metadata or {}),
+            "last_reminder_sent_at": now.isoformat(),
+        }
+
+        with self._lock:
+            with connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE patient_questionnaire_sessions
+                    SET metadata_json = ?,
+                        updated_at = ?
+                    WHERE session_id = ?
+                    """,
+                    (
+                        dumps(metadata),
+                        now.isoformat(),
+                        session_id,
+                    ),
+                )
+
+        return self.get_questionnaire_session(session_id)
+
+    def mark_invite_opened(self, session_id: str) -> PatientQuestionnaireSession | None:
+        session = self.get_questionnaire_session(session_id)
+
+        if not session:
+            return None
+
+        now = utc_now()
+        metadata = {
+            **(session.metadata or {}),
+            "invite_status": "opened",
+            "opened_at": now.isoformat(),
+        }
+
+        next_status = "in_progress" if session.status == "invited" else session.status
+
+        with self._lock:
+            with connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE patient_questionnaire_sessions
+                    SET status = ?,
+                        metadata_json = ?,
+                        updated_at = ?
+                    WHERE session_id = ?
+                    """,
+                    (
+                        next_status,
+                        dumps(metadata),
+                        now.isoformat(),
+                        session_id,
+                    ),
+                )
+
+        return self.get_questionnaire_session(session_id)
+
+    def delete_questionnaire_session(self, session_id: str) -> bool:
+        with self._lock:
+            with connect() as connection:
+                cursor = connection.execute(
+                    """
+                    DELETE FROM patient_questionnaire_sessions
+                    WHERE session_id = ?
+                    """,
+                    (session_id,),
+                )
+
+            return cursor.rowcount > 0
 
     def resume_questionnaire_session(
         self,
@@ -387,6 +717,14 @@ class SQLiteCaseStorage:
             else existing_session.insurance_id
         )
 
+        next_metadata = {
+            **(existing_session.metadata or {}),
+            **(metadata or {}),
+        }
+
+        if answers:
+            next_metadata["invite_status"] = "in_progress"
+
         with self._lock:
             with connect() as connection:
                 connection.execute(
@@ -403,6 +741,7 @@ class SQLiteCaseStorage:
                         answers_json = ?,
                         metadata_json = ?,
                         current_question_id = ?,
+                        status = ?,
                         updated_at = ?
                     WHERE session_id = ?
                     """,
@@ -415,8 +754,9 @@ class SQLiteCaseStorage:
                         questionnaire_template_id,
                         questionnaire_version,
                         dumps(answers),
-                        dumps(metadata or {}),
+                        dumps(next_metadata),
                         current_question_id,
+                        "in_progress",
                         now.isoformat(),
                         session_id,
                     ),
@@ -435,6 +775,12 @@ class SQLiteCaseStorage:
 
         now = utc_now()
 
+        metadata = {
+            **(existing_session.metadata or {}),
+            "invite_status": "completed",
+            "completed_at": now.isoformat(),
+        }
+
         with self._lock:
             with connect() as connection:
                 connection.execute(
@@ -442,11 +788,13 @@ class SQLiteCaseStorage:
                     UPDATE patient_questionnaire_sessions
                     SET
                         status = 'completed',
+                        metadata_json = ?,
                         updated_at = ?,
                         completed_at = ?
                     WHERE session_id = ?
                     """,
                     (
+                        dumps(metadata),
                         now.isoformat(),
                         now.isoformat(),
                         session_id,
@@ -454,10 +802,6 @@ class SQLiteCaseStorage:
                 )
 
         return self.get_questionnaire_session(session_id)
-
-    # -----------------------------------------------------------------------
-    # Completed patient cases
-    # -----------------------------------------------------------------------
 
     def create_case(
         self,
@@ -474,7 +818,12 @@ class SQLiteCaseStorage:
     ) -> PatientCase:
         now = utc_now()
 
-        clean_metadata = metadata or {}
+        existing_session = self.get_questionnaire_session(session_id) if session_id else None
+
+        clean_metadata = {
+            **(existing_session.metadata if existing_session else {}),
+            **(metadata or {}),
+        }
 
         case = PatientCase(
             case_id=str(uuid4()),
@@ -633,6 +982,54 @@ class SQLiteCaseStorage:
 
         return self.get_case(case_id)
 
+    def update_case_status(
+        self,
+        case_id: str,
+        status: str,
+    ) -> PatientCase | None:
+        existing_case = self.get_case(case_id)
+
+        if not existing_case:
+            return None
+
+        allowed_statuses = {
+            "completed",
+            "review_done",
+            "closed",
+        }
+
+        if status not in allowed_statuses:
+            return None
+
+        now = utc_now()
+
+        next_metadata = {
+            **(existing_case.metadata or {}),
+            "workflow_status": status,
+            f"{status}_at": now.isoformat(),
+        }
+
+        with self._lock:
+            with connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE patient_cases
+                    SET
+                        status = ?,
+                        metadata_json = ?,
+                        updated_at = ?
+                    WHERE case_id = ?
+                    """,
+                    (
+                        status,
+                        dumps(next_metadata),
+                        now.isoformat(),
+                        case_id,
+                    ),
+                )
+
+        return self.get_case(case_id)
+
     def delete_case(self, case_id: str) -> bool:
         with self._lock:
             with connect() as connection:
@@ -646,11 +1043,6 @@ class SQLiteCaseStorage:
 
             return cursor.rowcount > 0
 
-    # -----------------------------------------------------------------------
-    # Languages
-    # These are stored through cms_store/languages table.
-    # -----------------------------------------------------------------------
-
     def list_languages(self) -> list[LanguageDefinition]:
         return cms_list_languages()
 
@@ -660,10 +1052,6 @@ class SQLiteCaseStorage:
             name=language.name,
             enabled=language.enabled,
         )
-
-    # -----------------------------------------------------------------------
-    # Backwards-compatible extra question functions.
-    # -----------------------------------------------------------------------
 
     def list_extra_questions(self) -> list[AdminQuestion]:
         with self._lock:

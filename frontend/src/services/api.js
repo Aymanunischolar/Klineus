@@ -166,7 +166,6 @@ export const api = {
 
   // -------------------------------------------------------------------------
   // Public questionnaire config
-  // Used only by the patient questionnaire flow, not by marketing pages.
   // -------------------------------------------------------------------------
 
   getQuestionnaireConfig: () =>
@@ -176,6 +175,13 @@ export const api = {
 
   getQuestionnaire: (identifier) =>
     request(`/patient/questionnaires/${encodeURIComponent(identifier)}`),
+
+  // -------------------------------------------------------------------------
+  // Secure patient invite
+  // -------------------------------------------------------------------------
+
+  getPatientInvite: (inviteToken) =>
+    request(`/patient/invite/${encodeURIComponent(inviteToken)}`),
 
   // -------------------------------------------------------------------------
   // Patient questionnaire session flow
@@ -268,6 +274,70 @@ export const api = {
         answers: answers || [],
         metadata: metadata || {},
       },
+    }),
+
+  // -------------------------------------------------------------------------
+  // Receptionist portal
+  // Uses current doctor login token for MVP.
+  // -------------------------------------------------------------------------
+
+  createReceptionInvite: (payload) =>
+    request("/reception/invites", {
+      method: "POST",
+      auth: true,
+      body: {
+        patient_name: cleanString(payload.patient_name),
+        patient_last_name: cleanString(payload.patient_last_name),
+        patient_age: payload.patient_age ? Number(payload.patient_age) : null,
+        insurance_id: cleanString(payload.insurance_id),
+        patient_email: cleanString(payload.patient_email),
+        appointment_date: payload.appointment_date,
+        indication: payload.indication || "knee_tep",
+      },
+    }),
+
+  listReceptionInvites: ({
+    search = "",
+    status = "",
+    appointment_date = "",
+  } = {}) => {
+    const params = new URLSearchParams();
+
+    if (search) {
+      params.set("search", search);
+    }
+
+    if (status) {
+      params.set("status", status);
+    }
+
+    if (appointment_date) {
+      params.set("appointment_date", appointment_date);
+    }
+
+    const queryString = params.toString();
+
+    return request(`/reception/invites${queryString ? `?${queryString}` : ""}`, {
+      auth: true,
+    });
+  },
+
+  resendReceptionInvite: (sessionId) =>
+    request(`/reception/invites/${encodeURIComponent(sessionId)}/resend`, {
+      method: "POST",
+      auth: true,
+    }),
+
+  sendReceptionReminder: (sessionId) =>
+    request(`/reception/invites/${encodeURIComponent(sessionId)}/reminder`, {
+      method: "POST",
+      auth: true,
+    }),
+
+  deleteReceptionInvite: (sessionId) =>
+    request(`/reception/invites/${encodeURIComponent(sessionId)}`, {
+      method: "DELETE",
+      auth: true,
     }),
 
   // -------------------------------------------------------------------------

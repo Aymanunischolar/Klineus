@@ -1,6 +1,7 @@
 import smtplib
 from email.message import EmailMessage
 from html import escape
+from urllib.parse import quote_plus
 
 from app.config import get_settings
 
@@ -60,6 +61,191 @@ def send_email(
         print(f"Subject: {subject}")
         print(f"Error: {error}")
         return False
+
+
+def build_qr_code_url(target_url: str) -> str:
+    encoded_url = quote_plus(target_url)
+
+    return (
+        "https://api.qrserver.com/v1/create-qr-code/"
+        f"?size=220x220&data={encoded_url}"
+    )
+
+
+def format_appointment_date(appointment_date: str | None) -> str:
+    if not appointment_date:
+        return "Ihrem Termin"
+
+    return f"Ihrem Termin am {appointment_date}"
+
+
+def send_patient_invitation_email(
+    *,
+    to_email: str,
+    patient_name: str,
+    invite_url: str,
+    appointment_date: str | None = None,
+) -> bool:
+    safe_patient_name = escape(patient_name)
+    safe_invite_url = escape(invite_url)
+    qr_code_url = build_qr_code_url(invite_url)
+    safe_qr_code_url = escape(qr_code_url)
+    appointment_text = format_appointment_date(appointment_date)
+
+    subject = "Ihr Klineus Fragebogen"
+
+    text_body = f"""Hallo {patient_name},
+
+Ihre Praxis bittet Sie, vor {appointment_text} den Klineus Fragebogen auszufüllen.
+
+Bitte öffnen Sie dafür diesen persönlichen Link:
+{invite_url}
+
+Dieser Link ist nur für Sie bestimmt. Bitte leiten Sie ihn nicht weiter.
+
+Viele Grüße
+Klineus
+"""
+
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #102033;">
+      <h2 style="color: #0f7c8b;">Ihr Klineus Fragebogen</h2>
+
+      <p>Hallo {safe_patient_name},</p>
+
+      <p>
+        Ihre Praxis bittet Sie, vor {escape(appointment_text)} den Klineus
+        Fragebogen auszufüllen.
+      </p>
+
+      <p>
+        Bitte öffnen Sie dafür diesen persönlichen Link:
+      </p>
+
+      <p>
+        <a
+          href="{safe_invite_url}"
+          style="display: inline-block; background: #0f7c8b; color: #ffffff; padding: 12px 18px; border-radius: 10px; text-decoration: none; font-weight: 700;"
+        >
+          Fragebogen öffnen
+        </a>
+      </p>
+
+      <p style="word-break: break-all;">
+        Falls der Button nicht funktioniert, kopieren Sie diesen Link in Ihren Browser:<br />
+        <a href="{safe_invite_url}">{safe_invite_url}</a>
+      </p>
+
+      <h3 style="color: #102033;">QR-Code</h3>
+
+      <p>
+        Sie können den Fragebogen auch über diesen QR-Code öffnen:
+      </p>
+
+      <p>
+        <img
+          src="{safe_qr_code_url}"
+          alt="Klineus QR-Code"
+          width="220"
+          height="220"
+          style="border: 1px solid #d7e5ec; border-radius: 12px; padding: 8px;"
+        />
+      </p>
+
+      <p style="font-size: 13px; color: #607080;">
+        Dieser Link ist nur für Sie bestimmt. Bitte leiten Sie ihn nicht weiter.
+      </p>
+
+      <p>Viele Grüße<br />Klineus</p>
+    </div>
+    """
+
+    return send_email(
+        to_email=to_email,
+        subject=subject,
+        text_body=text_body,
+        html_body=html_body,
+    )
+
+
+def send_patient_questionnaire_reminder_email(
+    *,
+    to_email: str,
+    patient_name: str,
+    invite_url: str,
+    appointment_date: str | None = None,
+) -> bool:
+    safe_patient_name = escape(patient_name)
+    safe_invite_url = escape(invite_url)
+    qr_code_url = build_qr_code_url(invite_url)
+    safe_qr_code_url = escape(qr_code_url)
+    appointment_text = format_appointment_date(appointment_date)
+
+    subject = "Erinnerung: Bitte Klineus Fragebogen ausfüllen"
+
+    text_body = f"""Hallo {patient_name},
+
+dies ist eine Erinnerung Ihrer Praxis.
+
+Bitte füllen Sie den Klineus Fragebogen vor {appointment_text} aus.
+
+Persönlicher Link:
+{invite_url}
+
+Viele Grüße
+Klineus
+"""
+
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #102033;">
+      <h2 style="color: #0f7c8b;">Erinnerung: Klineus Fragebogen</h2>
+
+      <p>Hallo {safe_patient_name},</p>
+
+      <p>
+        dies ist eine Erinnerung Ihrer Praxis.
+      </p>
+
+      <p>
+        Bitte füllen Sie den Klineus Fragebogen vor {escape(appointment_text)} aus.
+      </p>
+
+      <p>
+        <a
+          href="{safe_invite_url}"
+          style="display: inline-block; background: #0f7c8b; color: #ffffff; padding: 12px 18px; border-radius: 10px; text-decoration: none; font-weight: 700;"
+        >
+          Fragebogen jetzt ausfüllen
+        </a>
+      </p>
+
+      <p style="word-break: break-all;">
+        Falls der Button nicht funktioniert, kopieren Sie diesen Link in Ihren Browser:<br />
+        <a href="{safe_invite_url}">{safe_invite_url}</a>
+      </p>
+
+      <h3 style="color: #102033;">QR-Code</h3>
+
+      <p>
+        <img
+          src="{safe_qr_code_url}"
+          alt="Klineus QR-Code"
+          width="220"
+          height="220"
+          style="border: 1px solid #d7e5ec; border-radius: 12px; padding: 8px;"
+        />
+      </p>
+
+      <p>Viele Grüße<br />Klineus</p>
+    </div>
+    """
+
+    return send_email(
+        to_email=to_email,
+        subject=subject,
+        text_body=text_body,
+        html_body=html_body,
+    )
 
 
 def send_patient_resume_code_email(

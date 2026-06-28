@@ -16,6 +16,7 @@ from app.schemas import (
     ContentPageListResponse,
     CreatePatientCaseRequest,
     CreatePatientCaseResponse,
+    PatientInviteLookupResponse,
     QuestionnaireConfigResponse,
     QuestionnaireListResponse,
     QuestionnaireTemplateDetail,
@@ -255,6 +256,47 @@ def get_patient_config() -> QuestionnaireConfigResponse:
 
 
 # ---------------------------------------------------------------------------
+# Secure patient invite flow
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/invite/{invite_token}",
+    response_model=PatientInviteLookupResponse,
+)
+def get_patient_invite(
+    invite_token: str,
+) -> PatientInviteLookupResponse:
+    session = storage.get_questionnaire_session_by_invite_token(invite_token)
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invite link is invalid or expired.",
+        )
+
+    if session.status != "completed":
+        opened_session = storage.mark_invite_opened(session.session_id)
+
+        if opened_session:
+            session = opened_session
+
+    metadata = session.metadata or {}
+
+    return PatientInviteLookupResponse(
+        session_id=session.session_id,
+        indication=session.indication,
+        patient_name=session.patient_name,
+        patient_last_name=session.patient_last_name,
+        patient_email=session.patient_email,
+        insurance_id=session.insurance_id,
+        patient_age=metadata.get("patient_age"),
+        appointment_date=metadata.get("appointment_date"),
+        answers=session.answers,
+        current_question_id=session.current_question_id,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Patient pause / resume session flow
 # ---------------------------------------------------------------------------
 
@@ -316,7 +358,6 @@ def save_patient_questionnaire_progress(
 ) -> ResumePatientQuestionnaireResponse:
     answers = [to_plain_data(answer) for answer in request.answers]
     metadata = to_plain_data(request.metadata)
-    documents_to_bring = []
 
     patient_updates = optional_patient_update_fields(
         patient_name=request.patient_name,

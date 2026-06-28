@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -300,6 +300,71 @@ class CaseClientMetadata(BaseModel):
     question_count: int | None = None
     user_agent_family: str | None = None
 
+
+# ---------------------------------------------------------------------------
+# Reception / patient invitations
+# ---------------------------------------------------------------------------
+
+class CreateReceptionInviteRequest(BaseModel):
+    patient_name: str
+    patient_last_name: str | None = None
+    patient_age: int | None = None
+    insurance_id: str
+    patient_email: str
+    appointment_date: date
+    indication: Indication
+
+
+class ReceptionInviteResponse(BaseModel):
+    session_id: str
+    invite_token: str
+    invite_url: str
+    email_sent: bool
+
+
+class ReceptionInviteDetail(BaseModel):
+    session_id: str
+    created_at: datetime
+    updated_at: datetime
+    indication: Indication
+
+    patient_name: str | None = None
+    patient_last_name: str | None = None
+    patient_age: int | None = None
+    patient_email: str | None = None
+    insurance_id: str | None = None
+    appointment_date: str | None = None
+
+    invite_token: str | None = None
+    invite_url: str | None = None
+    invite_status: str = "invited"
+    status: str = "in_progress"
+    answer_count: int = 0
+
+    last_invitation_sent_at: str | None = None
+    last_reminder_sent_at: str | None = None
+    completed_at: datetime | None = None
+
+    case_id: str | None = None
+    case_status: str | None = None
+    report_status: str | None = None
+
+
+class ReceptionInviteListResponse(BaseModel):
+    invites: list[ReceptionInviteDetail] = Field(default_factory=list)
+
+
+class PatientInviteLookupResponse(BaseModel):
+    session_id: str
+    indication: Indication
+    patient_name: str | None = None
+    patient_last_name: str | None = None
+    patient_email: str | None = None
+    insurance_id: str | None = None
+    patient_age: int | None = None
+    appointment_date: str | None = None
+    answers: list[QuestionnaireAnswer] = Field(default_factory=list)
+    current_question_id: str | None = None
 
 class StartPatientQuestionnaireRequest(BaseModel):
     patient_name: str

@@ -9,10 +9,12 @@ import DoctorLoginPage from "./pages/DoctorLoginPage.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
 import LegalPage from "./pages/LegalPage.jsx";
 import PatientDonePage from "./pages/PatientDonePage.jsx";
+import PatientInvitePage from "./pages/PatientInvitePage.jsx";
 import PatientResumePage from "./pages/PatientResumePage.jsx";
 import PatientStartPage from "./pages/PatientStartPage.jsx";
 import ProductPage from "./pages/ProductPage.jsx";
 import QuestionnairePage from "./pages/QuestionnairePage.jsx";
+import ReceptionDashboardPage from "./pages/ReceptionDashboardPage.jsx";
 import TeamPage from "./pages/TeamPage.jsx";
 
 function NotFoundPage() {
@@ -47,6 +49,7 @@ export default function App() {
       {/* Direct patient routes only. Do not link from public website. */}
       <Route path="/patient/start" element={<PatientStartPage />} />
       <Route path="/patient/resume" element={<PatientResumePage />} />
+      <Route path="/patient/invite/:inviteToken" element={<PatientInvitePage />} />
       <Route
         path="/patient/questionnaire/:indication"
         element={<QuestionnairePage />}
@@ -63,6 +66,10 @@ export default function App() {
         path="/doctor/cases"
         element={<Navigate to="/doctor/dashboard" replace />}
       />
+
+      {/* Receptionist portal. Uses doctor login token for MVP. */}
+      <Route path="/reception/login" element={<Navigate to="/doctor/login" replace />} />
+      <Route path="/reception/dashboard" element={<ReceptionDashboardPage />} />
 
       {/* Direct admin routes only. Do not link from public website. */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
