@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-
+import ReceptionLoginPage from "./pages/ReceptionLoginPage.jsx";
 import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
 import AdminLoginPage from "./pages/AdminLoginPage.jsx";
 import ContactPage from "./pages/ContactPage.jsx";
@@ -68,7 +68,7 @@ export default function App() {
       />
 
       {/* Receptionist portal. Uses doctor login token for MVP. */}
-      <Route path="/reception/login" element={<Navigate to="/doctor/login" replace />} />
+     <Route path="/reception/login" element={<ReceptionLoginPage />} />
       <Route path="/reception/dashboard" element={<ReceptionDashboardPage />} />
 
       {/* Direct admin routes only. Do not link from public website. */}

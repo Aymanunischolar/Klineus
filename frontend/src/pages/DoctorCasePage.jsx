@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
+import LanguageToggle from "../components/LanguageToggle.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
 import { normalizeGermanText } from "../utils/germanText.js";
@@ -62,11 +63,15 @@ function indicationLabel(indication) {
 }
 
 function patientDisplayName(patientCase) {
-  const fullName = cleanPatientValue(patientCase?.patient_name);
+  const firstName = cleanPatientValue(patientCase?.patient_name);
   const lastName = cleanPatientValue(patientCase?.patient_last_name);
 
-  if (fullName) {
-    return fullName;
+  if (firstName && lastName && firstName !== lastName) {
+    return `${firstName} ${lastName}`;
+  }
+
+  if (firstName) {
+    return firstName;
   }
 
   if (lastName) {
@@ -310,15 +315,13 @@ function EditableReportTemplate({ text, language, onChange }) {
   const lines = text.split("\n");
 
   function updateLine(index, nextContent, prefix = "") {
-  const cleanContent = cleanText(nextContent)
-    .replace(/\n+/g, " ")
-    .trim();
+    const cleanContent = cleanText(nextContent).replace(/\n+/g, " ").trim();
 
-  const nextLines = [...lines];
-  nextLines[index] = prefix ? `${prefix}${cleanContent}` : cleanContent;
+    const nextLines = [...lines];
+    nextLines[index] = prefix ? `${prefix}${cleanContent}` : cleanContent;
 
-  onChange(nextLines.join("\n"));
-}
+    onChange(nextLines.join("\n"));
+  }
 
   return (
     <article className="doctor-report-preview doctor-report-preview-editable">
@@ -334,24 +337,13 @@ function EditableReportTemplate({ text, language, onChange }) {
           trimmedLine.includes("Ärztliche Prüfung") ||
           trimmedLine.includes("ärztliche Entscheidung") ||
           trimmedLine.includes("AI-generated draft") ||
-          trimmedLine.includes("physician")
+          trimmedLine.includes("physician") ||
+          trimmedLine.includes("keine Diagnose") ||
+          trimmedLine.includes("ersetzt keine") ||
+          trimmedLine.includes("geprüft, bearbeitet und freigegeben") ||
+          trimmedLine.includes("Freigabe erforderlich")
         ) {
-          const cleanLine = trimmedLine.replace(/^[-*]\s*/, "");
-
-          return (
-            <div
-              className="doctor-report-disclaimer editable-report-field"
-              contentEditable
-              suppressContentEditableWarning
-              spellCheck="true"
-              key={index}
-              onBlur={(event) =>
-                updateLine(index, event.currentTarget.innerText)
-              }
-            >
-              {cleanLine}
-            </div>
-          );
+          return null;
         }
 
         if (trimmedLine.startsWith("# ")) {
@@ -432,9 +424,7 @@ function EditableReportTemplate({ text, language, onChange }) {
             suppressContentEditableWarning
             spellCheck="true"
             key={index}
-            onBlur={(event) =>
-              updateLine(index, event.currentTarget.innerText)
-            }
+            onBlur={(event) => updateLine(index, event.currentTarget.innerText)}
           >
             {trimmedLine}
           </p>
@@ -605,7 +595,7 @@ export default function DoctorCasePage() {
 
   if (isLoading) {
     return (
-      <AppShell>
+      <AppShell compact hideNav>
         <p className="muted">
           {localText(language, "Fall wird geladen…", "Loading case…")}
         </p>
@@ -615,7 +605,7 @@ export default function DoctorCasePage() {
 
   if (error && !patientCase) {
     return (
-      <AppShell>
+      <AppShell compact hideNav>
         <Link className="text-link case-back-link" to="/doctor/dashboard">
           ← {localText(language, "Zurück zum Dashboard", "Back to dashboard")}
         </Link>
@@ -626,7 +616,11 @@ export default function DoctorCasePage() {
   }
 
   return (
-    <AppShell>
+    <AppShell compact hideNav>
+      <div className="doctor-case-language-only">
+        <LanguageToggle />
+      </div>
+
       <div className="doctor-case-shell">
         <Link className="text-link case-back-link" to="/doctor/dashboard">
           ← {localText(language, "Zurück zum Dashboard", "Back to dashboard")}
@@ -893,6 +887,20 @@ export default function DoctorCasePage() {
             </div>
 
             <div>
+              <span>Versicherungsnummer</span>
+              <strong>{cleanPatientValue(patientCase?.insurance_id) || "-"}</strong>
+            </div>
+
+            <div>
+              <span>E-Mail</span>
+              <strong>
+                {cleanPatientValue(patientCase?.patient_email, {
+                  isEmail: true,
+                }) || "-"}
+              </strong>
+            </div>
+
+            <div>
               <span>Indikation</span>
               <strong>{indicationLabel(patientCase?.indication)}</strong>
             </div>
@@ -900,6 +908,11 @@ export default function DoctorCasePage() {
             <div>
               <span>Erstellt</span>
               <strong>{formatDate(patientCase?.created_at, language)}</strong>
+            </div>
+
+            <div>
+              <span>Arzt / Ärztin</span>
+              <strong>________________________</strong>
             </div>
           </div>
 

@@ -9,7 +9,7 @@ function localText(language, de, en) {
   return language === "en" ? en : de;
 }
 
-export default function DoctorLoginPage() {
+export default function ReceptionLoginPage() {
   const navigate = useNavigate();
   const { language, t } = useLanguage();
 
@@ -29,24 +29,24 @@ export default function DoctorLoginPage() {
     try {
       const data = await api.login(cleanUsername, password);
 
-      if (data.role !== "doctor") {
+      if (data.role !== "receptionist") {
         setError(
           localText(
             language,
-            "Diese Zugangsdaten gehören nicht zum Arztbereich.",
-            "These credentials do not belong to the doctor area.",
+            "Diese Zugangsdaten gehören nicht zum Rezeptionbereich.",
+            "These credentials do not belong to the reception area.",
           ),
         );
 
-        window.localStorage.removeItem("klineus_doctor_token");
+        window.localStorage.removeItem("klineus_reception_token");
         return;
       }
 
-      window.localStorage.setItem("klineus_doctor_token", data.access_token);
-      window.localStorage.removeItem("klineus_reception_token");
+      window.localStorage.setItem("klineus_reception_token", data.access_token);
+      window.localStorage.removeItem("klineus_doctor_token");
       window.localStorage.removeItem("klineus_admin_token");
 
-      navigate("/doctor/dashboard");
+      navigate("/reception/dashboard");
     } catch (loginError) {
       setError(
         loginError?.message ||
@@ -66,16 +66,16 @@ export default function DoctorLoginPage() {
       <section className="login-card auth-card">
         <div className="auth-card-header">
           <p className="eyebrow">
-            {t("doctorArea") || localText(language, "Arztbereich", "Doctor area")}
+            {localText(language, "Rezeption", "Reception")}
           </p>
 
-          <h1>{localText(language, "Arzt Login", "Doctor login")}</h1>
+          <h1>{localText(language, "Rezeption Login", "Reception login")}</h1>
 
           <p>
             {localText(
               language,
-              "Melden Sie sich mit einem Arzt-Zugang an, um Patientenfälle und Dokumentationsentwürfe zu prüfen.",
-              "Sign in with a doctor account to review patient cases and documentation drafts.",
+              "Melden Sie sich mit einem Rezeption-Zugang an, um Patienteneinladungen und Arzt-Zugänge zu verwalten.",
+              "Sign in with a reception account to manage patient invitations and doctor accounts.",
             )}
           </p>
         </div>
@@ -86,7 +86,7 @@ export default function DoctorLoginPage() {
 
             <input
               autoComplete="username"
-              placeholder="doctor01"
+              placeholder="rezeption01"
               type="text"
               value={username}
               onChange={(event) => {
@@ -124,7 +124,11 @@ export default function DoctorLoginPage() {
           >
             {isSubmitting
               ? localText(language, "Wird angemeldet…", "Signing in…")
-              : localText(language, "Als Arzt einloggen", "Sign in as doctor")}
+              : localText(
+                  language,
+                  "Als Rezeption einloggen",
+                  "Sign in as reception",
+                )}
           </button>
         </form>
       </section>
