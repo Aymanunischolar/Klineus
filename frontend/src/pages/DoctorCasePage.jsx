@@ -304,8 +304,8 @@ function EditableReportTemplate({ text, language, onChange }) {
         <p>
           {localText(
             language,
-            "Erstellen Sie einen KI-Entwurf. Danach kann der Text direkt im Dokument bearbeitet und gespeichert werden.",
-            "Generate an AI draft. Afterwards, the text can be edited directly inside the document and saved.",
+            "Erstellen Sie den Arztbrief. Danach kann der Text direkt im Dokument bearbeitet und gespeichert werden.",
+            "Generate the doctor letter. Afterwards, the text can be edited directly inside the document and saved.",
           )}
         </p>
       </div>
@@ -519,8 +519,8 @@ export default function DoctorCasePage() {
       setNotice(
         localText(
           language,
-          "Der KI-Entwurf wurde erstellt. Bitte ärztlich prüfen.",
-          "The AI draft was created. Please review medically.",
+          "Der Arztbrief wurde vorausgefüllt. Bitte ärztlich prüfen und ergänzen.",
+          "The doctor letter was pre-filled. Please review and complete it medically.",
         ),
       );
     } catch (generateError) {
@@ -571,8 +571,8 @@ export default function DoctorCasePage() {
       setNotice(
         localText(
           language,
-          "Bitte erstellen Sie zuerst einen KI-Entwurf.",
-          "Please generate an AI draft first.",
+          "Bitte erstellen Sie zuerst den Arztbrief.",
+          "Please generate the doctor letter first.",
         ),
       );
       return;
@@ -804,7 +804,7 @@ export default function DoctorCasePage() {
               <div className="doctor-section-heading">
                 <div>
                   <p className="eyebrow">
-                    {localText(language, "KI-Entwurf", "AI draft")}
+                    {localText(language, "Vorausgefüllt", "Pre-filled")}
                   </p>
 
                   <h2>{localText(language, "Arztbrief", "Doctor letter")}</h2>
@@ -830,8 +830,8 @@ export default function DoctorCasePage() {
                     ? localText(language, "Wird erstellt…", "Generating…")
                     : localText(
                         language,
-                        "KI-Entwurf erstellen",
-                        "Generate AI draft",
+                        "Arztbrief erstellen",
+                        "Generate doctor letter",
                       )}
                 </button>
 
@@ -871,7 +871,7 @@ export default function DoctorCasePage() {
           <header className="doctor-print-header">
             <div>
               <p>KLINEUS</p>
-              <h1>Ärztlicher Dokumentationsentwurf</h1>
+              <h1>Arztbrief</h1>
             </div>
 
             <div className="doctor-print-case-meta">

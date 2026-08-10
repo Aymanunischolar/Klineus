@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import re
 from collections import defaultdict
 from typing import Any
@@ -9,9 +8,9 @@ from app.schemas import AnswerGroup, DocumentationFlag, QuestionnaireAnswer
 
 
 DISCLAIMER = (
-    "KI-generierter Entwurf. Dieser Text ist keine Diagnose und ersetzt keine "
-    "ärztliche Entscheidung. Muss von einer Ärztin oder einem Arzt geprüft, "
-    "bearbeitet und freigegeben werden."
+    "Automatisch aus den Patientenangaben vorausgefüllter Entwurf. Dieser Text "
+    "ist keine Diagnose und ersetzt keine ärztliche Entscheidung. Muss von einer "
+    "Ärztin oder einem Arzt geprüft, bearbeitet und freigegeben werden."
 )
 
 BLOCK_TITLES = {
@@ -22,34 +21,6 @@ BLOCK_TITLES = {
     "E": "Gesundheit und Risiken",
     "F": "Ziele, Erwartungen und Ergänzungen",
 }
-
-DIRECT_IDENTIFIER_CATEGORIES = {
-    "name",
-    "date_of_birth",
-    "address",
-    "phone",
-    "email",
-    "insurance",
-    "other_identifier",
-}
-
-DIRECT_IDENTIFIER_TERMS = {
-    "name",
-    "vorname",
-    "nachname",
-    "geburtsdatum",
-    "date of birth",
-    "dob",
-    "adresse",
-    "address",
-    "telefon",
-    "phone",
-    "email",
-    "e-mail",
-    "versicherung",
-    "insurance",
-}
-
 
 def clean_german_text(value: Any) -> str:
     text = str(value or "")
@@ -125,10 +96,6 @@ def clean_german_text(value: Any) -> str:
 
 def block_id_for_question(question_id: str) -> str:
     return question_id[:1].upper() if question_id else "?"
-
-
-def block_title_for_question(question_id: str) -> str:
-    return BLOCK_TITLES.get(block_id_for_question(question_id), "Weitere Angaben")
 
 
 def group_answers(answers: list[dict[str, Any]]) -> list[AnswerGroup]:
@@ -223,7 +190,11 @@ def _height_weight_answer(
     by_id: dict[str, Any],
     indication: str | None = None,
 ) -> dict[str, Any] | None:
-    value = by_id.get("E4")
+    # The live questionnaire (frontend/src/data/questionnaire.js) asks
+    # height/weight at a different question id per indication: E4 for hip,
+    # E5 for knee.
+    question_id = "E4" if indication == "hip_tep" else "E5"
+    value = by_id.get(question_id)
 
     if isinstance(value, dict) and (
         "height_cm" in value or "weight_kg" in value
@@ -363,12 +334,26 @@ def generate_documentation_flags(
     answers: list[dict[str, Any]],
     indication: str | None = None,
 ) -> list[DocumentationFlag]:
+    """Build the doctor-dashboard risk flags.
+
+    Question IDs are indication-specific from block B onward — knee_tep and
+    hip_tep diverge structurally in the live questionnaire (see
+    frontend/src/data/questionnaire.js, the real source of truth; the
+    backend's own seed_data/questionnaires.py is a separate, unused
+    definition). The mapping here mirrors the verified one in
+    letter_service.py. Checks whose underlying question no longer exists for
+    an indication are omitted rather than guessed.
+    """
+
     by_id = _answers_by_id(answers)
     resolved_indication = indication or _infer_indication(answers)
-    joint_label = "Hüfte" if resolved_indication == "hip_tep" else "Knie"
-    joint_article = "die Hüfte" if resolved_indication == "hip_tep" else "das Knie"
+    is_hip = resolved_indication == "hip_tep"
+    joint_label = "Hüfte" if is_hip else "Knie"
+    joint_article = "die Hüfte" if is_hip else "das Knie"
 
     flags: list[DocumentationFlag] = []
+
+    # --- Shared: A-block (identical ids/options both indications) ---
 
     if by_id.get("A2") == "Nein":
         flags.append(
@@ -388,6 +373,8 @@ def generate_documentation_flags(
             )
         )
 
+    # --- Shared: B1 (identical both indications) ---
+
     limitation_score = _as_number(by_id.get("B1"))
 
     if limitation_score is not None and limitation_score < 3:
@@ -399,56 +386,7 @@ def generate_documentation_flags(
             )
         )
 
-    if by_id.get("B2") == "Weniger als 3 Monate":
-        flags.append(
-            _flag(
-                "orange",
-                "Kurze Dauer der Alltagseinschränkung",
-                "Patient berichtet eine deutliche Alltagseinschränkung seit weniger als 3 Monaten.",
-            )
-        )
-
-    walking_distance = by_id.get("B4")
-
-    if walking_distance in {
-        "100 bis 500 Meter",
-        "Weniger als 100 Meter",
-        "Kaum möglich",
-    }:
-        flags.append(
-            _flag(
-                "orange",
-                "Deutliche Gehstreckenlimitierung berichtet",
-                "Patient berichtet eine relevante Einschränkung der Gehstrecke.",
-            )
-        )
-
-    if _is_unknown(by_id.get("B6")):
-        flags.append(
-            _flag(
-                "orange",
-                "Beweglichkeit unklar",
-                f"Patient ist unsicher, ob {joint_article} richtig bewegt werden kann. Im Arztgespräch gezielt prüfen.",
-            )
-        )
-
-    if _is_unknown(by_id.get("B7")):
-        flags.append(
-            _flag(
-                "orange",
-                "Achsfehlstellung unklar",
-                "Patient ist unsicher, ob Bein oder Gelenk schief steht. Im Arztgespräch gezielt prüfen.",
-            )
-        )
-
-    if _is_unknown(by_id.get("B8")):
-        flags.append(
-            _flag(
-                "orange",
-                "Kraftminderung unklar",
-                "Patient ist unsicher, ob das betroffene Bein schwächer geworden ist. Im Arztgespräch gezielt prüfen.",
-            )
-        )
+    # --- Shared: C1/C3/C4 (identical both indications) ---
 
     if by_id.get("C1") == "Nein":
         flags.append(
@@ -477,48 +415,16 @@ def generate_documentation_flags(
             )
         )
 
-    if by_id.get("C5") in {"Nein", "Teilweise"}:
-        flags.append(
-            _flag(
-                "orange",
-                "Bewegungstherapie unvollständig",
-                "Regelmäßige Physiotherapie, Krankengymnastik oder gezielte Übungen sind nicht vollständig erfolgt.",
-            )
-        )
-
-    if by_id.get("D1") in {"Nein", "Weiß nicht", "Weiß ich nicht"}:
-        flags.append(
-            _flag(
-                "orange",
-                "Röntgenbefund unklar oder fehlend",
-                f"Patient berichtet kein bekanntes Röntgenbild von {joint_article} oder ist unsicher.",
-            )
-        )
-
-    if by_id.get("D2") in {"Nein", "Weiß nicht", "Weiß ich nicht"}:
-        flags.append(
-            _flag(
-                "orange",
-                "Gelenkverschleiß unklar",
-                f"Patient berichtet keinen bekannten deutlichen Gelenkverschleiß in {joint_article} oder ist unsicher.",
-            )
-        )
-
-    if _is_unknown(by_id.get("D6")):
-        flags.append(
-            _flag(
-                "orange",
-                "Frühere Prothesenempfehlung unklar",
-                f"Patient ist unsicher, ob bereits eine {joint_label}-Prothese empfohlen wurde.",
-            )
-        )
+    # --- Shared: E1/E2 (identical ids both indications) ---
 
     if by_id.get("E1") == "Ja":
         flags.append(
             _flag(
                 "red",
                 "Aktive Infektion berichtet",
-                f"Patient berichtet eine aktuell behandelte Entzündung oder Infektion in {joint_article}. Erfordert ärztliche Prüfung.",
+                f"Patient berichtet eine aktuell behandelte Entzündung oder Infektion in {joint_article}"
+                + (" oder an anderer Stelle" if is_hip else "")
+                + ". Erfordert ärztliche Prüfung.",
             )
         )
 
@@ -534,9 +440,9 @@ def generate_documentation_flags(
     if by_id.get("E2") == "Ja":
         flags.append(
             _flag(
-                "red",
-                "Kürzliches schweres Herz-Kreislauf-Ereignis berichtet",
-                "Patient berichtet ein schweres Herz-Kreislauf-Ereignis in den letzten 3 Monaten. Erfordert ärztliche Prüfung.",
+                "orange",
+                "Frühere Gelenkinfektion berichtet",
+                f"Patient berichtet eine frühere Infektion in {joint_article}. Relevanz ärztlich prüfen.",
             )
         )
 
@@ -544,141 +450,382 @@ def generate_documentation_flags(
         flags.append(
             _flag(
                 "orange",
-                "Kürzliches Herz-Kreislauf-Ereignis unklar",
-                "Patient ist unsicher, ob in den letzten 3 Monaten ein schweres Herz-Kreislauf-Ereignis vorlag.",
-            )
-        )
-
-    if by_id.get("E3") == "Ja":
-        flags.append(
-            _flag(
-                "orange",
-                "Diabetes oder erhöhte Blutzuckerwerte berichtet",
-                "Patient berichtet Diabetes oder erhöhte Blutzuckerwerte. HbA1c und präoperative Einstellung ärztlich prüfen.",
-            )
-        )
-
-    if _is_unknown(by_id.get("E3")):
-        flags.append(
-            _flag(
-                "orange",
-                "Diabetesstatus unklar",
-                "Patient ist unsicher bezüglich Diabetes oder erhöhter Blutzuckerwerte. HbA1c/Laborwerte ärztlich prüfen.",
-            )
-        )
-
-    _append_bmi_flags(flags, answers, resolved_indication)
-    _append_smoking_flag(flags, by_id.get("E5"))
-
-    if _is_unknown(by_id.get("E6")):
-        flags.append(
-            _flag(
-                "orange",
-                "Kortison-Injektion unklar",
-                f"Patient ist unsicher bezüglich einer Kortison-Spritze direkt in {joint_article}. Im Arztgespräch klären.",
-            )
-        )
-
-    _append_cortisone_flag(flags, by_id.get("E6"), joint_article)
-
-    if by_id.get("E7") == "Ja":
-        flags.append(
-            _flag(
-                "orange",
-                "Blutarmut oder Anämie berichtet",
-                "Patient berichtet Blutarmut oder Anämie. Diagnostik und Optimierung vor OP prüfen.",
-            )
-        )
-
-    if _is_unknown(by_id.get("E7")):
-        flags.append(
-            _flag(
-                "orange",
-                "Anämiestatus unklar",
-                "Patient ist unsicher bezüglich Blutarmut oder Anämie. Diagnostik und Optimierung vor OP prüfen.",
-            )
-        )
-
-    if by_id.get("E8") == "Ja":
-        flags.append(
-            _flag(
-                "orange",
-                "Psychische Erkrankung berichtet",
-                "Patient berichtet aktuelle Behandlung wegen einer psychischen Erkrankung.",
-            )
-        )
-
-    if _starts_with_yes(by_id.get("E9")):
-        flags.append(
-            _flag(
-                "orange",
-                "Rheumatische Erkrankung berichtet",
-                "Patient berichtet eine rheumatische Erkrankung. Krankheitskontrolle ärztlich prüfen.",
-            )
-        )
-
-    if _is_unknown(by_id.get("E9")):
-        flags.append(
-            _flag(
-                "orange",
-                "Rheumatische Erkrankung unklar",
-                "Patient ist unsicher bezüglich einer rheumatischen Erkrankung.",
-            )
-        )
-
-    if by_id.get("E10") == "Ja":
-        flags.append(
-            _flag(
-                "orange",
-                "Kortison als Tabletten berichtet",
-                "Patient berichtet aktuelle Kortison-Tabletteneinnahme. Glukokortikoiddosis ärztlich prüfen.",
-            )
-        )
-
-    if _is_unknown(by_id.get("E10")):
-        flags.append(
-            _flag(
-                "orange",
-                "Kortison-Tabletteneinnahme unklar",
-                "Patient ist unsicher bezüglich aktueller Kortison-Tabletteneinnahme.",
-            )
-        )
-
-    if _starts_with_yes(by_id.get("E11")):
-        flags.append(
-            _flag(
-                "orange",
-                "Andere schwere Erkrankung berichtet",
-                "Patient berichtet eine andere schwere Erkrankung mit regelmäßiger ärztlicher Behandlung.",
-            )
-        )
-
-    if by_id.get("E12") == "Ja":
-        flags.append(
-            _flag(
-                "orange",
-                "Alkohol- oder Suchtmittelrisiko berichtet",
-                "Patient berichtet regelmäßig viel Alkohol oder aktuelle Probleme mit Alkohol oder anderen Suchtmitteln.",
-            )
-        )
-
-    if by_id.get("E13") == "Ja":
-        flags.append(
-            _flag(
-                "orange",
-                "Frühere Gelenkinfektion berichtet",
-                f"Patient berichtet eine frühere Infektion in {joint_article}. Relevanz ärztlich prüfen.",
-            )
-        )
-
-    if _is_unknown(by_id.get("E13")):
-        flags.append(
-            _flag(
-                "orange",
                 "Frühere Gelenkinfektion unklar",
                 f"Patient ist unsicher, ob früher eine Infektion in {joint_article} vorlag.",
             )
         )
+
+    if is_hip:
+        # --- Hip-specific: B2 (gated on B1>=3 in the questionnaire), B3, B4 ---
+
+        if by_id.get("B2") == "Weniger als 3 Monate":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kurze Dauer der Alltagseinschränkung",
+                    "Patient berichtet eine deutliche Alltagseinschränkung seit weniger als 3 Monaten.",
+                )
+            )
+
+        if by_id.get("B4") in {"Unter 500 m", "Unter 100 m", "Kaum möglich"}:
+            flags.append(
+                _flag(
+                    "orange",
+                    "Deutliche Gehstreckenlimitierung berichtet",
+                    "Patient berichtet eine relevante Einschränkung der Gehstrecke.",
+                )
+            )
+
+        # --- Hip-specific: C5 Aufklärung / C6 Bewegungstherapie ---
+
+        if by_id.get("C5") == "Nein":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Aufklärung nicht erfolgt",
+                    "Patient berichtet, anamnestisch bislang nicht über die Erkrankung und Behandlungsmöglichkeiten aufgeklärt worden zu sein.",
+                )
+            )
+
+        if by_id.get("C6") in {"Nein", "Teilweise"}:
+            flags.append(
+                _flag(
+                    "orange",
+                    "Bewegungstherapie unvollständig",
+                    "Regelmäßige Bewegungstherapie, Krankengymnastik oder gezielte Übungen sind nicht vollständig erfolgt.",
+                )
+            )
+
+        # --- Hip-specific: D1 Gelenkverschleiß, D2 Vorbefunde, D3 Prothese ---
+
+        if by_id.get("D1") in {"Nein", "Weiß nicht", "Weiß ich nicht"}:
+            flags.append(
+                _flag(
+                    "orange",
+                    "Gelenkverschleiß unklar",
+                    f"Patient berichtet keinen bekannten deutlichen Gelenkverschleiß in {joint_article} oder ist unsicher.",
+                )
+            )
+
+        if by_id.get("D2") == "Nein":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Keine externen Vorbefunde vorhanden",
+                    f"Patient berichtet keine Arztbriefe, Röntgenbilder oder Befunde zu {joint_article}.",
+                )
+            )
+
+        if _is_unknown(by_id.get("D3")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Frühere Prothesenempfehlung unklar",
+                    f"Patient ist unsicher, ob bereits eine {joint_label}-Prothese empfohlen wurde.",
+                )
+            )
+
+        # --- Hip-specific: E3 schwere Begleiterkrankung, E6 Diabetes ---
+
+        if _starts_with_yes(by_id.get("E3")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Schwere Begleiterkrankung berichtet",
+                    "Patient berichtet eine schwere Herz-, Lungen-, Krebs- oder andere Erkrankung mit erhöhtem Operationsrisiko. Details ärztlich prüfen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E3")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Begleiterkrankungsstatus unklar",
+                    "Patient ist unsicher bezüglich einer schweren Begleiterkrankung mit erhöhtem Operationsrisiko.",
+                )
+            )
+
+        _append_bmi_flags(flags, answers, resolved_indication)
+        _append_smoking_flag(flags, by_id.get("E5"))
+
+        if _starts_with_yes(by_id.get("E6")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Diabetes oder erhöhte Blutzuckerwerte berichtet",
+                    "Patient berichtet Diabetes oder erhöhte Blutzuckerwerte. HbA1c und präoperative Einstellung ärztlich prüfen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E6")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Diabetesstatus unklar",
+                    "Patient ist unsicher bezüglich Diabetes oder erhöhter Blutzuckerwerte. HbA1c/Laborwerte ärztlich prüfen.",
+                )
+            )
+
+        if by_id.get("E7") == "Ja":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Blutarmut oder Anämie berichtet",
+                    "Patient berichtet Blutarmut oder Anämie. Diagnostik und Optimierung vor OP prüfen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E7")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Anämiestatus unklar",
+                    "Patient ist unsicher bezüglich Blutarmut oder Anämie. Diagnostik und Optimierung vor OP prüfen.",
+                )
+            )
+
+        _append_cortisone_flag(flags, by_id.get("E8"), joint_article)
+
+        if _is_unknown(by_id.get("E8")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kortison-Injektion unklar",
+                    f"Patient ist unsicher bezüglich einer Kortison-Spritze direkt in {joint_article}. Im Arztgespräch klären.",
+                )
+            )
+
+        if _starts_with_yes(by_id.get("E9")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Psychische Erkrankung berichtet",
+                    "Patient berichtet, dass eine psychische Erkrankung vermutet wird oder behandelt wurde bzw. wird.",
+                )
+            )
+
+        if by_id.get("E10") == "Ja":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Beschwerden beim Wasserlassen bzw. Harnwegsinfekt berichtet",
+                    "Patient berichtet aktuelle Beschwerden beim Wasserlassen oder einen behandlungsbedürftigen Harnwegsinfekt. Präoperativ relevant als möglicher Streuherd.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E10")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Harnwegsinfekt-Status unklar",
+                    "Patient ist unsicher bezüglich aktueller Beschwerden beim Wasserlassen oder eines Harnwegsinfekts.",
+                )
+            )
+
+        if _starts_with_yes(by_id.get("E11")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Dauerhafte immunmodulierende Medikation berichtet",
+                    "Patient berichtet die dauerhafte Einnahme von Medikamenten, die das Immunsystem deutlich beeinflussen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E11")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Immunmodulierende Medikation unklar",
+                    "Patient ist unsicher bezüglich dauerhafter immunmodulierender Medikation.",
+                )
+            )
+
+    else:
+        # --- Knee-specific: B2 Gehstrecke, B3 Fehlstellung, B4 Kraftminderung ---
+
+        if by_id.get("B2") in {
+            "100 bis 500 Meter",
+            "Weniger als 100 Meter",
+            "Kaum möglich",
+        }:
+            flags.append(
+                _flag(
+                    "orange",
+                    "Deutliche Gehstreckenlimitierung berichtet",
+                    "Patient berichtet eine relevante Einschränkung der Gehstrecke.",
+                )
+            )
+
+        if _is_unknown(by_id.get("B3")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Achsfehlstellung unklar",
+                    "Patient ist unsicher, ob Bein oder Gelenk schief steht. Im Arztgespräch gezielt prüfen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("B4")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kraftminderung unklar",
+                    "Patient ist unsicher, ob das betroffene Bein schwächer geworden ist. Im Arztgespräch gezielt prüfen.",
+                )
+            )
+
+        # --- Knee-specific: D1 Vorbefunde, D2 Prothese ---
+
+        if by_id.get("D1") == "Nein":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Keine externen Vorbefunde vorhanden",
+                    f"Patient berichtet keine Arztbriefe, Röntgenbilder oder Befunde zu {joint_article}.",
+                )
+            )
+
+        if _is_unknown(by_id.get("D2")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Frühere Prothesenempfehlung unklar",
+                    f"Patient ist unsicher, ob bereits eine {joint_label}-Prothese empfohlen wurde.",
+                )
+            )
+
+        # --- Knee-specific: E3 kardiovaskulär, E4 Diabetes ---
+
+        if by_id.get("E3") == "Ja":
+            flags.append(
+                _flag(
+                    "red",
+                    "Kürzliches schweres Herz-Kreislauf-Ereignis berichtet",
+                    "Patient berichtet ein schweres Herz-Kreislauf-Ereignis in den letzten 3 Monaten. Erfordert ärztliche Prüfung.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E3")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kürzliches Herz-Kreislauf-Ereignis unklar",
+                    "Patient ist unsicher, ob in den letzten 3 Monaten ein schweres Herz-Kreislauf-Ereignis vorlag.",
+                )
+            )
+
+        if by_id.get("E4") == "Ja":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Diabetes oder erhöhte Blutzuckerwerte berichtet",
+                    "Patient berichtet Diabetes oder erhöhte Blutzuckerwerte. HbA1c und präoperative Einstellung ärztlich prüfen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E4")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Diabetesstatus unklar",
+                    "Patient ist unsicher bezüglich Diabetes oder erhöhter Blutzuckerwerte. HbA1c/Laborwerte ärztlich prüfen.",
+                )
+            )
+
+        _append_bmi_flags(flags, answers, resolved_indication)
+        _append_smoking_flag(flags, by_id.get("E6"))
+
+        _append_cortisone_flag(flags, by_id.get("E7"), joint_article)
+
+        if _is_unknown(by_id.get("E7")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kortison-Injektion unklar",
+                    f"Patient ist unsicher bezüglich einer Kortison-Spritze direkt in {joint_article}. Im Arztgespräch klären.",
+                )
+            )
+
+        if by_id.get("E8") == "Ja":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Blutarmut oder Anämie berichtet",
+                    "Patient berichtet Blutarmut oder Anämie. Diagnostik und Optimierung vor OP prüfen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E8")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Anämiestatus unklar",
+                    "Patient ist unsicher bezüglich Blutarmut oder Anämie. Diagnostik und Optimierung vor OP prüfen.",
+                )
+            )
+
+        if by_id.get("E9") == "Ja":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Psychische Erkrankung berichtet",
+                    "Patient berichtet aktuelle Behandlung wegen einer psychischen Erkrankung.",
+                )
+            )
+
+        if _starts_with_yes(by_id.get("E10")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Rheumatische Erkrankung berichtet",
+                    "Patient berichtet eine rheumatische Erkrankung. Krankheitskontrolle ärztlich prüfen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E10")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Rheumatische Erkrankung unklar",
+                    "Patient ist unsicher bezüglich einer rheumatischen Erkrankung.",
+                )
+            )
+
+        if by_id.get("E11") == "Ja":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kortison als Tabletten berichtet",
+                    "Patient berichtet aktuelle Kortison-Tabletteneinnahme. Glukokortikoiddosis ärztlich prüfen.",
+                )
+            )
+
+        if _is_unknown(by_id.get("E11")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Kortison-Tabletteneinnahme unklar",
+                    "Patient ist unsicher bezüglich aktueller Kortison-Tabletteneinnahme.",
+                )
+            )
+
+        if _starts_with_yes(by_id.get("E12")):
+            flags.append(
+                _flag(
+                    "orange",
+                    "Andere schwere Erkrankung berichtet",
+                    "Patient berichtet eine andere schwere Erkrankung mit regelmäßiger ärztlicher Behandlung.",
+                )
+            )
+
+        if by_id.get("E13") == "Ja":
+            flags.append(
+                _flag(
+                    "orange",
+                    "Alkohol- oder Suchtmittelrisiko berichtet",
+                    "Patient berichtet regelmäßig viel Alkohol oder aktuelle Probleme mit Alkohol oder anderen Suchtmitteln.",
+                )
+            )
 
     if not flags:
         flags.append(
@@ -742,121 +889,6 @@ def derive_traffic_light(flags: list[DocumentationFlag]) -> dict[str, str]:
         "label": derive_traffic_light_label(level),
         "description": derive_traffic_light_description(level),
     }
-
-
-def _is_direct_identifier(answer: dict[str, Any]) -> bool:
-    pii_category = str(answer.get("pii_category") or "none").strip().lower()
-
-    if pii_category in DIRECT_IDENTIFIER_CATEGORIES:
-        return True
-
-    question_id = str(answer.get("question_id", "")).lower()
-    question = str(answer.get("question", "")).lower()
-    haystack = f"{question_id} {question}"
-
-    return any(term in haystack for term in DIRECT_IDENTIFIER_TERMS)
-
-
-def _format_answer_for_ai(value: Any) -> Any:
-    if value is None or value == "":
-        return "nicht angegeben"
-
-    if isinstance(value, list):
-        return [
-            clean_german_text(item)
-            for item in value
-        ] if value else "nicht angegeben"
-
-    if isinstance(value, dict):
-        if (
-            "packs_per_day" in value
-            or "smoking_years" in value
-            or "pack_years" in value
-            or "stopped_since" in value
-        ):
-            parts = []
-
-            if value.get("value"):
-                parts.append(clean_german_text(value.get("value")))
-
-            if value.get("packs_per_day"):
-                parts.append(f"{value.get('packs_per_day')} Packungen pro Tag")
-
-            if value.get("smoking_years"):
-                parts.append(f"{value.get('smoking_years')} Raucherjahre")
-
-            if value.get("pack_years") not in (None, ""):
-                parts.append(f"{value.get('pack_years')} Packungsjahre")
-
-            if value.get("stopped_since"):
-                parts.append(f"aufgehört seit {value.get('stopped_since')}")
-
-            return " | ".join(parts) if parts else "nicht angegeben"
-
-        if "height_cm" in value or "weight_kg" in value:
-            height_cm = _as_number(value.get("height_cm"))
-            weight_kg = _as_number(value.get("weight_kg"))
-
-            parts = []
-
-            if height_cm:
-                parts.append(f"Größe {height_cm:g} cm")
-
-            if weight_kg:
-                parts.append(f"Gewicht {weight_kg:g} kg")
-
-            if height_cm and weight_kg:
-                height_m = height_cm / 100
-                bmi = round(weight_kg / (height_m * height_m), 1)
-                parts.append(f"BMI {bmi}")
-
-            return " | ".join(parts) if parts else "nicht angegeben"
-
-        if "value" in value:
-            if value.get("detail"):
-                return clean_german_text(f"{value.get('value')}: {value.get('detail')}")
-
-            return clean_german_text(value.get("value")) or "nicht angegeben"
-
-        return json.dumps(value, ensure_ascii=False)
-
-    return clean_german_text(value)
-
-
-def format_minimum_answers_for_ai(answers: list[dict[str, Any]]) -> str:
-    """Return only questionnaire content needed for report drafting.
-
-    Direct patient identifiers are excluded before the AI prompt is created.
-    The AI receives only medically relevant questionnaire answers.
-    """
-    minimal_payload = []
-
-    for answer in answers:
-        if answer.get("include_in_ai") is False or _is_direct_identifier(answer):
-            continue
-
-        block_title = (
-            answer.get("block_title_displayed")
-            or answer.get("block_title")
-            or block_title_for_question(answer.get("question_id", ""))
-        )
-
-        question_text = (
-            answer.get("question_displayed")
-            or answer.get("question")
-            or answer.get("question_id")
-        )
-
-        minimal_payload.append(
-            {
-                "block": clean_german_text(block_title),
-                "question_id": answer.get("question_id"),
-                "question": clean_german_text(question_text),
-                "answer": _format_answer_for_ai(answer.get("answer")),
-            }
-        )
-
-    return json.dumps(minimal_payload, ensure_ascii=False, indent=2)
 
 
 def ensure_disclaimer(report_text: str) -> str:

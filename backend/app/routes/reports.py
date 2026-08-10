@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.ai_service import AIServiceError, generate_ai_report
 from app.auth import get_current_doctor
+from app.letter_service import build_arztbrief
 from app.report_service import ensure_disclaimer
 from app.schemas import GenerateReportResponse, SaveReportRequest
 from app.storage import storage
@@ -65,24 +65,14 @@ def generate_report(
             detail="Case not found.",
         )
 
-    try:
-        generated_report = generate_ai_report(
-            case.answers,
-            indication=getattr(case, "indication", None),
-            questionnaire_version=get_case_questionnaire_version(case),
-        )
-    except AIServiceError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(exc),
-        ) from exc
+    generated_report = build_arztbrief(
+        case.answers,
+        indication=getattr(case, "indication", None),
+        questionnaire_version=get_case_questionnaire_version(case),
+    )
 
-    if isinstance(generated_report, dict):
-        report_text = generated_report.get("report_text") or ""
-        report_json = generated_report.get("report_json")
-    else:
-        report_text = str(generated_report or "")
-        report_json = None
+    report_text = generated_report.get("report_text") or ""
+    report_json = generated_report.get("report_json")
 
     updated_case = storage.save_report(
         case_id,
