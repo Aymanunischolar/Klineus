@@ -697,60 +697,7 @@ export default function DoctorCasePage() {
         {notice ? <p className="form-notice">{notice}</p> : null}
 
         <section className="doctor-workspace-grid">
-          <main className="doctor-main-column">
-            <section className="doctor-notes-panel-left">
-              <div className="doctor-section-heading">
-                <div>
-                  <p className="eyebrow">
-                    {localText(language, "Offene Punkte", "Open points")}
-                  </p>
-
-                  <h2>
-                    {localText(
-                      language,
-                      "Wichtige Hinweise für das Arztgespräch",
-                      "Important notes for the consultation",
-                    )}
-                  </h2>
-                </div>
-
-                <span className="doctor-count-pill">{flags.length}</span>
-              </div>
-
-              {flags.length === 0 ? (
-                <p className="muted">
-                  {localText(
-                    language,
-                    "Keine Hinweise vorhanden.",
-                    "No notes available.",
-                  )}
-                </p>
-              ) : (
-                <div className="doctor-notes-grid">
-                  {flags.map((flag, index) => (
-                    <article className={flagLevelClass(flag)} key={index}>
-                      <strong>
-                        {cleanText(
-                          flag.title ||
-                            flag.label ||
-                            flag.message ||
-                            localText(language, "Hinweis", "Note"),
-                        )}
-                      </strong>
-
-                      {flag.description || flag.text || flag.reason ? (
-                        <p>
-                          {cleanText(
-                            flag.description || flag.text || flag.reason,
-                          )}
-                        </p>
-                      ) : null}
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-
+          <aside className="doctor-answers-column">
             <section className="answer-group answer-group-enhanced">
               <div className="section-heading">
                 <div>
@@ -772,34 +719,36 @@ export default function DoctorCasePage() {
                 </div>
               </div>
 
-              {allAnswers.length === 0 ? (
-                <p className="muted">
-                  {localText(
-                    language,
-                    "Für diesen Fall wurden keine Antworten gefunden.",
-                    "No answers were found for this case.",
-                  )}
-                </p>
-              ) : (
-                <div className="answer-list">
-                  {allAnswers.map((answer, index) => (
-                    <div
-                      className="answer-row"
-                      key={`${getQuestionId(answer)}-${index}`}
-                    >
-                      <div>
-                        <p>{getQuestionText(answer)}</p>
+              <div className="doctor-answers-scroll">
+                {allAnswers.length === 0 ? (
+                  <p className="muted">
+                    {localText(
+                      language,
+                      "Für diesen Fall wurden keine Antworten gefunden.",
+                      "No answers were found for this case.",
+                    )}
+                  </p>
+                ) : (
+                  <div className="answer-list">
+                    {allAnswers.map((answer, index) => (
+                      <div
+                        className="answer-row"
+                        key={`${getQuestionId(answer)}-${index}`}
+                      >
+                        <div>
+                          <p>{getQuestionText(answer)}</p>
+                        </div>
+
+                        <strong>{normalizeAnswer(answer.answer)}</strong>
                       </div>
-
-                      <strong>{normalizeAnswer(answer.answer)}</strong>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </section>
-          </main>
+          </aside>
 
-          <aside className="doctor-ai-sidebar">
+          <main className="doctor-letter-column">
             <section className="doctor-ai-panel">
               <div className="doctor-section-heading">
                 <div>
@@ -862,6 +811,63 @@ export default function DoctorCasePage() {
                   language={language}
                   onChange={setReportText}
                 />
+              </div>
+            </section>
+          </main>
+
+          <aside className="doctor-notes-column">
+            <section className="doctor-notes-panel-left">
+              <div className="doctor-section-heading">
+                <div>
+                  <p className="eyebrow">
+                    {localText(language, "Offene Punkte", "Open points")}
+                  </p>
+
+                  <h2>
+                    {localText(
+                      language,
+                      "Wichtige Hinweise für das Arztgespräch",
+                      "Important notes for the consultation",
+                    )}
+                  </h2>
+                </div>
+
+                <span className="doctor-count-pill">{flags.length}</span>
+              </div>
+
+              <div className="doctor-notes-scroll">
+                {flags.length === 0 ? (
+                  <p className="muted">
+                    {localText(
+                      language,
+                      "Keine Hinweise vorhanden.",
+                      "No notes available.",
+                    )}
+                  </p>
+                ) : (
+                  <div className="doctor-notes-grid">
+                    {flags.map((flag, index) => (
+                      <article className={flagLevelClass(flag)} key={index}>
+                        <strong>
+                          {cleanText(
+                            flag.title ||
+                              flag.label ||
+                              flag.message ||
+                              localText(language, "Hinweis", "Note"),
+                          )}
+                        </strong>
+
+                        {flag.description || flag.text || flag.reason ? (
+                          <p>
+                            {cleanText(
+                              flag.description || flag.text || flag.reason,
+                            )}
+                          </p>
+                        ) : null}
+                      </article>
+                    ))}
+                  </div>
+                )}
               </div>
             </section>
           </aside>

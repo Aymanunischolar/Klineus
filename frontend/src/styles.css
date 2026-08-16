@@ -14173,3 +14173,148 @@ a[href="/doctor/login"] {
 .app-shell-hidden-nav .doctor-case-shell {
   padding-top: 0;
 }
+
+/* ==========================================================================
+   Doctor case workspace v2 — 3-column layout: answers | letter | notes.
+   Appended last so it wins the cascade over the earlier 2-column rules
+   above without having to hunt down every duplicate block. Print/PDF export
+   is untouched — it targets .doctor-print-document, a separate section this
+   layout doesn't affect.
+   ========================================================================== */
+
+.doctor-case-language-only,
+.doctor-case-shell {
+  width: min(100%, 1600px);
+}
+
+/* .app-shell caps at 1220px and .app-shell-hidden-nav .main-content caps at
+   980px — both are shared with the compact patient questionnaire pages that
+   also use hideNav, so widen them only when the doctor case shell is
+   present rather than touching the shared rules. */
+.app-shell:has(.doctor-case-shell) {
+  width: min(100%, 1656px);
+}
+
+.app-shell-hidden-nav:has(.doctor-case-shell) .main-content {
+  width: min(100%, 1600px);
+}
+
+.doctor-workspace-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(280px, 0.85fr) minmax(440px, 1.55fr) minmax(280px, 0.85fr);
+  align-items: start;
+  gap: 24px;
+}
+
+.doctor-answers-column,
+.doctor-letter-column,
+.doctor-notes-column {
+  min-width: 0;
+  position: sticky;
+  top: 24px;
+}
+
+.doctor-answers-column .answer-group-enhanced,
+.doctor-notes-column .doctor-notes-panel-left {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+}
+
+.doctor-letter-column .doctor-ai-panel {
+  max-height: calc(100vh - 48px);
+  border-color: #bcdce6;
+  box-shadow: var(--shadow-md);
+}
+
+.doctor-answers-scroll,
+.doctor-notes-scroll {
+  flex: 1;
+  min-height: 0;
+  margin-top: 16px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.doctor-answers-scroll::-webkit-scrollbar,
+.doctor-notes-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.doctor-answers-scroll::-webkit-scrollbar-track,
+.doctor-notes-scroll::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #edf5fa;
+}
+
+.doctor-answers-scroll::-webkit-scrollbar-thumb,
+.doctor-notes-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid #edf5fa;
+  border-radius: 999px;
+  background: #b8d3e5;
+}
+
+.doctor-notes-column .doctor-notes-grid {
+  grid-template-columns: 1fr;
+  margin-top: 0;
+}
+
+@media (max-width: 1320px) {
+  .doctor-workspace-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 0.9fr);
+    grid-template-areas:
+      "letter letter"
+      "answers notes";
+  }
+
+  .doctor-letter-column {
+    grid-area: letter;
+  }
+
+  .doctor-answers-column {
+    grid-area: answers;
+  }
+
+  .doctor-notes-column {
+    grid-area: notes;
+  }
+
+  .doctor-answers-column,
+  .doctor-notes-column,
+  .doctor-letter-column {
+    position: static;
+  }
+
+  .doctor-answers-column .answer-group-enhanced,
+  .doctor-notes-column .doctor-notes-panel-left,
+  .doctor-letter-column .doctor-ai-panel {
+    max-height: 480px;
+  }
+}
+
+@media (max-width: 860px) {
+  .doctor-workspace-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "letter"
+      "notes"
+      "answers";
+    gap: 18px;
+  }
+
+  .doctor-answers-column .answer-group-enhanced,
+  .doctor-notes-column .doctor-notes-panel-left,
+  .doctor-letter-column .doctor-ai-panel {
+    max-height: none;
+  }
+
+  .doctor-ai-panel {
+    min-height: 0;
+  }
+
+  .doctor-notes-grid .flag-card {
+    padding: 14px;
+  }
+}
