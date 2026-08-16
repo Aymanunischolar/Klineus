@@ -18,6 +18,150 @@ function cleanText(value) {
   return normalizeGermanText(value);
 }
 
+// ---------------------------------------------------------------------------
+// Rich text formatting for the Arztbrief editor
+//
+// report_text is stored as a single string, shared verbatim between the
+// on-screen editor and the printed/PDF view (see EditableReportTemplate
+// below, used for both). To support bold/italic/underline/color without
+// changing that storage shape, each line's content is HTML rather than
+// plain text once it enters the editor. Freshly generated text from the
+// backend is always plain, so it's HTML-escaped before display (a literal
+// "<" from a patient's free-text answer must never be read as markup).
+// Anything that has previously been through this editor and saved is
+// already sanitized HTML, so it's used as-is (not re-escaped, or the
+// formatting tags themselves would show up as literal text).
+// ---------------------------------------------------------------------------
+
+const RICH_TEXT_INLINE_TAGS = new Set(["B", "STRONG", "I", "EM", "U"]);
+const SAFE_CSS_COLOR =
+  /^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)|rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\))$/;
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// execCommand doesn't reliably express bold/italic/underline the same way
+// on every selection — a plain paragraph gets <b>/<i>/<u>, but toggling
+// bold on a heading (already bold via its own CSS) can instead add
+// "font-weight: normal" as an inline style on whatever element already
+// wraps the selection. Rather than rely on a particular DOM shape, the
+// sanitizer recognizes this fixed, narrow set of formatting styles
+// wherever they appear and rebuilds a clean style string from scratch —
+// anything else in the original style (backgrounds, urls, ...) is dropped.
+function sanitizeFormattingStyle(styleValue) {
+  const style = styleValue || "";
+  const parts = [];
+
+  const colorMatch = /(?:^|;)\s*color\s*:\s*([^;]+)/i.exec(style);
+  if (colorMatch && SAFE_CSS_COLOR.test(colorMatch[1].trim())) {
+    parts.push(`color: ${colorMatch[1].trim()}`);
+  }
+
+  const weightMatch = /(?:^|;)\s*font-weight\s*:\s*([^;]+)/i.exec(style);
+  if (weightMatch) {
+    const weight = weightMatch[1].trim().toLowerCase();
+    if (weight === "bold" || weight === "700") {
+      parts.push("font-weight: bold");
+    } else if (weight === "normal" || weight === "400") {
+      parts.push("font-weight: normal");
+    }
+  }
+
+  const italicMatch = /(?:^|;)\s*font-style\s*:\s*([^;]+)/i.exec(style);
+  if (italicMatch) {
+    const value = italicMatch[1].trim().toLowerCase();
+    if (value === "italic" || value === "normal") {
+      parts.push(`font-style: ${value}`);
+    }
+  }
+
+  const decorationMatch = /(?:^|;)\s*text-decoration(?:-line)?\s*:\s*([^;]+)/i.exec(
+    style,
+  );
+  if (decorationMatch) {
+    const value = decorationMatch[1].trim().toLowerCase();
+    if (value.includes("underline")) {
+      parts.push("text-decoration: underline");
+    } else if (value === "none") {
+      parts.push("text-decoration: none");
+    }
+  }
+
+  return parts.join("; ");
+}
+
+function appendSanitizedNode(node, target) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    target.appendChild(document.createTextNode(node.textContent));
+    return;
+  }
+
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return;
+  }
+
+  const tagName = node.tagName;
+
+  if (tagName === "BR") {
+    target.appendChild(document.createElement("br"));
+    return;
+  }
+
+  const isSpan = tagName === "SPAN";
+  const isAllowedInline = RICH_TEXT_INLINE_TAGS.has(tagName);
+
+  if (isSpan || isAllowedInline) {
+    // The browser doesn't only ever wrap a fresh <span> for foreColor, and
+    // toggling bold/italic/underline off can add its own inline style to
+    // whatever element already wraps the selection — so formatting styles
+    // are checked on every allowed tag, not only SPAN.
+    const formattingStyle = sanitizeFormattingStyle(node.getAttribute("style"));
+
+    if (isSpan && !formattingStyle) {
+      // A <span> carrying none of our allowed styles is a no-op wrapper.
+      Array.from(node.childNodes).forEach((child) =>
+        appendSanitizedNode(child, target),
+      );
+      return;
+    }
+
+    const clone = document.createElement(isSpan ? "span" : tagName.toLowerCase());
+
+    if (formattingStyle) {
+      clone.setAttribute("style", formattingStyle);
+    }
+
+    Array.from(node.childNodes).forEach((child) =>
+      appendSanitizedNode(child, clone),
+    );
+    target.appendChild(clone);
+    return;
+  }
+
+  // Any other tag (script, img, a, div, style, event handlers, ...) is
+  // unwrapped: its text/children survive, the tag and its attributes don't.
+  Array.from(node.childNodes).forEach((child) =>
+    appendSanitizedNode(child, target),
+  );
+}
+
+function sanitizeRichHtml(html) {
+  const template = document.createElement("template");
+  template.innerHTML = String(html ?? "");
+
+  const wrapper = document.createElement("div");
+
+  Array.from(template.content.childNodes).forEach((child) =>
+    appendSanitizedNode(child, wrapper),
+  );
+
+  return wrapper.innerHTML;
+}
+
 function cleanPatientValue(value, { isEmail = false } = {}) {
   const cleaned = String(value || "").trim();
 
@@ -211,25 +355,31 @@ function normalizeAnswer(answer) {
   return cleanText(answer);
 }
 
-function extractReportText(data) {
+function extractReportText(data, { alreadyRich = false } = {}) {
   if (!data) {
     return "";
   }
 
-  if (typeof data === "string") {
-    return cleanText(data);
-  }
+  const raw =
+    typeof data === "string"
+      ? data
+      : data.report_text ||
+        data.report ||
+        data.markdown ||
+        data.content ||
+        data.ai_report ||
+        data.report_json?.markdown ||
+        data.report_json?.report_text ||
+        "";
 
-  return cleanText(
-    data.report_text ||
-      data.report ||
-      data.markdown ||
-      data.content ||
-      data.ai_report ||
-      data.report_json?.markdown ||
-      data.report_json?.report_text ||
-      "",
-  );
+  const cleaned = cleanText(raw);
+
+  // Text fresh from the backend is always plain (build_arztbrief never emits
+  // HTML), so it must be escaped before it's treated as editor HTML. Text
+  // that has already been through this editor and saved (report_status ===
+  // "edited") is already sanitized HTML and must NOT be re-escaped, or its
+  // own formatting tags would show up as literal text.
+  return alreadyRich ? cleaned : escapeHtml(cleaned);
 }
 
 function extractFlags(patientCase) {
@@ -314,13 +464,38 @@ function EditableReportTemplate({ text, language, onChange }) {
 
   const lines = text.split("\n");
 
-  function updateLine(index, nextContent, prefix = "") {
-    const cleanContent = cleanText(nextContent).replace(/\n+/g, " ").trim();
+  function updateLine(index, nextContentHtml, prefix = "") {
+    const sanitized = sanitizeRichHtml(cleanText(nextContentHtml))
+      .replace(/\n+/g, " ")
+      .trim();
 
     const nextLines = [...lines];
-    nextLines[index] = prefix ? `${prefix}${cleanContent}` : cleanContent;
+    nextLines[index] = prefix ? `${prefix}${sanitized}` : sanitized;
 
     onChange(nextLines.join("\n"));
+  }
+
+  function handleFieldKeyDown(event) {
+    // Each line is its own single-line contentEditable field — block Enter
+    // instead of letting the browser insert a nested block element, which
+    // the sanitizer would otherwise have to unwrap on the next blur.
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.currentTarget.blur();
+    }
+  }
+
+  function handleFieldPaste(event) {
+    event.preventDefault();
+
+    const clipboard = event.clipboardData;
+    const html = clipboard?.getData("text/html") || "";
+    const plain = clipboard?.getData("text/plain") || "";
+    const sanitizedHtml = html ? sanitizeRichHtml(html) : "";
+    const hasSanitizedText = sanitizedHtml.replace(/<[^>]*>/g, "").trim();
+    const safeHtml = hasSanitizedText ? sanitizedHtml : escapeHtml(plain);
+
+    document.execCommand("insertHTML", false, safeHtml);
   }
 
   return (
@@ -354,12 +529,13 @@ function EditableReportTemplate({ text, language, onChange }) {
               suppressContentEditableWarning
               spellCheck="true"
               key={index}
+              onKeyDown={handleFieldKeyDown}
+              onPaste={handleFieldPaste}
               onBlur={(event) =>
-                updateLine(index, event.currentTarget.innerText, "# ")
+                updateLine(index, event.currentTarget.innerHTML, "# ")
               }
-            >
-              {trimmedLine.replace("# ", "")}
-            </h1>
+              dangerouslySetInnerHTML={{ __html: trimmedLine.replace("# ", "") }}
+            />
           );
         }
 
@@ -371,12 +547,13 @@ function EditableReportTemplate({ text, language, onChange }) {
               suppressContentEditableWarning
               spellCheck="true"
               key={index}
+              onKeyDown={handleFieldKeyDown}
+              onPaste={handleFieldPaste}
               onBlur={(event) =>
-                updateLine(index, event.currentTarget.innerText, "## ")
+                updateLine(index, event.currentTarget.innerHTML, "## ")
               }
-            >
-              {trimmedLine.replace("## ", "")}
-            </h2>
+              dangerouslySetInnerHTML={{ __html: trimmedLine.replace("## ", "") }}
+            />
           );
         }
 
@@ -388,12 +565,13 @@ function EditableReportTemplate({ text, language, onChange }) {
               suppressContentEditableWarning
               spellCheck="true"
               key={index}
+              onKeyDown={handleFieldKeyDown}
+              onPaste={handleFieldPaste}
               onBlur={(event) =>
-                updateLine(index, event.currentTarget.innerText, "### ")
+                updateLine(index, event.currentTarget.innerHTML, "### ")
               }
-            >
-              {trimmedLine.replace("### ", "")}
-            </h3>
+              dangerouslySetInnerHTML={{ __html: trimmedLine.replace("### ", "") }}
+            />
           );
         }
 
@@ -407,12 +585,13 @@ function EditableReportTemplate({ text, language, onChange }) {
                 contentEditable
                 suppressContentEditableWarning
                 spellCheck="true"
+                onKeyDown={handleFieldKeyDown}
+                onPaste={handleFieldPaste}
                 onBlur={(event) =>
-                  updateLine(index, event.currentTarget.innerText, "- ")
+                  updateLine(index, event.currentTarget.innerHTML, "- ")
                 }
-              >
-                {trimmedLine.replace("- ", "")}
-              </p>
+                dangerouslySetInnerHTML={{ __html: trimmedLine.replace("- ", "") }}
+              />
             </div>
           );
         }
@@ -424,13 +603,151 @@ function EditableReportTemplate({ text, language, onChange }) {
             suppressContentEditableWarning
             spellCheck="true"
             key={index}
-            onBlur={(event) => updateLine(index, event.currentTarget.innerText)}
-          >
-            {trimmedLine}
-          </p>
+            onKeyDown={handleFieldKeyDown}
+            onPaste={handleFieldPaste}
+            onBlur={(event) =>
+              updateLine(index, event.currentTarget.innerHTML)
+            }
+            dangerouslySetInnerHTML={{ __html: trimmedLine }}
+          />
         );
       })}
     </article>
+  );
+}
+
+const LETTER_FORMAT_COLORS = [
+  { value: "#102033", label: "Standard" },
+  { value: "#b42318", label: "Rot" },
+  { value: "#b45309", label: "Orange" },
+  { value: "#0d7f8c", label: "Teal" },
+  { value: "#0a376d", label: "Marineblau" },
+];
+
+function isFormattableField(element) {
+  return Boolean(element?.classList?.contains("editable-report-field"));
+}
+
+function readActiveFormats() {
+  return {
+    bold: document.queryCommandState("bold"),
+    italic: document.queryCommandState("italic"),
+    underline: document.queryCommandState("underline"),
+  };
+}
+
+function LetterFormatToolbar({ disabled, language }) {
+  const [activeFormats, setActiveFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+  });
+
+  useEffect(() => {
+    function handleSelectionChange() {
+      if (!isFormattableField(document.activeElement)) {
+        return;
+      }
+
+      setActiveFormats(readActiveFormats());
+    }
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+    };
+  }, []);
+
+  function applyCommand(command, value = null) {
+    if (!isFormattableField(document.activeElement)) {
+      return;
+    }
+
+    // Only foreColor needs CSS-based output (a <span style="color:...">,
+    // matched by the sanitizer's SPAN handling). Leaving styleWithCSS on for
+    // bold/italic/underline makes browsers emit <span style="font-weight:
+    // bold"> etc. instead of <strong>/<em>/<u>, which the sanitizer doesn't
+    // recognize and would strip on save.
+    document.execCommand("styleWithCSS", false, command === "foreColor");
+    document.execCommand(command, false, value);
+
+    setActiveFormats(readActiveFormats());
+  }
+
+  return (
+    <div
+      className="doctor-letter-toolbar"
+      role="toolbar"
+      aria-label={localText(language, "Textformatierung", "Text formatting")}
+    >
+      <button
+        type="button"
+        className={`doctor-format-button${activeFormats.bold ? " active" : ""}`}
+        aria-pressed={activeFormats.bold}
+        disabled={disabled}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => applyCommand("bold")}
+        title={localText(language, "Fett", "Bold")}
+      >
+        <strong>F</strong>
+      </button>
+
+      <button
+        type="button"
+        className={`doctor-format-button${activeFormats.italic ? " active" : ""}`}
+        aria-pressed={activeFormats.italic}
+        disabled={disabled}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => applyCommand("italic")}
+        title={localText(language, "Kursiv", "Italic")}
+      >
+        <em>K</em>
+      </button>
+
+      <button
+        type="button"
+        className={`doctor-format-button${activeFormats.underline ? " active" : ""}`}
+        aria-pressed={activeFormats.underline}
+        disabled={disabled}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => applyCommand("underline")}
+        title={localText(language, "Unterstrichen", "Underline")}
+      >
+        <u>U</u>
+      </button>
+
+      <span className="doctor-format-divider" aria-hidden="true" />
+
+      <div className="doctor-format-colors">
+        {LETTER_FORMAT_COLORS.map((color) => (
+          <button
+            key={color.value}
+            type="button"
+            className="doctor-format-swatch"
+            style={{ backgroundColor: color.value }}
+            disabled={disabled}
+            title={color.label}
+            aria-label={color.label}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applyCommand("foreColor", color.value)}
+          />
+        ))}
+      </div>
+
+      <span className="doctor-format-divider" aria-hidden="true" />
+
+      <button
+        type="button"
+        className="doctor-format-button doctor-format-clear"
+        disabled={disabled}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => applyCommand("removeFormat")}
+        title={localText(language, "Formatierung entfernen", "Clear formatting")}
+      >
+        ⨯
+      </button>
+    </div>
   );
 }
 
@@ -460,7 +777,11 @@ export default function DoctorCasePage() {
         if (!mounted) return;
 
         setPatientCase(data);
-        setReportText(extractReportText(data));
+        setReportText(
+          extractReportText(data, {
+            alreadyRich: data?.report_status === "edited",
+          }),
+        );
       })
       .catch((loadError) => {
         if (!mounted) return;
@@ -506,7 +827,9 @@ export default function DoctorCasePage() {
 
     try {
       const result = await api.generateReport(caseId);
-      const nextReport = extractReportText(result);
+      // A fresh generation always comes back as plain text from the
+      // backend, even if the case had prior (now discarded) edits.
+      const nextReport = extractReportText(result, { alreadyRich: false });
 
       setReportText(nextReport);
 
@@ -804,6 +1127,8 @@ export default function DoctorCasePage() {
                   {localText(language, "Als PDF exportieren", "Export as PDF")}
                 </button>
               </div>
+
+              <LetterFormatToolbar disabled={!reportText} language={language} />
 
               <div className="doctor-letter-scroll">
                 <EditableReportTemplate
