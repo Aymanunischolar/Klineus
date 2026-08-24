@@ -14199,11 +14199,13 @@ a[href="/doctor/login"] {
   width: min(100%, 1600px);
 }
 
+/* Doctor case workspace: stacked review order (notes, then letter, then
+   answers) so the doctor reads top to bottom instead of cross-checking
+   side-by-side columns. */
+
 .doctor-workspace-grid {
-  display: grid;
-  grid-template-columns:
-    minmax(280px, 0.85fr) minmax(440px, 1.55fr) minmax(280px, 0.85fr);
-  align-items: start;
+  display: flex;
+  flex-direction: column;
   gap: 24px;
 }
 
@@ -14211,20 +14213,22 @@ a[href="/doctor/login"] {
 .doctor-letter-column,
 .doctor-notes-column {
   min-width: 0;
-  position: sticky;
-  top: 24px;
+  width: 100%;
+  position: static;
 }
 
 .doctor-answers-column .answer-group-enhanced,
 .doctor-notes-column .doctor-notes-panel-left {
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 48px);
-  overflow: hidden;
+  max-height: none;
+  overflow: visible;
 }
 
 .doctor-letter-column .doctor-ai-panel {
-  max-height: calc(100vh - 48px);
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
   border-color: #bcdce6;
   box-shadow: var(--shadow-md);
 }
@@ -14234,84 +14238,16 @@ a[href="/doctor/login"] {
   flex: 1;
   min-height: 0;
   margin-top: 16px;
-  overflow-y: auto;
-  padding-right: 6px;
-}
-
-.doctor-answers-scroll::-webkit-scrollbar,
-.doctor-notes-scroll::-webkit-scrollbar {
-  width: 10px;
-}
-
-.doctor-answers-scroll::-webkit-scrollbar-track,
-.doctor-notes-scroll::-webkit-scrollbar-track {
-  border-radius: 999px;
-  background: #edf5fa;
-}
-
-.doctor-answers-scroll::-webkit-scrollbar-thumb,
-.doctor-notes-scroll::-webkit-scrollbar-thumb {
-  border: 2px solid #edf5fa;
-  border-radius: 999px;
-  background: #b8d3e5;
 }
 
 .doctor-notes-column .doctor-notes-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   margin-top: 0;
-}
-
-@media (max-width: 1320px) {
-  .doctor-workspace-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(340px, 0.9fr);
-    grid-template-areas:
-      "letter letter"
-      "answers notes";
-  }
-
-  .doctor-letter-column {
-    grid-area: letter;
-  }
-
-  .doctor-answers-column {
-    grid-area: answers;
-  }
-
-  .doctor-notes-column {
-    grid-area: notes;
-  }
-
-  .doctor-answers-column,
-  .doctor-notes-column,
-  .doctor-letter-column {
-    position: static;
-  }
-
-  .doctor-answers-column .answer-group-enhanced,
-  .doctor-notes-column .doctor-notes-panel-left,
-  .doctor-letter-column .doctor-ai-panel {
-    max-height: 480px;
-  }
 }
 
 @media (max-width: 860px) {
   .doctor-workspace-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "letter"
-      "notes"
-      "answers";
     gap: 18px;
-  }
-
-  .doctor-answers-column .answer-group-enhanced,
-  .doctor-notes-column .doctor-notes-panel-left,
-  .doctor-letter-column .doctor-ai-panel {
-    max-height: none;
-  }
-
-  .doctor-ai-panel {
-    min-height: 0;
   }
 
   .doctor-notes-grid .flag-card {
