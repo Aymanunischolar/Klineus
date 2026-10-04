@@ -12,6 +12,7 @@ export default function AppShell({
   children,
   compact = false,
   hideNav = false,
+  wide = false,
 }) {
   const { language, t } = useLanguage();
   const menuRef = useRef(null);
@@ -47,12 +48,17 @@ export default function AppShell({
     "app-shell",
     compact ? "app-shell-compact" : "",
     hideNav ? "app-shell-hidden-nav" : "",
+    wide ? "app-shell-wide" : "",
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
     <div className={shellClassName}>
+      <a className="skip-link" href="#main-content">
+        {localText(language, "Zum Inhalt springen", "Skip to content")}
+      </a>
+
       {!hideNav ? (
         <header className="topbar">
           <Link className="brand" to="/home" aria-label="Klineus home">
@@ -128,7 +134,9 @@ export default function AppShell({
         </header>
       ) : null}
 
-      <main className="main-content">{children}</main>
+      <main className="main-content" id="main-content" tabIndex={-1}>
+        {children}
+      </main>
 
       {!compact && !hideNav ? (
 <footer className="site-footer">

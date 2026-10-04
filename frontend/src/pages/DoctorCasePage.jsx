@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
 import LanguageToggle from "../components/LanguageToggle.jsx";
+import TrafficLight from "../components/TrafficLight.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
 import { normalizeGermanText } from "../utils/germanText.js";
@@ -196,6 +197,21 @@ function formatDate(value, language) {
   } catch {
     return value;
   }
+}
+
+function caseStatusLabel(status, language) {
+  const labels = {
+    completed: ["Ausgefüllt", "Completed"],
+    in_progress: ["In Bearbeitung", "In progress"],
+    invited: ["Eingeladen", "Invited"],
+    abandoned: ["Abgebrochen", "Abandoned"],
+    review_done: ["Geprüft", "Reviewed"],
+    closed: ["Geschlossen", "Closed"],
+  };
+
+  return labels[status]
+    ? localText(language, labels[status][0], labels[status][1])
+    : cleanText(status) || "-";
 }
 
 function indicationLabel(indication) {
@@ -617,11 +633,11 @@ function EditableReportTemplate({ text, language, onChange }) {
 }
 
 const LETTER_FORMAT_COLORS = [
-  { value: "#102033", label: "Standard" },
-  { value: "#b42318", label: "Rot" },
-  { value: "#b45309", label: "Orange" },
-  { value: "#0d7f8c", label: "Teal" },
-  { value: "#0a376d", label: "Marineblau" },
+  { value: "#102033", de: "Standard", en: "Default" },
+  { value: "#b42318", de: "Rot", en: "Red" },
+  { value: "#b45309", de: "Orange", en: "Orange" },
+  { value: "#0d7f8c", de: "Türkis", en: "Turquoise" },
+  { value: "#0a376d", de: "Dunkelblau", en: "Dark blue" },
 ];
 
 function isFormattableField(element) {
@@ -727,8 +743,8 @@ function LetterFormatToolbar({ disabled, language }) {
             className="doctor-format-swatch"
             style={{ backgroundColor: color.value }}
             disabled={disabled}
-            title={color.label}
-            aria-label={color.label}
+            title={localText(language, color.de, color.en)}
+            aria-label={localText(language, color.de, color.en)}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => applyCommand("foreColor", color.value)}
           />
@@ -956,8 +972,15 @@ export default function DoctorCasePage() {
             </p>
 
             <h1>
-              {localText(language, "Auswertung", "Evaluation")}{" "}
-              {caseId ? caseId.slice(0, 8) : ""}
+              {patientDisplayName(patientCase) !== "-"
+                ? patientDisplayName(patientCase)
+                : localText(language, "Auswertung", "Evaluation")}
+              {caseId ? (
+                <small className="case-title-id">
+                  {" "}
+                  #{caseId.slice(0, 8)}
+                </small>
+              ) : null}
             </h1>
 
             <p className="case-subtitle">
@@ -971,14 +994,19 @@ export default function DoctorCasePage() {
         </section>
 
         {trafficLight ? (
-          <section className={trafficLightClass(trafficLight)}>
-            <div>
+          <section
+            className={trafficLightClass(trafficLight)}
+            role="status"
+          >
+            <div className="traffic-light-banner-head">
               <p className="eyebrow">
                 {localText(language, "Einschätzung", "Assessment")}
               </p>
 
-              <h2>{cleanText(trafficLight.label)}</h2>
+              <TrafficLight level={trafficLight.level} />
             </div>
+
+            <h2>{cleanText(trafficLight.label)}</h2>
 
             <p>{cleanText(trafficLight.description)}</p>
           </section>
@@ -988,11 +1016,6 @@ export default function DoctorCasePage() {
           <article className="case-summary-card">
             <span>{localText(language, "Patient", "Patient")}</span>
             <strong>{patientDisplayName(patientCase)}</strong>
-          </article>
-
-          <article className="case-summary-card">
-            <span>{localText(language, "Fall-ID", "Case ID")}</span>
-            <strong className="mono">{patientCase?.case_id || caseId}</strong>
           </article>
 
           <article className="case-summary-card">
@@ -1007,7 +1030,7 @@ export default function DoctorCasePage() {
 
           <article className="case-summary-card">
             <span>{localText(language, "Status", "Status")}</span>
-            <strong>{cleanText(patientCase?.status) || "-"}</strong>
+            <strong>{caseStatusLabel(patientCase?.status, language)}</strong>
           </article>
 
           <article className="case-summary-card">
@@ -1025,7 +1048,7 @@ export default function DoctorCasePage() {
               <div className="doctor-section-heading">
                 <div>
                   <p className="eyebrow">
-                    {localText(language, "Offene Punkte", "Open points")}
+                    {localText(language, "Risikohinweise", "Risk notices")}
                   </p>
 
                   <h2>

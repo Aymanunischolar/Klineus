@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
+import TrafficLight, {
+  trafficLevel,
+  trafficRank,
+} from "../components/TrafficLight.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
 
@@ -38,8 +42,11 @@ function formatDateTime(value, language) {
 
   try {
     return new Intl.DateTimeFormat(language === "en" ? "en-US" : "de-DE", {
-      dateStyle: "short",
-      timeStyle: "short",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(new Date(value));
   } catch {
     return "—";
@@ -57,7 +64,7 @@ function formatDateInput(value) {
 }
 
 function indicationLabel(indication) {
-  if (indication === "hip_tep") return "Hüfte-TEP";
+  if (indication === "hip_tep") return "Hüft-TEP";
   if (indication === "knee_tep") return "Knie-TEP";
   return indication || "—";
 }
@@ -152,6 +159,8 @@ export default function DoctorDashboardPage() {
   const [activeTab, setActiveTab] = useState("completed");
   const [pendingSessions, setPendingSessions] = useState([]);
   const [completedCases, setCompletedCases] = useState([]);
+  const [trafficByCase, setTrafficByCase] = useState({});
+  const [showFilters, setShowFilters] = useState(false);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -205,8 +214,44 @@ export default function DoctorDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 
+  // The worklist does not carry the assessment, so it is read from the case
+  // detail (three at a time) and cached per case.
+  useEffect(() => {
+    let cancelled = false;
+    const queue = completedCases
+      .filter((item) => item.case_id && !trafficLevel(item.traffic_light))
+      .map((item) => item.case_id);
+
+    async function worker() {
+      while (queue.length && !cancelled) {
+        const caseId = queue.shift();
+        let level = "";
+
+        try {
+          const detail = await api.getCase(caseId);
+          level = trafficLevel(detail?.traffic_light);
+        } catch {
+          level = "";
+        }
+
+        if (!cancelled) {
+          setTrafficByCase((current) => ({ ...current, [caseId]: level }));
+        }
+      }
+    }
+
+    Promise.all([worker(), worker(), worker()]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [completedCases]);
+
+  function caseTrafficLevel(item) {
+    return trafficLevel(item.traffic_light) || trafficByCase[item.case_id] || "";
+  }
+
   const dashboardStats = useMemo(() => {
-    const total = pendingSessions.length + completedCases.length;
     const reportsGenerated = completedCases.filter(
       (item) => item.report_status === "generated" || item.report_status === "edited",
     ).length;
@@ -215,7 +260,6 @@ export default function DoctorDashboardPage() {
     ).length;
 
     return {
-      total,
       pending: pendingSessions.length,
       completed: completedCases.length,
       reportsGenerated,
@@ -264,8 +308,20 @@ export default function DoctorDashboardPage() {
     });
   }, [completedCases, filters]);
 
+  // Red first, then amber, green, unknown; newest first within a level.
+  const sortedCompletedCases = useMemo(
+    () =>
+      [...filteredCompletedCases].sort(
+        (a, b) =>
+          trafficRank(caseTrafficLevel(a)) - trafficRank(caseTrafficLevel(b)) ||
+          new Date(b.created_at || 0) - new Date(a.created_at || 0),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredCompletedCases, trafficByCase],
+  );
+
   const visibleRows =
-    activeTab === "pending" ? filteredPendingSessions : filteredCompletedCases;
+    activeTab === "pending" ? filteredPendingSessions : sortedCompletedCases;
 
   function updateFilter(field, value) {
     setFilters((current) => ({
@@ -289,10 +345,13 @@ export default function DoctorDashboardPage() {
     navigate("/doctor/login");
   }
 
+  const statValue = (value) =>
+    isLoading ? <span className="skeleton-bar" aria-hidden="true" /> : value;
+
   return (
-    <AppShell compact hideNav>
-      <main className="doctor-dashboard-pro">
-        <section className="doctor-hero">
+    <AppShell compact hideNav wide>
+      <main className="doctor-dashboard-pro doctor-dashboard-wide">
+        <section className="doctor-hero doctor-hero-compact">
           <div>
             <p className="doctor-kicker">
               {t("dashboardEyebrow") ||
@@ -303,14 +362,6 @@ export default function DoctorDashboardPage() {
               {t("patientCases") ||
                 localText(language, "Patientenfälle", "Patient cases")}
             </h1>
-
-            <p>
-              {localText(
-                language,
-                "Suchen, filtern und öffnen Sie eingereichte Patientenfälle und laufende Fragebögen.",
-                "Search, filter, and open submitted patient cases and active questionnaires.",
-              )}
-            </p>
           </div>
 
           <div className="doctor-hero-actions">
@@ -324,44 +375,12 @@ export default function DoctorDashboardPage() {
             </button>
 
             <button className="doctor-secondary-btn" type="button" onClick={logout}>
-              {t("logout") || localText(language, "Abmelden", "Logout")}
+              {t("logout") || localText(language, "Abmelden", "Sign out")}
             </button>
           </div>
         </section>
 
         {error ? <div className="doctor-alert error">{error}</div> : null}
-
-        <section className="doctor-stats-grid">
-          <article>
-            <span>{localText(language, "Gesamt", "Total")}</span>
-            <strong>{dashboardStats.total}</strong>
-            <p>{localText(language, "Patientenfälle", "Patient cases")}</p>
-          </article>
-
-          <article>
-            <span>{localText(language, "Ausstehend", "Pending")}</span>
-            <strong>{dashboardStats.pending}</strong>
-            <p>{localText(language, "Gestartete Fragebögen", "Started questionnaires")}</p>
-          </article>
-
-          <article>
-            <span>{localText(language, "Ausgefüllt", "Completed")}</span>
-            <strong>{dashboardStats.completed}</strong>
-            <p>{localText(language, "Übermittelte Fälle", "Submitted cases")}</p>
-          </article>
-
-          <article>
-            <span>{localText(language, "Berichte", "Reports")}</span>
-            <strong>{dashboardStats.reportsGenerated}</strong>
-            <p>{localText(language, "Erstellt oder bearbeitet", "Generated or edited")}</p>
-          </article>
-
-          <article>
-            <span>{localText(language, "Bearbeitet", "Edited")}</span>
-            <strong>{dashboardStats.reportsEdited}</strong>
-            <p>{localText(language, "Manuell geprüft", "Manually reviewed")}</p>
-          </article>
-        </section>
 
         <section className="doctor-toolbar">
           <div className="doctor-tabs">
@@ -387,23 +406,77 @@ export default function DoctorDashboardPage() {
               type="search"
               value={filters.search}
               onChange={(event) => updateFilter("search", event.target.value)}
+              aria-label={localText(language, "Patient suchen", "Search patient")}
               placeholder={localText(
                 language,
                 "Patient suchen: Name, E-Mail, VSNR oder Fall-ID",
                 "Search patient: name, email, insurance ID or case ID",
               )}
             />
+
+            <button
+              type="button"
+              className="doctor-secondary-btn"
+              aria-expanded={showFilters}
+              onClick={() => setShowFilters((current) => !current)}
+            >
+              {localText(language, "Filter", "Filters")} {showFilters ? "▴" : "▾"}
+            </button>
           </div>
         </section>
 
-        <section className="doctor-card">
-          <div className="doctor-card-header">
-            <div>
-              <span>{localText(language, "Suche & Filter", "Search & filter")}</span>
-              <h2>{localText(language, "Fälle finden", "Find cases")}</h2>
-            </div>
+        {showFilters ? (
+          <section className="doctor-card doctor-filter-card">
+            <div className="doctor-filter-grid">
+              <label>
+                {localText(language, "Indikation", "Indication")}
+                <select
+                  value={filters.indication}
+                  onChange={(event) => updateFilter("indication", event.target.value)}
+                >
+                  <option value="">{localText(language, "Alle", "All")}</option>
+                  <option value="knee_tep">Knie-TEP</option>
+                  <option value="hip_tep">Hüft-TEP</option>
+                </select>
+              </label>
 
-            <div className="doctor-card-actions">
+              <label>
+                {localText(language, "Status", "Status")}
+                <select
+                  value={filters.status}
+                  onChange={(event) => updateFilter("status", event.target.value)}
+                >
+                  <option value="">{localText(language, "Alle", "All")}</option>
+                  <option value="completed">{localText(language, "Ausgefüllt", "Completed")}</option>
+                  <option value="in_progress">{localText(language, "In Bearbeitung", "In progress")}</option>
+                  <option value="review_done">{localText(language, "Geprüft", "Reviewed")}</option>
+                  <option value="closed">{localText(language, "Geschlossen", "Closed")}</option>
+                </select>
+              </label>
+
+              <label>
+                {localText(language, "Bericht", "Report")}
+                <select
+                  value={filters.report_status}
+                  onChange={(event) => updateFilter("report_status", event.target.value)}
+                  disabled={activeTab === "pending"}
+                >
+                  <option value="">{localText(language, "Alle", "All")}</option>
+                  <option value="not_generated">{localText(language, "Nicht erstellt", "Not generated")}</option>
+                  <option value="generated">{localText(language, "Erstellt", "Generated")}</option>
+                  <option value="edited">{localText(language, "Bearbeitet", "Edited")}</option>
+                </select>
+              </label>
+
+              <label>
+                {localText(language, "Datum", "Date")}
+                <input
+                  type="date"
+                  value={filters.date}
+                  onChange={(event) => updateFilter("date", event.target.value)}
+                />
+              </label>
+
               <button
                 type="button"
                 className="doctor-secondary-btn"
@@ -411,79 +484,9 @@ export default function DoctorDashboardPage() {
               >
                 {localText(language, "Zurücksetzen", "Reset")}
               </button>
-
-              <button
-                type="button"
-                className="doctor-primary-btn"
-                onClick={loadWorklist}
-                disabled={isLoading}
-              >
-                {localText(language, "Aktualisieren", "Refresh")}
-              </button>
             </div>
-          </div>
-
-          <div className="doctor-filter-grid">
-            <label>
-              {localText(language, "Name, E-Mail, VSNR oder Fall-ID", "Name, email, insurance ID or case ID")}
-              <input
-                type="search"
-                value={filters.search}
-                onChange={(event) => updateFilter("search", event.target.value)}
-                placeholder={localText(language, "Suchen...", "Search...")}
-              />
-            </label>
-
-            <label>
-              {localText(language, "Indikation", "Indication")}
-              <select
-                value={filters.indication}
-                onChange={(event) => updateFilter("indication", event.target.value)}
-              >
-                <option value="">{localText(language, "Alle", "All")}</option>
-                <option value="knee_tep">Knie-TEP</option>
-                <option value="hip_tep">Hüfte-TEP</option>
-              </select>
-            </label>
-
-            <label>
-              {localText(language, "Status", "Status")}
-              <select
-                value={filters.status}
-                onChange={(event) => updateFilter("status", event.target.value)}
-              >
-                <option value="">{localText(language, "Alle", "All")}</option>
-                <option value="completed">{localText(language, "Ausgefüllt", "Completed")}</option>
-                <option value="in_progress">{localText(language, "In Bearbeitung", "In progress")}</option>
-                <option value="review_done">{localText(language, "Geprüft", "Reviewed")}</option>
-                <option value="closed">{localText(language, "Geschlossen", "Closed")}</option>
-              </select>
-            </label>
-
-            <label>
-              {localText(language, "Bericht", "Report")}
-              <select
-                value={filters.report_status}
-                onChange={(event) => updateFilter("report_status", event.target.value)}
-                disabled={activeTab === "pending"}
-              >
-                <option value="">{localText(language, "Alle", "All")}</option>
-                <option value="not_generated">{localText(language, "Nicht erstellt", "Not generated")}</option>
-                <option value="generated">{localText(language, "Erstellt", "Generated")}</option>
-                <option value="edited">{localText(language, "Bearbeitet", "Edited")}</option>
-              </select>
-            </label>
-
-            <label>
-              {localText(language, "Datum", "Date")}
-              <input
-                type="date"
-                value={filters.date}
-                onChange={(event) => updateFilter("date", event.target.value)}
-              />
-            </label>
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         <section className="doctor-card">
           <div className="doctor-card-header">
@@ -552,7 +555,10 @@ export default function DoctorDashboardPage() {
                         </span>
                       </td>
 
-                      <td>{session.answer_count || 0}</td>
+                      <td>
+                        {session.answer_count || 0}{" "}
+                        {localText(language, "beantwortet", "answered")}
+                      </td>
 
                       <td>{formatDateTime(session.updated_at, language)}</td>
                     </tr>
@@ -567,8 +573,8 @@ export default function DoctorDashboardPage() {
               <table className="doctor-table">
                 <thead>
                   <tr>
+                    <th>{localText(language, "Einschätzung", "Assessment")}</th>
                     <th>{localText(language, "Patient", "Patient")}</th>
-                    <th>{localText(language, "Fall-ID", "Case ID")}</th>
                     <th>{localText(language, "Erstellt", "Created")}</th>
                     <th>{localText(language, "Indikation", "Indication")}</th>
                     <th>{localText(language, "Status", "Status")}</th>
@@ -581,6 +587,16 @@ export default function DoctorDashboardPage() {
                   {visibleRows.map((patientCase) => (
                     <tr key={patientCase.case_id}>
                       <td>
+                        {caseTrafficLevel(patientCase) ? (
+                          <TrafficLight level={caseTrafficLevel(patientCase)} />
+                        ) : trafficByCase[patientCase.case_id] === undefined ? (
+                          <span className="skeleton-bar" aria-hidden="true" />
+                        ) : (
+                          <span className="doctor-muted">—</span>
+                        )}
+                      </td>
+
+                      <td>
                         <div className="doctor-patient-cell">
                           <strong>{patientDisplayName(patientCase)}</strong>
                           <span>
@@ -588,10 +604,6 @@ export default function DoctorDashboardPage() {
                           </span>
                           <small>VSNR: {cleanPatientValue(patientCase.insurance_id) || "—"}</small>
                         </div>
-                      </td>
-
-                      <td className="mono">
-                        {patientCase.case_id ? patientCase.case_id.slice(0, 8) : "—"}
                       </td>
 
                       <td>{formatDateTime(patientCase.created_at, language)}</td>
@@ -626,6 +638,32 @@ export default function DoctorDashboardPage() {
               </table>
             </div>
           ) : null}
+        </section>
+
+        <section className="doctor-stats-grid doctor-stats-compact">
+          <article>
+            <span>{localText(language, "Ausstehend", "Pending")}</span>
+            <strong>{statValue(dashboardStats.pending)}</strong>
+            <p>{localText(language, "Gestartete Fragebögen", "Started questionnaires")}</p>
+          </article>
+
+          <article>
+            <span>{localText(language, "Ausgefüllt", "Completed")}</span>
+            <strong>{statValue(dashboardStats.completed)}</strong>
+            <p>{localText(language, "Übermittelte Fälle", "Submitted cases")}</p>
+          </article>
+
+          <article>
+            <span>{localText(language, "Berichte", "Reports")}</span>
+            <strong>{statValue(dashboardStats.reportsGenerated)}</strong>
+            <p>{localText(language, "Erstellt oder bearbeitet", "Generated or edited")}</p>
+          </article>
+
+          <article>
+            <span>{localText(language, "Bearbeitet", "Edited")}</span>
+            <strong>{statValue(dashboardStats.reportsEdited)}</strong>
+            <p>{localText(language, "Manuell geprüft", "Manually reviewed")}</p>
+          </article>
         </section>
       </main>
     </AppShell>
