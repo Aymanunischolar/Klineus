@@ -21,7 +21,7 @@ const EMPTY_DOCTOR_FORM = {
 };
 
 function formatIndication(value) {
-  if (value === "hip_tep") return "Hüfte-TEP";
+  if (value === "hip_tep") return "Hüft-TEP";
   return "Knie-TEP";
 }
 
@@ -38,6 +38,29 @@ function formatStatus(value) {
   return labels[status] || status;
 }
 
+function formatCaseStatus(value) {
+  const labels = {
+    completed: "Ausgefüllt",
+    in_progress: "In Bearbeitung",
+    review_done: "Geprüft",
+    closed: "Geschlossen",
+  };
+
+  return labels[value] || formatStatus(value);
+}
+
+function formatReportStatus(value) {
+  const labels = {
+    not_generated: "Nicht erstellt",
+    generated: "Erstellt",
+    edited: "Bearbeitet",
+  };
+
+  return labels[value || "not_generated"] || value;
+}
+
+const STATUS_ORDER = ["invited", "opened", "in_progress", "completed"];
+
 function getStatusClass(value) {
   const status = value || "invited";
 
@@ -51,8 +74,11 @@ function formatDateTime(value) {
 
   try {
     return new Intl.DateTimeFormat("de-DE", {
-      dateStyle: "short",
-      timeStyle: "short",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(new Date(value));
   } catch {
     return value;
@@ -109,6 +135,7 @@ export default function ReceptionDashboardPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [createdInvite, setCreatedInvite] = useState(null);
   const [createdDoctor, setCreatedDoctor] = useState(null);
+  const [sort, setSort] = useState({ key: "appointment", direction: "asc" });
 
   const hasReceptionToken = useMemo(() => {
     return Boolean(window.localStorage.getItem("klineus_reception_token"));
@@ -156,6 +183,43 @@ export default function ReceptionDashboardPage() {
       completed,
     };
   }, [invites]);
+
+  useEffect(() => {
+    if (!successMessage) return undefined;
+
+    const timer = window.setTimeout(() => setSuccessMessage(""), 6000);
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
+
+  const sortedInvites = useMemo(() => {
+    const factor = sort.direction === "asc" ? 1 : -1;
+    const sortValue = (invite) =>
+      sort.key === "status"
+        ? STATUS_ORDER.indexOf(invite.invite_status || "invited")
+        : invite.appointment_date
+          ? new Date(invite.appointment_date).getTime()
+          : Number.MAX_SAFE_INTEGER;
+
+    return [...invites].sort((a, b) => (sortValue(a) - sortValue(b)) * factor);
+  }, [invites, sort]);
+
+  function toggleSort(key) {
+    setSort((current) =>
+      current.key === key
+        ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" },
+    );
+  }
+
+  function sortIndicator(key) {
+    if (sort.key !== key) return "";
+    return sort.direction === "asc" ? " ▲" : " ▼";
+  }
+
+  function ariaSort(key) {
+    if (sort.key !== key) return "none";
+    return sort.direction === "asc" ? "ascending" : "descending";
+  }
 
   const doctorStats = useMemo(() => {
     const total = doctorUsers.length;
@@ -244,7 +308,6 @@ export default function ReceptionDashboardPage() {
       );
 
       setInviteForm(EMPTY_INVITE_FORM);
-      setActiveTab("patients");
       await loadInvites();
     } catch (submitError) {
       setError(submitError?.message || "Einladung konnte nicht erstellt werden.");
@@ -423,8 +486,8 @@ export default function ReceptionDashboardPage() {
   }
 
   return (
-    <AppShell compact hideNav>
-      <main className="reception-dashboard">
+    <AppShell compact hideNav wide>
+      <main className="reception-dashboard reception-dashboard-wide">
         <section className="reception-hero">
           <div>
             <p className="reception-kicker">Dashboard</p>
@@ -439,7 +502,7 @@ export default function ReceptionDashboardPage() {
 
 
             <button type="button" className="reception-secondary-btn" onClick={logout}>
-              Logout
+              Abmelden
             </button>
           </div>
         </section>
@@ -485,7 +548,9 @@ export default function ReceptionDashboardPage() {
 
         {error ? <div className="reception-alert error">{error}</div> : null}
         {successMessage ? (
-          <div className="reception-alert success">{successMessage}</div>
+          <div className="reception-alert success reception-toast" role="status">
+            {successMessage}
+          </div>
         ) : null}
 
         <section className="reception-stats">
@@ -524,9 +589,13 @@ export default function ReceptionDashboardPage() {
                 </div>
               </div>
 
+              <p className="reception-required-note">
+                Mit * markierte Felder sind Pflichtfelder.
+              </p>
+
               <div className="reception-form-grid">
                 <label>
-                  Vorname / Name
+                  Vorname *
                   <input
                     type="text"
                     value={inviteForm.patient_name}
@@ -539,18 +608,19 @@ export default function ReceptionDashboardPage() {
                 </label>
 
                 <label>
-                  Nachname
+                  Nachname *
                   <input
                     type="text"
                     value={inviteForm.patient_last_name}
                     onChange={(event) =>
                       updateInviteForm("patient_last_name", event.target.value)
                     }
+                    required
                     placeholder="z. B. Mustermann"
                   />
                 </label>
 
-                <label>
+                <label className="reception-field-narrow">
                   Alter
                   <input
                     type="number"
@@ -565,7 +635,7 @@ export default function ReceptionDashboardPage() {
                 </label>
 
                 <label>
-                  Versicherungsnummer
+                  Versicherungsnummer *
                   <input
                     type="text"
                     value={inviteForm.insurance_id}
@@ -578,7 +648,7 @@ export default function ReceptionDashboardPage() {
                 </label>
 
                 <label>
-                  E-Mail Patient
+                  E-Mail Patient *
                   <input
                     type="email"
                     value={inviteForm.patient_email}
@@ -591,7 +661,7 @@ export default function ReceptionDashboardPage() {
                 </label>
 
                 <label>
-                  Termin-Datum
+                  Termin-Datum *
                   <input
                     type="date"
                     value={inviteForm.appointment_date}
@@ -603,7 +673,7 @@ export default function ReceptionDashboardPage() {
                 </label>
 
                 <label>
-                  Fragebogen / Indikation
+                  Fragebogen / Indikation *
                   <select
                     value={inviteForm.indication}
                     onChange={(event) =>
@@ -612,7 +682,7 @@ export default function ReceptionDashboardPage() {
                     required
                   >
                     <option value="knee_tep">Knie-TEP</option>
-                    <option value="hip_tep">Hüfte-TEP</option>
+                    <option value="hip_tep">Hüft-TEP</option>
                   </select>
                 </label>
               </div>
@@ -1048,8 +1118,24 @@ export default function ReceptionDashboardPage() {
                       <tr>
                         <th>Patient</th>
                         <th>Indikation</th>
-                        <th>Termin</th>
-                        <th>Status</th>
+                        <th aria-sort={ariaSort("appointment")}>
+                          <button
+                            type="button"
+                            className="reception-sort-btn"
+                            onClick={() => toggleSort("appointment")}
+                          >
+                            Termin{sortIndicator("appointment")}
+                          </button>
+                        </th>
+                        <th aria-sort={ariaSort("status")}>
+                          <button
+                            type="button"
+                            className="reception-sort-btn"
+                            onClick={() => toggleSort("status")}
+                          >
+                            Status{sortIndicator("status")}
+                          </button>
+                        </th>
                         <th>Bericht</th>
                         <th>Gesendet</th>
                         <th>Aktionen</th>
@@ -1057,7 +1143,7 @@ export default function ReceptionDashboardPage() {
                     </thead>
 
                     <tbody>
-                      {invites.map((invite) => (
+                      {sortedInvites.map((invite) => (
                         <tr key={invite.session_id}>
                           <td>
                             <div className="patient-cell">
@@ -1088,8 +1174,8 @@ export default function ReceptionDashboardPage() {
                           <td>
                             {invite.case_id ? (
                               <div className="report-cell">
-                                <span>{invite.case_status || "completed"}</span>
-                                <small>{invite.report_status || "not_generated"}</small>
+                                <span>{formatCaseStatus(invite.case_status || "completed")}</span>
+                                <small>{formatReportStatus(invite.report_status)}</small>
                               </div>
                             ) : (
                               <span className="reception-muted">Noch kein Fall</span>
