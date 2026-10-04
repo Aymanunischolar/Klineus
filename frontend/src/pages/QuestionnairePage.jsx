@@ -231,7 +231,7 @@ export default function QuestionnairePage() {
   const isLastQuestion = currentIndex === visibleQuestions.length - 1;
 
   const progress = visibleQuestions.length
-    ? Math.round(((currentIndex + 1) / visibleQuestions.length) * 100)
+    ? Math.round((currentIndex / visibleQuestions.length) * 100)
     : 0;
 
   const currentCategory =
@@ -527,8 +527,6 @@ export default function QuestionnairePage() {
           </div>
         </div>
         <div className="questionnaire-question-shell">
-          <p className="question-id">{currentQuestion.id}</p>
-
           <h1>{getQuestionText(currentQuestion, language)}</h1>
 
           {currentQuestion.helpText?.[language] ||
@@ -570,7 +568,7 @@ export default function QuestionnairePage() {
 
           <button
             className="primary-button"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isAnswerComplete(currentQuestion, value)}
             type="button"
             onClick={handleForward}
           >

@@ -55,7 +55,7 @@ export default function QuestionInput({
 }) {
   if (question.type === "single") {
     return (
-      <div className="choice-grid">
+      <div className="choice-grid" role="radiogroup">
         {question.options.map((option) => {
           const optionValue = getOptionValue(option);
 
@@ -66,8 +66,14 @@ export default function QuestionInput({
               }
               key={optionValue}
               type="button"
+              role="radio"
+              aria-checked={value === optionValue}
               onClick={() => onChange(optionValue)}
             >
+              <span
+                className="choice-indicator choice-indicator-radio"
+                aria-hidden="true"
+              />
               {getOptionLabel(option, language)}
             </button>
           );
@@ -93,7 +99,7 @@ export default function QuestionInput({
     const detailsLabel = getDetailsLabel(question, language);
 
     return (
-      <div className="choice-grid">
+      <div className="choice-grid" role="radiogroup">
         {question.options.map((option) => {
           const optionValue = getOptionValue(option);
 
@@ -106,8 +112,14 @@ export default function QuestionInput({
               }
               key={optionValue}
               type="button"
+              role="radio"
+              aria-checked={activeValue === optionValue}
               onClick={() => onChange({ value: optionValue, detail: "" })}
             >
+              <span
+                className="choice-indicator choice-indicator-radio"
+                aria-hidden="true"
+              />
               {getOptionLabel(option, language)}
             </button>
           );
@@ -152,7 +164,7 @@ export default function QuestionInput({
     const needsStoppedSince = isStoppedSmokingValue(activeValue);
 
     return (
-      <div className="choice-grid">
+      <div className="choice-grid" role="radiogroup">
         {question.options.map((option) => {
           const optionValue = getOptionValue(option);
 
@@ -165,6 +177,8 @@ export default function QuestionInput({
               }
               key={optionValue}
               type="button"
+              role="radio"
+              aria-checked={activeValue === optionValue}
               onClick={() =>
                 onChange({
                   value: optionValue,
@@ -174,6 +188,10 @@ export default function QuestionInput({
                 })
               }
             >
+              <span
+                className="choice-indicator choice-indicator-radio"
+                aria-hidden="true"
+              />
               {getOptionLabel(option, language)}
             </button>
           );
@@ -260,7 +278,15 @@ export default function QuestionInput({
     const selected = Array.isArray(value) ? value : [];
 
     return (
-      <div className="choice-grid">
+      <div className="choice-grid" role="group">
+        <p className="choice-hint">
+          {localText(
+            language,
+            "Sie können mehrere Antworten auswählen.",
+            "You can select more than one answer.",
+          )}
+        </p>
+
         {question.options.map((option) => {
           const optionValue = getOptionValue(option);
           const isSelected = selected.includes(optionValue);
@@ -270,6 +296,8 @@ export default function QuestionInput({
               className={isSelected ? "choice-button selected" : "choice-button"}
               key={optionValue}
               type="button"
+              role="checkbox"
+              aria-checked={isSelected}
               onClick={() => {
                 if (isSelected) {
                   onChange(selected.filter((item) => item !== optionValue));
@@ -278,6 +306,10 @@ export default function QuestionInput({
                 }
               }}
             >
+              <span
+                className="choice-indicator choice-indicator-checkbox"
+                aria-hidden="true"
+              />
               {getOptionLabel(option, language)}
             </button>
           );
@@ -368,6 +400,11 @@ export default function QuestionInput({
     <textarea
       aria-label={getQuestionText(question, language)}
       className="free-text-input"
+      placeholder={localText(
+        language,
+        "z. B. frühere Operationen, Allergien, Medikamente",
+        "e.g. previous operations, allergies, medication",
+      )}
       rows="6"
       value={value || ""}
       onChange={(event) => onChange(event.target.value)}

@@ -9,6 +9,7 @@ const copy = {
     title: "Vielen Dank. Ihre Angaben wurden übermittelt.",
     lead:
       "Ihre Antworten wurden gespeichert und stehen der Ärztin oder dem Arzt zur Prüfung zur Verfügung.",
+    nextSteps: "Sie müssen nichts weiter tun. Bitte kommen Sie wie vereinbart zu Ihrem Termin.",
     backHome: "Zur Startseite",
   },
   en: {
@@ -16,6 +17,7 @@ const copy = {
     title: "Thank you. Your answers have been submitted.",
     lead:
       "Your answers have been saved and are available for the doctor to review.",
+    nextSteps: "You do not need to do anything else. Please attend your appointment as planned.",
     backHome: "Go to homepage",
   },
 };
@@ -32,6 +34,10 @@ export default function PatientDonePage() {
         <h1>{text.title}</h1>
 
         <p>{text.lead}</p>
+
+        <p className="patient-done-next">
+          <strong>{text.nextSteps}</strong>
+        </p>
 
         <div className="patient-start-actions">
           <Link className="secondary-button full-width" to="/home">

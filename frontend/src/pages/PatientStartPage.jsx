@@ -39,6 +39,7 @@ export default function PatientStartPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [isStarting, setIsStarting] = useState(false);
+  const [startingIndication, setStartingIndication] = useState("");
 
   const questionnaireChoices = useMemo(() => {
     const choices = [
@@ -262,7 +263,10 @@ export default function PatientStartPage() {
               className="patient-info-card patient-info-card-button"
               disabled={isStarting}
               type="button"
-              onClick={() => openQuestionnaire(choice.indication)}
+              onClick={() => {
+                setStartingIndication(choice.indication);
+                openQuestionnaire(choice.indication);
+              }}
             >
               <div className="joint-choice-image">
                 <img alt="" src={choice.image} />
@@ -273,7 +277,7 @@ export default function PatientStartPage() {
               <p>{choice.description}</p>
 
               <span className="text-link">
-                {isStarting
+                {isStarting && startingIndication === choice.indication
                   ? localText(language, "Wird vorbereitet…", "Preparing…")
                   : choice.button}
               </span>
