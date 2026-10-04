@@ -69,7 +69,7 @@ export default function ReceptionLoginPage() {
             {localText(language, "Rezeption", "Reception")}
           </p>
 
-          <h1>{localText(language, "Rezeption Login", "Reception login")}</h1>
+          <h1>{localText(language, "Rezeptions-Anmeldung", "Reception login")}</h1>
 
           <p>
             {localText(

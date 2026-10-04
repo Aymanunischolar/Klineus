@@ -69,7 +69,7 @@ export default function DoctorLoginPage() {
             {t("doctorArea") || localText(language, "Arztbereich", "Doctor area")}
           </p>
 
-          <h1>{localText(language, "Arzt Login", "Doctor login")}</h1>
+          <h1>{localText(language, "Arzt-Anmeldung", "Doctor login")}</h1>
 
           <p>
             {localText(

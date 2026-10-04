@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+
 import AppShell from "../components/AppShell.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 
@@ -7,6 +10,13 @@ function localText(language, de, en) {
 
 export default function LegalPage() {
   const { language } = useLanguage();
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (!hash) return;
+
+    document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
+  }, [hash]);
 
   const imprintCards = [
     {

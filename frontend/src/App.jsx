@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useLanguage } from "./i18n/LanguageContext.jsx";
 import ReceptionLoginPage from "./pages/ReceptionLoginPage.jsx";
 import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
 import AdminLoginPage from "./pages/AdminLoginPage.jsx";
@@ -18,16 +19,23 @@ import ReceptionDashboardPage from "./pages/ReceptionDashboardPage.jsx";
 import TeamPage from "./pages/TeamPage.jsx";
 
 function NotFoundPage() {
+  const { language } = useLanguage();
+  const de = language !== "en";
+
   return (
     <main className="not-found-page">
       <p className="eyebrow">404</p>
 
-      <h1>Page not found</h1>
+      <h1>{de ? "Seite nicht gefunden" : "Page not found"}</h1>
 
-      <p>The page you are looking for does not exist or has moved.</p>
+      <p>
+        {de
+          ? "Die gesuchte Seite existiert nicht oder wurde verschoben."
+          : "The page you are looking for does not exist or has moved."}
+      </p>
 
       <a className="primary-button" href="/">
-        Back to home
+        {de ? "Zur Startseite" : "Back to home"}
       </a>
     </main>
   );
