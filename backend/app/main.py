@@ -141,3 +141,25 @@ def health() -> dict[str, str]:
         "status": "ok",
         "service": settings.app_name,
     }
+
+@app.get("/health/db")
+def health_db() -> dict[str, object]:
+    """Database latency only (milliseconds); exposes no connection details."""
+    from app.cms_store import connect, get_database_url
+
+    timings: dict[str, object] = {
+        "backend": "postgres" if get_database_url() else "sqlite",
+    }
+
+    started = time.perf_counter()
+    with connect() as connection:
+        timings["connect_ms"] = round((time.perf_counter() - started) * 1000)
+
+        for index in range(3):
+            query_started = time.perf_counter()
+            connection.execute("SELECT 1")
+            timings[f"query_{index + 1}_ms"] = round(
+                (time.perf_counter() - query_started) * 1000
+            )
+
+    return timings
