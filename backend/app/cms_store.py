@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 import sqlite3
+import threading
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -102,20 +105,108 @@ def adapt_sql_for_postgres(sql: str) -> str:
     return clean_sql
 
 
+# Opening a Postgres connection costs several network round trips (TCP, TLS,
+# auth). Every query helper used to open its own, so a single API request paid
+# that price many times. Idle connections are kept and reused instead; a
+# connection is only ever used by one caller at a time, so nested
+# `with connect()` blocks still get separate transactions.
+_POOL_MAX_IDLE = 4
+_POOL_PING_AFTER_SECONDS = 15
+_POOL_DISCARD_AFTER_SECONDS = 240
+
+_pool_lock = threading.Lock()
+_idle_connections: list[tuple[Any, float]] = []
+
+
+def _open_postgres_connection(database_url: str):
+    return postgres_connect(
+        database_url,
+        row_factory=dict_row,
+        connect_timeout=10,
+        # Safe behind transaction-mode poolers such as pgbouncer.
+        prepare_threshold=None,
+    )
+
+
+def _acquire_postgres_connection(database_url: str):
+    while True:
+        with _pool_lock:
+            entry = _idle_connections.pop() if _idle_connections else None
+
+        if entry is None:
+            return _open_postgres_connection(database_url)
+
+        connection, last_used = entry
+        idle_for = time.monotonic() - last_used
+
+        if connection.closed or idle_for > _POOL_DISCARD_AFTER_SECONDS:
+            _close_quietly(connection)
+            continue
+
+        if idle_for > _POOL_PING_AFTER_SECONDS:
+            try:
+                connection.execute("SELECT 1")
+                connection.rollback()
+            except Exception:
+                _close_quietly(connection)
+                continue
+
+        return connection
+
+
+def _release_postgres_connection(connection) -> None:
+    if connection.closed:
+        return
+
+    with _pool_lock:
+        if len(_idle_connections) < _POOL_MAX_IDLE:
+            _idle_connections.append((connection, time.monotonic()))
+            return
+
+    _close_quietly(connection)
+
+
+def _close_quietly(connection) -> None:
+    try:
+        connection.close()
+    except Exception:
+        pass
+
+
 class PostgresConnection:
     def __init__(self, database_url: str) -> None:
-        self._connection = postgres_connect(database_url, row_factory=dict_row)
+        self._connection = _acquire_postgres_connection(database_url)
+        self._released = False
 
     def __enter__(self) -> "PostgresConnection":
         return self
 
     def __exit__(self, exc_type, exc, traceback) -> None:
-        if exc_type:
-            self._connection.rollback()
-        else:
-            self._connection.commit()
+        try:
+            if exc_type:
+                self._connection.rollback()
+            else:
+                self._connection.commit()
+        except Exception:
+            # The connection is in an unknown state; do not reuse it.
+            self._discard()
+            raise
 
-        self._connection.close()
+        self._release()
+
+    def _release(self) -> None:
+        if self._released:
+            return
+
+        self._released = True
+        _release_postgres_connection(self._connection)
+
+    def _discard(self) -> None:
+        if self._released:
+            return
+
+        self._released = True
+        _close_quietly(self._connection)
 
     def execute(self, sql: str, params: tuple[Any, ...] | list[Any] | None = None):
         pragma_match = re.match(
@@ -157,7 +248,16 @@ class PostgresConnection:
         self._connection.commit()
 
     def close(self) -> None:
-        self._connection.close()
+        if self._released:
+            return
+
+        try:
+            self._connection.rollback()
+        except Exception:
+            self._discard()
+            return
+
+        self._release()
 
 
 def connect():
@@ -202,7 +302,88 @@ def create_id(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex[:16]}"
 
 
+# ---------------------------------------------------------------------------
+# Boot-time schema/seed marker
+#
+# Creating every table and seeding the CMS content costs one round trip per
+# statement, which made each cold start take many seconds. A fingerprint of the
+# files that define the schema and seed data is stored in the database; when it
+# matches, the whole boot-time setup is skipped.
+# ---------------------------------------------------------------------------
+
+_BOOT_SOURCE_FILES = ("cms_store.py", "storage.py", "analytics_store.py")
+_boot_state: dict[str, Any] = {"checked": False, "current": False}
+
+
+def _boot_fingerprint() -> str:
+    app_dir = Path(__file__).resolve().parent
+    digest = hashlib.sha256()
+
+    paths = [app_dir / name for name in _BOOT_SOURCE_FILES]
+    paths += sorted((app_dir / "seed_data").glob("*.py"))
+
+    for path in paths:
+        try:
+            digest.update(path.read_bytes())
+        except OSError:
+            digest.update(path.name.encode())
+
+    return digest.hexdigest()
+
+
+def boot_schema_is_current() -> bool:
+    """True when this exact code version already set up the database."""
+    if _boot_state["checked"]:
+        return _boot_state["current"]
+
+    current = False
+
+    if not refresh_seed_data_enabled():
+        try:
+            with connect() as connection:
+                connection.execute(
+                    "CREATE TABLE IF NOT EXISTS klineus_schema_meta ("
+                    "key TEXT PRIMARY KEY, value TEXT NOT NULL)"
+                )
+                row = connection.execute(
+                    "SELECT value FROM klineus_schema_meta WHERE key = ?",
+                    ("boot_fingerprint",),
+                ).fetchone()
+
+            current = bool(row) and row["value"] == _boot_fingerprint()
+        except Exception:
+            current = False
+
+    _boot_state["checked"] = True
+    _boot_state["current"] = current
+    return current
+
+
+def mark_boot_schema_current() -> None:
+    if _boot_state["current"]:
+        return
+
+    with connect() as connection:
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS klineus_schema_meta ("
+            "key TEXT PRIMARY KEY, value TEXT NOT NULL)"
+        )
+        connection.execute(
+            "DELETE FROM klineus_schema_meta WHERE key = ?",
+            ("boot_fingerprint",),
+        )
+        connection.execute(
+            "INSERT INTO klineus_schema_meta (key, value) VALUES (?, ?)",
+            ("boot_fingerprint", _boot_fingerprint()),
+        )
+
+    _boot_state["current"] = True
+
+
 def init_db() -> None:
+    if boot_schema_is_current():
+        return
+
     with connect() as connection:
         connection.executescript(
             """

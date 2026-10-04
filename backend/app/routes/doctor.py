@@ -191,11 +191,23 @@ def build_session_summary(session) -> PatientQuestionnaireSessionSummary:
     )
 
 
+def build_listed_case_summary(case) -> PatientCaseSummary:
+    summary = build_case_summary(case)
+
+    try:
+        flags = generate_documentation_flags(case.answers, case.indication)
+        summary.traffic_light = derive_traffic_light(flags)
+    except Exception:
+        summary.traffic_light = None
+
+    return summary
+
+
 @router.get("/cases", response_model=list[PatientCaseSummary])
 def list_cases(
     _: str = Depends(get_current_doctor),
 ) -> list[PatientCaseSummary]:
-    return [build_case_summary(case) for case in storage.list_cases()]
+    return [build_listed_case_summary(case) for case in storage.list_cases()]
 
 
 @router.get("/worklist", response_model=DoctorWorklistResponse)
@@ -208,7 +220,7 @@ def get_worklist(
     ]
 
     completed_cases = [
-        build_case_summary(case)
+        build_listed_case_summary(case)
         for case in storage.list_cases()
     ]
 

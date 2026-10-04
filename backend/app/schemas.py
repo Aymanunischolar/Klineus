@@ -535,6 +535,7 @@ class PatientCaseSummary(BaseModel):
     status: CaseStatus
     report_status: ReportStatus
     report_generated_at: datetime | None = None
+    traffic_light: TrafficLightAssessment | None = None
 
 
 class DoctorWorklistResponse(BaseModel):

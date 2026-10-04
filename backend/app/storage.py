@@ -7,6 +7,7 @@ from typing import Any
 from uuid import uuid4
 
 from app.cms_store import (
+    boot_schema_is_current,
     connect,
     dumps,
     list_languages as cms_list_languages,
@@ -39,6 +40,9 @@ class SQLiteCaseStorage:
         self._ensure_schema()
 
     def _ensure_schema(self) -> None:
+        if boot_schema_is_current():
+            return
+
         with connect() as connection:
             connection.executescript(
                 """

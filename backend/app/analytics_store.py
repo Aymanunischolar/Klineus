@@ -4,7 +4,14 @@ import sqlite3
 from datetime import datetime
 from typing import Any
 
-from app.cms_store import connect, create_id, dumps, loads, utc_now_iso
+from app.cms_store import (
+    boot_schema_is_current,
+    connect,
+    create_id,
+    dumps,
+    loads,
+    utc_now_iso,
+)
 from app.schemas import (
     AiAnalyticsSummary,
     AiLogEntry,
@@ -42,6 +49,10 @@ def init_analytics_tables() -> None:
     global _tables_ready
 
     if _tables_ready:
+        return
+
+    if boot_schema_is_current():
+        _tables_ready = True
         return
 
     with connect() as connection:

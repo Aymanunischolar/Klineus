@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.analytics_store import init_analytics_tables, log_api_event
-from app.cms_store import init_db
+from app.cms_store import init_db, mark_boot_schema_current
 from app.config import get_settings
 from app.routes import admin, auth, doctor, patient, reception, reports
 
@@ -27,6 +27,11 @@ app = FastAPI(title=settings.app_name)
 def startup() -> None:
     init_db()
     init_analytics_tables()
+    try:
+        mark_boot_schema_current()
+    except Exception:
+        # Only an optimisation: without the marker the next boot does a full init.
+        pass
 
 
 # ---------------------------------------------------------------------------
