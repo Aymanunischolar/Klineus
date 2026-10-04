@@ -14717,3 +14717,20 @@ button:disabled.primary-button,
   background: #fff8e6;
   color: #5a4300;
 }
+
+/* Tick lists (home "Why Klineus", team principles): put the text on the same line as the tick.
+   The paragraph had a default 1em top/bottom margin that pushed it below the 28px tick circle. */
+.home-benefit-list-pro article,
+.team-principle-list-pro article {
+  align-items: start !important;
+}
+
+.home-benefit-list-pro article p,
+.team-principle-list-pro article p {
+  margin: 0 !important;
+  line-height: 28px !important; /* same height as the tick, so the first line is centred on it */
+}
+
+.team-principle-list-pro article p {
+  line-height: 32px !important; /* the team tick circle is 32px */
+}
