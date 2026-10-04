@@ -144,22 +144,52 @@ def health() -> dict[str, str]:
 
 @app.get("/health/db")
 def health_db() -> dict[str, object]:
-    """Database latency only (milliseconds); exposes no connection details."""
+    """Database latency only (milliseconds); exposes no connection details.
+
+    Also runs a transactional write and a single-statement write against a
+    temporary table, so deployments can verify the write paths without touching
+    real data.
+    """
     from app.cms_store import connect, get_database_url
 
     timings: dict[str, object] = {
         "backend": "postgres" if get_database_url() else "sqlite",
     }
 
+    def elapsed(since: float) -> int:
+        return round((time.perf_counter() - since) * 1000)
+
     started = time.perf_counter()
     with connect() as connection:
-        timings["connect_ms"] = round((time.perf_counter() - started) * 1000)
+        timings["connect_ms"] = elapsed(started)
 
-        for index in range(3):
-            query_started = time.perf_counter()
-            connection.execute("SELECT 1")
-            timings[f"query_{index + 1}_ms"] = round(
-                (time.perf_counter() - query_started) * 1000
-            )
+        query_started = time.perf_counter()
+        connection.execute("SELECT 1")
+        timings["read_ms"] = elapsed(query_started)
+
+        if timings["backend"] == "postgres":
+            connection.execute("CREATE TEMP TABLE IF NOT EXISTS klineus_probe (value INTEGER)")
+
+    if timings["backend"] != "postgres":
+        return timings
+
+    try:
+        write_started = time.perf_counter()
+        with connect() as connection:
+            connection.execute("INSERT INTO klineus_probe (value) VALUES (?)", (1,))
+        timings["transaction_write_ms"] = elapsed(write_started)
+
+        write_started = time.perf_counter()
+        with connect(autocommit=True) as connection:
+            connection.execute("INSERT INTO klineus_probe (value) VALUES (?)", (2,))
+        timings["autocommit_write_ms"] = elapsed(write_started)
+
+        with connect() as connection:
+            row = connection.execute(
+                "SELECT COUNT(*) AS total FROM klineus_probe"
+            ).fetchone()
+        timings["probe_rows_visible"] = row["total"] if row else None
+    except Exception as exc:  # report, do not fail the probe
+        timings["write_error"] = exc.__class__.__name__
 
     return timings

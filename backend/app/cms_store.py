@@ -125,6 +125,9 @@ def _open_postgres_connection(database_url: str):
         connect_timeout=10,
         # Safe behind transaction-mode poolers such as pgbouncer.
         prepare_threshold=None,
+        # Transactions are opened explicitly, and only for writes (see
+        # PostgresConnection.execute), so plain reads cost one round trip.
+        autocommit=True,
     )
 
 
@@ -146,7 +149,6 @@ def _acquire_postgres_connection(database_url: str):
         if idle_for > _POOL_PING_AFTER_SECONDS:
             try:
                 connection.execute("SELECT 1")
-                connection.rollback()
             except Exception:
                 _close_quietly(connection)
                 continue
@@ -173,26 +175,43 @@ def _close_quietly(connection) -> None:
         pass
 
 
+_READ_ONLY_SQL = re.compile(r"^\s*SELECT\b", flags=re.IGNORECASE)
+_LOCKING_SQL = re.compile(
+    r"\bFOR\s+(NO\s+KEY\s+)?(UPDATE|SHARE|KEY\s+SHARE)\b", flags=re.IGNORECASE
+)
+
+
+def _needs_transaction(sql: str) -> bool:
+    # Anything that is not a plain SELECT (writes, DDL, CTEs, row locks) runs
+    # inside a transaction so a block of statements stays atomic.
+    return not _READ_ONLY_SQL.match(sql) or bool(_LOCKING_SQL.search(sql))
+
+
 class PostgresConnection:
-    def __init__(self, database_url: str) -> None:
+    def __init__(self, database_url: str, autocommit: bool = False) -> None:
         self._connection = _acquire_postgres_connection(database_url)
         self._released = False
+        self._in_transaction = False
+        # When true, every statement commits on its own (one round trip).
+        self._autocommit = autocommit
 
     def __enter__(self) -> "PostgresConnection":
         return self
 
     def __exit__(self, exc_type, exc, traceback) -> None:
         try:
-            if exc_type:
-                self._connection.rollback()
-            else:
-                self._connection.commit()
+            if self._in_transaction:
+                self._end_transaction("ROLLBACK" if exc_type else "COMMIT")
         except Exception:
             # The connection is in an unknown state; do not reuse it.
             self._discard()
             raise
 
         self._release()
+
+    def _end_transaction(self, command: str) -> None:
+        self._in_transaction = False
+        self._connection.execute(command)
 
     def _release(self) -> None:
         if self._released:
@@ -232,6 +251,15 @@ class PostgresConnection:
             return ListCursor(cursor.fetchall())
 
         adapted_sql = adapt_sql_for_postgres(sql)
+
+        if (
+            not self._autocommit
+            and not self._in_transaction
+            and _needs_transaction(adapted_sql)
+        ):
+            self._connection.execute("BEGIN")
+            self._in_transaction = True
+
         return self._connection.execute(adapted_sql, tuple(params or ()))
 
     def executescript(self, script: str) -> None:
@@ -245,14 +273,16 @@ class PostgresConnection:
             self.execute(statement)
 
     def commit(self) -> None:
-        self._connection.commit()
+        if self._in_transaction:
+            self._end_transaction("COMMIT")
 
     def close(self) -> None:
         if self._released:
             return
 
         try:
-            self._connection.rollback()
+            if self._in_transaction:
+                self._end_transaction("ROLLBACK")
         except Exception:
             self._discard()
             return
@@ -260,11 +290,16 @@ class PostgresConnection:
         self._release()
 
 
-def connect():
+def connect(autocommit: bool = False):
+    """Open a database connection.
+
+    autocommit=True is for single-statement writes (such as request logging):
+    on Postgres it avoids the BEGIN/COMMIT round trips.
+    """
     database_url = get_database_url()
 
     if database_url:
-        return PostgresConnection(database_url)
+        return PostgresConnection(database_url, autocommit=autocommit)
 
     db_path = get_db_path()
     db_path.parent.mkdir(parents=True, exist_ok=True)

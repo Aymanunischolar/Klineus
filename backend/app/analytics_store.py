@@ -147,7 +147,7 @@ def log_api_event(
     log_id = create_id("api_log")
     created_at = utc_now_iso()
 
-    with connect() as connection:
+    with connect(autocommit=True) as connection:
         connection.execute(
             """
             INSERT INTO api_logs (
