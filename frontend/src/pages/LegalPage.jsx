@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
 import { legalContent } from "../data/legalContent.js";
-import { OPERATOR, missingOperatorFields } from "../data/operator.js";
+import { OPERATOR } from "../data/operator.js";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 
 function localText(language, de, en) {
@@ -40,70 +40,29 @@ function Blocks({ blocks, language }) {
   ));
 }
 
-function ProviderBlock({ language }) {
-  const missing = missingOperatorFields();
-  const lines = [
-    OPERATOR.name,
-    OPERATOR.street,
-    OPERATOR.postalCity,
-    OPERATOR.postalCity ? OPERATOR.country : "",
-  ].filter(Boolean);
-
-  const facts = [
-    [localText(language, "Vertreten durch", "Represented by"), OPERATOR.representative],
-    [localText(language, "Registereintrag", "Commercial register"), OPERATOR.register],
-    [localText(language, "Umsatzsteuer-ID", "VAT ID"), OPERATOR.vatId],
-    [
-      localText(language, "Verantwortlich für den Inhalt (§ 18 Abs. 2 MStV)", "Responsible for content (§ 18(2) MStV)"),
-      OPERATOR.contentResponsible || OPERATOR.representative,
-    ],
-  ].filter(([, value]) => value);
-
-  return (
-    <div className="legal-prose-block">
-      <h3>{localText(language, "Anbieter", "Provider")}</h3>
-
-      <p>
-        {lines.map((line) => (
-          <span key={line} className="legal-line">
-            {line}
-          </span>
-        ))}
-      </p>
-
-      {facts.length ? (
-        <ul>
-          {facts.map(([label, value]) => (
-            <li key={label}>
-              {label}: {value}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      {missing.length ? (
-        <p className="legal-notice" role="note">
-          {localText(
-            language,
-            "Die vollständige Anbieterkennzeichnung (Anschrift und vertretungsberechtigte Person) wird ergänzt.",
-            "The full provider identification (address and authorised representative) is being added.",
-          )}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 export default function LegalPage() {
   const { language } = useLanguage();
   const { hash } = useLocation();
   const content = legalContent[language] || legalContent.de;
 
+  // Images above the target load after the first paint and move it, so scroll
+  // again a few times; stop as soon as the visitor scrolls themselves.
   useEffect(() => {
-    if (!hash) return;
+    if (!hash) return undefined;
 
-    document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
-  }, [hash]);
+    const go = () =>
+      document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
+    const timers = [0, 200, 600, 1400].map((delay) => window.setTimeout(go, delay));
+    const stop = () => timers.forEach(window.clearTimeout);
+    const events = ["wheel", "touchstart", "keydown", "mousedown"];
+
+    events.forEach((name) => window.addEventListener(name, stop, { passive: true, once: true }));
+
+    return () => {
+      stop();
+      events.forEach((name) => window.removeEventListener(name, stop));
+    };
+  }, [hash, language]);
 
   return (
     <AppShell>
@@ -141,7 +100,6 @@ export default function LegalPage() {
             <p>{content.imprint.intro}</p>
           </div>
 
-          <ProviderBlock language={language} />
           <Blocks blocks={content.imprint.blocks} language={language} />
         </section>
 

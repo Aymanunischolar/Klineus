@@ -6,7 +6,7 @@ export const legalContent = {
   de: {
     imprint: {
       title: "Impressum",
-      intro: "Angaben zum Anbieter und zur Kontaktaufnahme gemäß § 5 DDG.",
+      intro: "Kontakt und rechtliche Hinweise zur Nutzung von Klineus.",
       blocks: [
         {
           heading: "Kontakt",
@@ -173,7 +173,7 @@ export const legalContent = {
   en: {
     imprint: {
       title: "Imprint",
-      intro: "Provider and contact details pursuant to § 5 DDG (German Digital Services Act).",
+      intro: "Contact details and legal notices for using Klineus.",
       blocks: [
         {
           heading: "Contact",
