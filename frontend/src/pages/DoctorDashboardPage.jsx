@@ -2,39 +2,40 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import AppShell from "../components/AppShell.jsx";
-import TrafficLight, {
-  trafficLevel,
-  trafficRank,
-} from "../components/TrafficLight.jsx";
+import TrafficLight from "../components/TrafficLight.jsx";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
 import { api } from "../services/api.js";
+import {
+  cleanPatientValue,
+  countByLevel,
+  filterCases,
+  groupByDay,
+  indicationLabel,
+  patientDisplayName,
+  sortCases,
+  topFlags,
+} from "../utils/dashboardRows.js";
+import { TRAFFIC_LEVELS, trafficLevel } from "../utils/traffic.js";
+import "./doctor-dashboard.css";
 
-const FALLBACK_PATIENT_VALUE = "not-provided";
-const FALLBACK_PATIENT_EMAIL = "not-provided@klineus.local";
+const WIDE_QUERY = "(min-width: 1100px)";
+
+const LEVEL_TEXT = {
+  red: ["Sofort prüfen", "Review first"],
+  orange: ["Im Gespräch klären", "Clarify in consultation"],
+  green: ["Unauffällig", "No major issue"],
+};
+
+const EMPTY_FILTERS = {
+  search: "",
+  indication: "",
+  status: "",
+  report_status: "",
+  date: "",
+};
 
 function localText(language, de, en) {
   return language === "en" ? en : de;
-}
-
-function cleanPatientValue(value, { isEmail = false } = {}) {
-  const cleaned = String(value || "").trim();
-
-  if (!cleaned) return "";
-
-  const normalized = cleaned.toLowerCase();
-
-  if (
-    normalized === FALLBACK_PATIENT_VALUE ||
-    normalized === FALLBACK_PATIENT_EMAIL
-  ) {
-    return "";
-  }
-
-  if (isEmail && normalized.endsWith("@klineus.local")) {
-    return "";
-  }
-
-  return cleaned;
 }
 
 function formatDateTime(value, language) {
@@ -53,75 +54,23 @@ function formatDateTime(value, language) {
   }
 }
 
-function formatDateInput(value) {
-  if (!value) return "";
+function relativeTime(value, language) {
+  if (!value) return "—";
 
-  try {
-    return new Date(value).toISOString().slice(0, 10);
-  } catch {
-    return "";
-  }
+  const minutes = Math.round((new Date(value).getTime() - Date.now()) / 60000);
+  const formatter = new Intl.RelativeTimeFormat(language === "en" ? "en" : "de", {
+    numeric: "auto",
+  });
+
+  if (Math.abs(minutes) < 60) return formatter.format(minutes, "minute");
+  if (Math.abs(minutes) < 60 * 24) return formatter.format(Math.round(minutes / 60), "hour");
+  return formatter.format(Math.round(minutes / 1440), "day");
 }
 
-function indicationLabel(indication) {
-  if (indication === "hip_tep") return "Hüft-TEP";
-  if (indication === "knee_tep") return "Knie-TEP";
-  return indication || "—";
-}
-
-function patientDisplayName(item) {
-  const patientName = cleanPatientValue(item?.patient_name);
-  const patientLastName = cleanPatientValue(item?.patient_last_name);
-
-  if (patientName && patientLastName && patientName !== patientLastName) {
-    return `${patientName} ${patientLastName}`;
-  }
-
-  if (patientName) return patientName;
-  if (patientLastName) return patientLastName;
-
-  return "—";
-}
-
-function patientSearchText(item) {
-  return [
-    patientDisplayName(item),
-    cleanPatientValue(item?.patient_email, { isEmail: true }),
-    cleanPatientValue(item?.insurance_id),
-    item?.case_id || "",
-    item?.session_id || "",
-    indicationLabel(item?.indication),
-  ]
-    .join(" ")
-    .toLowerCase();
-}
-
-function statusLabel(status, language) {
-  if (status === "completed") {
-    return localText(language, "Ausgefüllt", "Completed");
-  }
-
-  if (status === "in_progress") {
-    return localText(language, "In Bearbeitung", "In progress");
-  }
-
-  if (status === "invited") {
-    return localText(language, "Eingeladen", "Invited");
-  }
-
-  if (status === "abandoned") {
-    return localText(language, "Abgebrochen", "Abandoned");
-  }
-
-  if (status === "review_done") {
-    return localText(language, "Geprüft", "Reviewed");
-  }
-
-  if (status === "closed") {
-    return localText(language, "Geschlossen", "Closed");
-  }
-
-  return status || "—";
+function dayLabel(bucket, language) {
+  if (bucket === 0) return localText(language, "Heute", "Today");
+  if (bucket === 1) return localText(language, "Gestern", "Yesterday");
+  return localText(language, "Älter", "Earlier");
 }
 
 function reportStatusLabel(status, language) {
@@ -129,47 +78,57 @@ function reportStatusLabel(status, language) {
     return localText(language, "Nicht erstellt", "Not generated");
   }
 
-  if (status === "generated") {
-    return localText(language, "Erstellt", "Generated");
-  }
-
-  if (status === "edited") {
-    return localText(language, "Bearbeitet", "Edited");
-  }
+  if (status === "generated") return localText(language, "Erstellt", "Generated");
+  if (status === "edited") return localText(language, "Bearbeitet", "Edited");
 
   return status;
 }
 
-function statusClass(status) {
-  if (status === "completed" || status === "review_done" || status === "closed") {
-    return "status-success";
-  }
+function statusLabel(status, language) {
+  const labels = {
+    completed: ["Ausgefüllt", "Completed"],
+    in_progress: ["In Bearbeitung", "In progress"],
+    invited: ["Eingeladen", "Invited"],
+    abandoned: ["Abgebrochen", "Abandoned"],
+    review_done: ["Geprüft", "Reviewed"],
+    closed: ["Geschlossen", "Closed"],
+  };
 
-  if (status === "in_progress" || status === "invited") {
-    return "status-warning";
-  }
+  return labels[status] ? localText(language, ...labels[status]) : status || "—";
+}
 
-  return "status-muted";
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(query).matches,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const onChange = (event) => setMatches(event.matches);
+
+    setMatches(media.matches);
+    media.addEventListener("change", onChange);
+
+    return () => media.removeEventListener("change", onChange);
+  }, [query]);
+
+  return matches;
 }
 
 export default function DoctorDashboardPage() {
   const navigate = useNavigate();
   const { language, t } = useLanguage();
+  const isWide = useMediaQuery(WIDE_QUERY);
 
   const [activeTab, setActiveTab] = useState("completed");
   const [pendingSessions, setPendingSessions] = useState([]);
   const [completedCases, setCompletedCases] = useState([]);
   const [trafficByCase, setTrafficByCase] = useState({});
+  const [details, setDetails] = useState({});
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [severity, setSeverity] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-
-  const [filters, setFilters] = useState({
-    search: "",
-    indication: "",
-    status: "",
-    report_status: "",
-    date: "",
-  });
-
+  const [selectedId, setSelectedId] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -179,21 +138,13 @@ export default function DoctorDashboardPage() {
 
     try {
       const data = await api.getDoctorWorklist();
+      const named = (item) => patientDisplayName(item) !== "—";
 
       setPendingSessions(
-        Array.isArray(data?.pending_sessions)
-          ? data.pending_sessions.filter(
-              (session) => patientDisplayName(session) !== "—",
-            )
-          : [],
+        Array.isArray(data?.pending_sessions) ? data.pending_sessions.filter(named) : [],
       );
-
       setCompletedCases(
-        Array.isArray(data?.completed_cases)
-          ? data.completed_cases.filter(
-              (patientCase) => patientDisplayName(patientCase) !== "—",
-            )
-          : [],
+        Array.isArray(data?.completed_cases) ? data.completed_cases.filter(named) : [],
       );
     } catch (loadError) {
       setError(
@@ -214,8 +165,8 @@ export default function DoctorDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 
-  // The worklist does not carry the assessment, so it is read from the case
-  // detail (three at a time) and cached per case.
+  // Older backends do not put the assessment on the list; read it from the case
+  // detail (three at a time) and cache it. Cases that carry it are skipped.
   useEffect(() => {
     let cancelled = false;
     const queue = completedCases
@@ -247,97 +198,109 @@ export default function DoctorDashboardPage() {
     };
   }, [completedCases]);
 
-  function caseTrafficLevel(item) {
-    return trafficLevel(item.traffic_light) || trafficByCase[item.case_id] || "";
-  }
+  const levelOf = (item) => trafficLevel(item.traffic_light) || trafficByCase[item.case_id] || "";
 
-  const dashboardStats = useMemo(() => {
-    const reportsGenerated = completedCases.filter(
-      (item) => item.report_status === "generated" || item.report_status === "edited",
-    ).length;
-    const reportsEdited = completedCases.filter(
-      (item) => item.report_status === "edited",
-    ).length;
-
-    return {
-      pending: pendingSessions.length,
-      completed: completedCases.length,
-      reportsGenerated,
-      reportsEdited,
-    };
-  }, [pendingSessions, completedCases]);
-
-  const filteredPendingSessions = useMemo(() => {
-    const search = filters.search.trim().toLowerCase();
-
-    return pendingSessions.filter((item) => {
-      if (search && !patientSearchText(item).includes(search)) return false;
-      if (filters.indication && item.indication !== filters.indication) return false;
-      if (filters.status && item.status !== filters.status) return false;
-
-      if (filters.date) {
-        const itemDate = formatDateInput(item.updated_at || item.created_at);
-
-        if (itemDate !== filters.date) return false;
-      }
-
-      return true;
-    });
-  }, [filters, pendingSessions]);
-
-  const filteredCompletedCases = useMemo(() => {
-    const search = filters.search.trim().toLowerCase();
-
-    return completedCases.filter((item) => {
-      if (search && !patientSearchText(item).includes(search)) return false;
-      if (filters.indication && item.indication !== filters.indication) return false;
-      if (filters.status && item.status !== filters.status) return false;
-
-      if (filters.report_status) {
-        const currentReportStatus = item.report_status || "not_generated";
-        if (currentReportStatus !== filters.report_status) return false;
-      }
-
-      if (filters.date) {
-        const itemDate = formatDateInput(item.created_at || item.updated_at);
-
-        if (itemDate !== filters.date) return false;
-      }
-
-      return true;
-    });
-  }, [completedCases, filters]);
-
-  // Red first, then amber, green, unknown; newest first within a level.
-  const sortedCompletedCases = useMemo(
-    () =>
-      [...filteredCompletedCases].sort(
-        (a, b) =>
-          trafficRank(caseTrafficLevel(a)) - trafficRank(caseTrafficLevel(b)) ||
-          new Date(b.created_at || 0) - new Date(a.created_at || 0),
-      ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filteredCompletedCases, trafficByCase],
+  const baseCases = useMemo(
+    () => filterCases(completedCases, filters),
+    [completedCases, filters],
   );
 
-  const visibleRows =
-    activeTab === "pending" ? filteredPendingSessions : sortedCompletedCases;
+  const counts = useMemo(
+    () => countByLevel(baseCases, levelOf),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baseCases, trafficByCase],
+  );
+
+  const groups = useMemo(() => {
+    const visible = severity
+      ? baseCases.filter((item) => levelOf(item) === severity)
+      : baseCases;
+
+    return groupByDay(sortCases(visible, levelOf));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseCases, severity, trafficByCase]);
+
+  const visibleCases = useMemo(() => groups.flatMap((group) => group.items), [groups]);
+
+  const pendingRows = useMemo(
+    () =>
+      filterCases(pendingSessions, filters, { dateField: "updated_at" }).sort(
+        (a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0),
+      ),
+    [pendingSessions, filters],
+  );
+
+  const selected =
+    visibleCases.find((item) => item.case_id === selectedId) || visibleCases[0] || null;
+  const selectedDetail = selected ? details[selected.case_id] : null;
+
+  // Preview details are only needed on screens wide enough to show the pane.
+  useEffect(() => {
+    if (!isWide || !selected || details[selected.case_id]) return undefined;
+
+    let cancelled = false;
+
+    api
+      .getCase(selected.case_id)
+      .then((detail) => {
+        if (!cancelled) {
+          setDetails((current) => ({ ...current, [selected.case_id]: detail }));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDetails((current) => ({ ...current, [selected.case_id]: { failed: true } }));
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isWide, selected, details]);
+
+  // Up/Down moves through the list on wide screens (not while typing).
+  useEffect(() => {
+    if (!isWide || activeTab !== "completed") return undefined;
+
+    function onKey(event) {
+      const tag = event.target?.tagName;
+      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      if (visibleCases.length === 0) return;
+
+      event.preventDefault();
+
+      const index = Math.max(visibleCases.findIndex((item) => item.case_id === selected?.case_id), 0);
+      const next = Math.min(
+        Math.max(index + (event.key === "ArrowDown" ? 1 : -1), 0),
+        visibleCases.length - 1,
+      );
+
+      setSelectedId(visibleCases[next].case_id);
+      document.getElementById(`dd-row-${visibleCases[next].case_id}`)?.scrollIntoView({
+        block: "nearest",
+      });
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isWide, activeTab, visibleCases, selected]);
 
   function updateFilter(field, value) {
-    setFilters((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setFilters((current) => ({ ...current, [field]: value }));
   }
 
   function resetFilters() {
-    setFilters({
-      search: "",
-      indication: "",
-      status: "",
-      report_status: "",
-      date: "",
-    });
+    setFilters(EMPTY_FILTERS);
+    setSeverity("");
+  }
+
+  function selectCase(item) {
+    if (isWide) {
+      setSelectedId(item.case_id);
+    } else {
+      navigate(`/doctor/cases/${item.case_id}`);
+    }
   }
 
   function logout() {
@@ -345,329 +308,379 @@ export default function DoctorDashboardPage() {
     navigate("/doctor/login");
   }
 
-  const statValue = (value) =>
-    isLoading ? <span className="skeleton-bar" aria-hidden="true" /> : value;
+  // Show a dash instead of 0 until the list has loaded.
+  const count = (value) => (isLoading ? "–" : value);
+
+  const openLabel = t("openCase") || localText(language, "Fall öffnen", "Open case");
+  const flags = topFlags(selectedDetail?.documentation_flags);
+  const hasActiveFilters = Boolean(
+    severity || Object.entries(filters).some(([field, value]) => field !== "search" && value),
+  );
 
   return (
     <AppShell compact hideNav wide>
-      <main className="doctor-dashboard-pro doctor-dashboard-wide">
-        <section className="doctor-hero doctor-hero-compact">
+      <main className="dd">
+        <header className="dd-header">
           <div>
-            <p className="doctor-kicker">
+            <p className="dd-kicker">
               {t("dashboardEyebrow") ||
                 localText(language, "Arzt-Dashboard", "Doctor dashboard")}
             </p>
-
-            <h1>
-              {t("patientCases") ||
-                localText(language, "Patientenfälle", "Patient cases")}
-            </h1>
+            <h1>{t("patientCases") || localText(language, "Patientenfälle", "Patient cases")}</h1>
           </div>
 
-          <div className="doctor-hero-actions">
-            <button
-              className="doctor-secondary-btn"
-              type="button"
-              onClick={loadWorklist}
-              disabled={isLoading}
-            >
+          <div className="dd-header-actions">
+            <button type="button" onClick={loadWorklist} disabled={isLoading}>
               {localText(language, "Aktualisieren", "Refresh")}
             </button>
-
-            <button className="doctor-secondary-btn" type="button" onClick={logout}>
+            <button type="button" onClick={logout}>
               {t("logout") || localText(language, "Abmelden", "Sign out")}
             </button>
           </div>
-        </section>
+        </header>
 
-        {error ? <div className="doctor-alert error">{error}</div> : null}
+        {error ? (
+          <div className="dd-alert" role="alert">
+            {error}
+          </div>
+        ) : null}
 
-        <section className="doctor-toolbar">
-          <div className="doctor-tabs">
+        <div className="dd-toolbar">
+          <div className="dd-tabs" role="tablist">
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === "completed"}
               className={activeTab === "completed" ? "active" : ""}
               onClick={() => setActiveTab("completed")}
             >
-              {localText(language, "Ausgefüllte Fälle", "Completed cases")}
+              {localText(language, "Ausgefüllte Fälle", "Completed cases")}{" "}
+              <b>{count(completedCases.length)}</b>
             </button>
-
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === "pending"}
               className={activeTab === "pending" ? "active" : ""}
               onClick={() => setActiveTab("pending")}
             >
-              {localText(language, "Laufende Fragebögen", "Active questionnaires")}
+              {localText(language, "Laufende Fragebögen", "Active questionnaires")}{" "}
+              <b>{count(pendingSessions.length)}</b>
             </button>
           </div>
 
-          <div className="doctor-search">
-            <input
-              type="search"
-              value={filters.search}
-              onChange={(event) => updateFilter("search", event.target.value)}
-              aria-label={localText(language, "Patient suchen", "Search patient")}
-              placeholder={localText(
-                language,
-                "Patient suchen: Name, E-Mail, VSNR oder Fall-ID",
-                "Search patient: name, email, insurance ID or case ID",
-              )}
-            />
+          <input
+            className="dd-search"
+            type="search"
+            value={filters.search}
+            onChange={(event) => updateFilter("search", event.target.value)}
+            aria-label={localText(language, "Patient suchen", "Search patient")}
+            placeholder={localText(
+              language,
+              "Patient suchen: Name, E-Mail, VSNR oder Fall-ID",
+              "Search patient: name, email, insurance ID or case ID",
+            )}
+          />
 
-            <button
-              type="button"
-              className="doctor-secondary-btn"
-              aria-expanded={showFilters}
-              onClick={() => setShowFilters((current) => !current)}
-            >
-              {localText(language, "Filter", "Filters")} {showFilters ? "▴" : "▾"}
-            </button>
-          </div>
-        </section>
+          <button
+            type="button"
+            className="dd-filter-toggle"
+            aria-expanded={showFilters}
+            onClick={() => setShowFilters((current) => !current)}
+          >
+            {localText(language, "Filter", "Filters")}
+            {hasActiveFilters ? " •" : ""} {showFilters ? "▴" : "▾"}
+          </button>
+        </div>
 
         {showFilters ? (
-          <section className="doctor-card doctor-filter-card">
-            <div className="doctor-filter-grid">
-              <label>
-                {localText(language, "Indikation", "Indication")}
-                <select
-                  value={filters.indication}
-                  onChange={(event) => updateFilter("indication", event.target.value)}
-                >
-                  <option value="">{localText(language, "Alle", "All")}</option>
-                  <option value="knee_tep">Knie-TEP</option>
-                  <option value="hip_tep">Hüft-TEP</option>
-                </select>
-              </label>
-
-              <label>
-                {localText(language, "Status", "Status")}
-                <select
-                  value={filters.status}
-                  onChange={(event) => updateFilter("status", event.target.value)}
-                >
-                  <option value="">{localText(language, "Alle", "All")}</option>
-                  <option value="completed">{localText(language, "Ausgefüllt", "Completed")}</option>
-                  <option value="in_progress">{localText(language, "In Bearbeitung", "In progress")}</option>
-                  <option value="review_done">{localText(language, "Geprüft", "Reviewed")}</option>
-                  <option value="closed">{localText(language, "Geschlossen", "Closed")}</option>
-                </select>
-              </label>
-
-              <label>
-                {localText(language, "Bericht", "Report")}
-                <select
-                  value={filters.report_status}
-                  onChange={(event) => updateFilter("report_status", event.target.value)}
-                  disabled={activeTab === "pending"}
-                >
-                  <option value="">{localText(language, "Alle", "All")}</option>
-                  <option value="not_generated">{localText(language, "Nicht erstellt", "Not generated")}</option>
-                  <option value="generated">{localText(language, "Erstellt", "Generated")}</option>
-                  <option value="edited">{localText(language, "Bearbeitet", "Edited")}</option>
-                </select>
-              </label>
-
-              <label>
-                {localText(language, "Datum", "Date")}
-                <input
-                  type="date"
-                  value={filters.date}
-                  onChange={(event) => updateFilter("date", event.target.value)}
-                />
-              </label>
-
-              <button
-                type="button"
-                className="doctor-secondary-btn"
-                onClick={resetFilters}
+          <div className="dd-filters">
+            <label>
+              {localText(language, "Indikation", "Indication")}
+              <select
+                value={filters.indication}
+                onChange={(event) => updateFilter("indication", event.target.value)}
               >
-                {localText(language, "Zurücksetzen", "Reset")}
-              </button>
-            </div>
-          </section>
+                <option value="">{localText(language, "Alle", "All")}</option>
+                <option value="knee_tep">Knie-TEP</option>
+                <option value="hip_tep">Hüft-TEP</option>
+              </select>
+            </label>
+
+            <label>
+              {localText(language, "Status", "Status")}
+              <select
+                value={filters.status}
+                onChange={(event) => updateFilter("status", event.target.value)}
+              >
+                <option value="">{localText(language, "Alle", "All")}</option>
+                <option value="completed">{statusLabel("completed", language)}</option>
+                <option value="in_progress">{statusLabel("in_progress", language)}</option>
+                <option value="review_done">{statusLabel("review_done", language)}</option>
+                <option value="closed">{statusLabel("closed", language)}</option>
+              </select>
+            </label>
+
+            <label>
+              {localText(language, "Bericht", "Report")}
+              <select
+                value={filters.report_status}
+                onChange={(event) => updateFilter("report_status", event.target.value)}
+                disabled={activeTab === "pending"}
+              >
+                <option value="">{localText(language, "Alle", "All")}</option>
+                <option value="not_generated">{reportStatusLabel("not_generated", language)}</option>
+                <option value="generated">{reportStatusLabel("generated", language)}</option>
+                <option value="edited">{reportStatusLabel("edited", language)}</option>
+              </select>
+            </label>
+
+            <label>
+              {localText(language, "Datum", "Date")}
+              <input
+                type="date"
+                value={filters.date}
+                onChange={(event) => updateFilter("date", event.target.value)}
+              />
+            </label>
+
+            <button type="button" onClick={resetFilters}>
+              {localText(language, "Zurücksetzen", "Reset")}
+            </button>
+          </div>
         ) : null}
 
-        <section className="doctor-card">
-          <div className="doctor-card-header">
-            <div>
-              <span>{localText(language, "Übersicht", "Overview")}</span>
-              <h2>
-                {activeTab === "pending"
-                  ? localText(language, "Laufende Fragebögen", "Active questionnaires")
-                  : localText(language, "Ausgefüllte Patientenfälle", "Completed patient cases")}
-              </h2>
+        {activeTab === "completed" ? (
+          <>
+            <div
+              className="dd-chips"
+              role="group"
+              aria-label={localText(language, "Dringlichkeit", "Urgency")}
+            >
+              <button
+                type="button"
+                aria-pressed={severity === ""}
+                className={severity === "" ? "on" : ""}
+                onClick={() => setSeverity("")}
+              >
+                {localText(language, "Alle", "All")} <b>{count(baseCases.length)}</b>
+              </button>
+
+              {TRAFFIC_LEVELS.map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  aria-pressed={severity === level}
+                  className={`dd-chip-${level}${severity === level ? " on" : ""}`}
+                  onClick={() => setSeverity(severity === level ? "" : level)}
+                >
+                  <span className="dd-dot" aria-hidden="true" />
+                  {localText(language, ...LEVEL_TEXT[level])} <b>{count(counts[level])}</b>
+                </button>
+              ))}
             </div>
 
-            <p className="doctor-result-count">
-              {visibleRows.length}{" "}
-              {visibleRows.length === 1
-                ? localText(language, "Ergebnis", "result")
-                : localText(language, "Ergebnisse", "results")}
-            </p>
+            <div className="dd-split">
+              <div className="dd-list">
+                {isLoading ? (
+                  <ul className="dd-rows" aria-busy="true">
+                    {[0, 1, 2, 3].map((index) => (
+                      <li key={index} className="dd-row dd-row-skeleton">
+                        <span className="skeleton-bar" />
+                      </li>
+                    ))}
+                  </ul>
+                ) : groups.length === 0 ? (
+                  <p className="dd-empty">
+                    {localText(language, "Keine passenden Fälle gefunden.", "No matching cases found.")}
+                  </p>
+                ) : (
+                  groups.map((group) => (
+                    <section key={group.bucket} className="dd-group">
+                      <h2>{dayLabel(group.bucket, language)}</h2>
+
+                      <ul className="dd-rows">
+                        {group.items.map((item) => {
+                          const level = levelOf(item);
+                          const isSelected = isWide && item.case_id === selected?.case_id;
+
+                          return (
+                            <li
+                              key={item.case_id}
+                              id={`dd-row-${item.case_id}`}
+                              className={`dd-row dd-edge-${level || "none"}${isSelected ? " selected" : ""}`}
+                            >
+                              <button
+                                type="button"
+                                className="dd-row-main"
+                                aria-current={isSelected ? "true" : undefined}
+                                onClick={() => selectCase(item)}
+                              >
+                                {level ? (
+                                  <TrafficLight level={level} />
+                                ) : trafficByCase[item.case_id] === undefined ? (
+                                  <span className="skeleton-bar" aria-hidden="true" />
+                                ) : (
+                                  <span className="dd-muted">—</span>
+                                )}
+
+                                <strong>{patientDisplayName(item)}</strong>
+                                <span>{indicationLabel(item.indication)}</span>
+                                <span className="dd-muted dd-hide-narrow">
+                                  {cleanPatientValue(item.insurance_id) || "—"}
+                                </span>
+                                <span
+                                  className="dd-muted"
+                                  title={formatDateTime(item.created_at, language)}
+                                >
+                                  {relativeTime(item.created_at, language)}
+                                </span>
+                              </button>
+
+                              <Link className="dd-row-open" to={`/doctor/cases/${item.case_id}`}>
+                                {localText(language, "Öffnen", "Open")} →
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  ))
+                )}
+              </div>
+
+              {isWide ? (
+                <aside className="dd-preview" aria-label={localText(language, "Vorschau", "Preview")}>
+                  {!selected ? (
+                    <p className="dd-empty">
+                      {localText(language, "Kein Fall ausgewählt.", "No case selected.")}
+                    </p>
+                  ) : (
+                    <>
+                      <div className={`dd-preview-head dd-edge-${levelOf(selected) || "none"}`}>
+                        <div>
+                          <TrafficLight level={levelOf(selected)} />
+                          <h2>{patientDisplayName(selected)}</h2>
+                          <p>
+                            {indicationLabel(selected.indication)} ·{" "}
+                            {localText(language, "eingereicht", "submitted")}{" "}
+                            {relativeTime(selected.created_at, language)}
+                          </p>
+                        </div>
+
+                        <Link className="dd-primary" to={`/doctor/cases/${selected.case_id}`}>
+                          {openLabel} →
+                        </Link>
+                      </div>
+
+                      <p className="dd-assessment">
+                        {selectedDetail?.traffic_light?.description ||
+                          (selectedDetail?.failed
+                            ? localText(
+                                language,
+                                "Die Einschätzung konnte nicht geladen werden.",
+                                "The assessment could not be loaded.",
+                              )
+                            : localText(language, "Einschätzung wird geladen…", "Loading assessment…"))}
+                      </p>
+
+                      <h3>
+                        {localText(language, "Das sollten Sie ansprechen", "Raise in the consultation")}
+                      </h3>
+
+                      {!selectedDetail || selectedDetail.failed ? null : flags.length === 0 ? (
+                        <p className="dd-empty">
+                          {localText(language, "Keine Auffälligkeiten.", "Nothing flagged.")}
+                        </p>
+                      ) : (
+                        <ul className="dd-flags">
+                          {flags.map((flag, index) => (
+                            <li key={index} className={`dd-edge-${trafficLevel(flag.level)}`}>
+                              <strong>{flag.title}</strong>
+                              <span>{flag.description}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      <dl className="dd-facts">
+                        <div>
+                          <dt>VSNR</dt>
+                          <dd>{cleanPatientValue(selected.insurance_id) || "—"}</dd>
+                        </div>
+                        <div>
+                          <dt>{localText(language, "E-Mail", "Email")}</dt>
+                          <dd>
+                            {cleanPatientValue(selected.patient_email, { isEmail: true }) || "—"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>{localText(language, "Eingereicht", "Submitted")}</dt>
+                          <dd>{formatDateTime(selected.created_at, language)}</dd>
+                        </div>
+                        <div>
+                          <dt>{localText(language, "Bericht", "Report")}</dt>
+                          <dd>{reportStatusLabel(selected.report_status, language)}</dd>
+                        </div>
+                        <div>
+                          <dt>{localText(language, "Status", "Status")}</dt>
+                          <dd>{statusLabel(selected.status, language)}</dd>
+                        </div>
+                      </dl>
+                    </>
+                  )}
+                </aside>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <div className="dd-list">
+            {isLoading ? (
+              <ul className="dd-rows" aria-busy="true">
+                {[0, 1, 2].map((index) => (
+                  <li key={index} className="dd-row dd-row-skeleton">
+                    <span className="skeleton-bar" />
+                  </li>
+                ))}
+              </ul>
+            ) : pendingRows.length === 0 ? (
+              <p className="dd-empty">
+                {localText(language, "Keine laufenden Fragebögen.", "No active questionnaires.")}
+              </p>
+            ) : (
+              <ul className="dd-rows">
+                {pendingRows.map((session) => (
+                  <li key={session.session_id} className="dd-row dd-edge-none">
+                    <div className="dd-row-main dd-row-static">
+                      <span className="dd-status">{statusLabel(session.status, language)}</span>
+                      <strong>{patientDisplayName(session)}</strong>
+                      <span>{indicationLabel(session.indication)}</span>
+                      <span className="dd-muted dd-hide-narrow">
+                        {session.answer_count || 0} {localText(language, "beantwortet", "answered")}
+                      </span>
+                      <span className="dd-muted" title={formatDateTime(session.updated_at, language)}>
+                        {relativeTime(session.updated_at, language)}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
+        )}
 
-          {isLoading ? (
-            <p className="doctor-muted">
-              {t("loadingCases") ||
-                localText(language, "Fälle werden geladen…", "Loading cases…")}
-            </p>
-          ) : null}
-
-          {!isLoading && visibleRows.length === 0 ? (
-            <p className="doctor-muted">
-              {localText(
-                language,
-                "Keine passenden Fälle gefunden.",
-                "No matching cases found.",
-              )}
-            </p>
-          ) : null}
-
-          {!isLoading && activeTab === "pending" && visibleRows.length > 0 ? (
-            <div className="doctor-table-wrap">
-              <table className="doctor-table">
-                <thead>
-                  <tr>
-                    <th>{localText(language, "Patient", "Patient")}</th>
-                    <th>{localText(language, "Indikation", "Indication")}</th>
-                    <th>{localText(language, "Status", "Status")}</th>
-                    <th>{localText(language, "Antworten", "Answers")}</th>
-                    <th>{localText(language, "Zuletzt aktualisiert", "Updated")}</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {visibleRows.map((session) => (
-                    <tr key={session.session_id || `${session.patient_name}-${session.updated_at}`}>
-                      <td>
-                        <div className="doctor-patient-cell">
-                          <strong>{patientDisplayName(session)}</strong>
-                          <span>
-                            {cleanPatientValue(session.patient_email, { isEmail: true }) || "—"}
-                          </span>
-                          <small>VSNR: {cleanPatientValue(session.insurance_id) || "—"}</small>
-                        </div>
-                      </td>
-
-                      <td>{indicationLabel(session.indication)}</td>
-
-                      <td>
-                        <span className={`doctor-status ${statusClass(session.status)}`}>
-                          {statusLabel(session.status, language)}
-                        </span>
-                      </td>
-
-                      <td>
-                        {session.answer_count || 0}{" "}
-                        {localText(language, "beantwortet", "answered")}
-                      </td>
-
-                      <td>{formatDateTime(session.updated_at, language)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : null}
-
-          {!isLoading && activeTab === "completed" && visibleRows.length > 0 ? (
-            <div className="doctor-table-wrap">
-              <table className="doctor-table">
-                <thead>
-                  <tr>
-                    <th>{localText(language, "Einschätzung", "Assessment")}</th>
-                    <th>{localText(language, "Patient", "Patient")}</th>
-                    <th>{localText(language, "Erstellt", "Created")}</th>
-                    <th>{localText(language, "Indikation", "Indication")}</th>
-                    <th>{localText(language, "Status", "Status")}</th>
-                    <th>{localText(language, "Bericht", "Report")}</th>
-                    <th>{localText(language, "Aktion", "Action")}</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {visibleRows.map((patientCase) => (
-                    <tr key={patientCase.case_id}>
-                      <td>
-                        {caseTrafficLevel(patientCase) ? (
-                          <TrafficLight level={caseTrafficLevel(patientCase)} />
-                        ) : trafficByCase[patientCase.case_id] === undefined ? (
-                          <span className="skeleton-bar" aria-hidden="true" />
-                        ) : (
-                          <span className="doctor-muted">—</span>
-                        )}
-                      </td>
-
-                      <td>
-                        <div className="doctor-patient-cell">
-                          <strong>{patientDisplayName(patientCase)}</strong>
-                          <span>
-                            {cleanPatientValue(patientCase.patient_email, { isEmail: true }) || "—"}
-                          </span>
-                          <small>VSNR: {cleanPatientValue(patientCase.insurance_id) || "—"}</small>
-                        </div>
-                      </td>
-
-                      <td>{formatDateTime(patientCase.created_at, language)}</td>
-
-                      <td>{indicationLabel(patientCase.indication)}</td>
-
-                      <td>
-                        <span className={`doctor-status ${statusClass(patientCase.status)}`}>
-                          {statusLabel(patientCase.status, language)}
-                        </span>
-                      </td>
-
-                      <td>{reportStatusLabel(patientCase.report_status, language)}</td>
-
-                      <td>
-                        {patientCase.case_id ? (
-                          <Link
-                            className="doctor-secondary-btn small"
-                            to={`/doctor/cases/${patientCase.case_id}`}
-                          >
-                            {t("openCase") || localText(language, "Fall öffnen", "Open case")}
-                          </Link>
-                        ) : (
-                          <span className="doctor-muted">
-                            {localText(language, "Keine Fall-ID", "No case ID")}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : null}
-        </section>
-
-        <section className="doctor-stats-grid doctor-stats-compact">
-          <article>
-            <span>{localText(language, "Ausstehend", "Pending")}</span>
-            <strong>{statValue(dashboardStats.pending)}</strong>
-            <p>{localText(language, "Gestartete Fragebögen", "Started questionnaires")}</p>
-          </article>
-
-          <article>
-            <span>{localText(language, "Ausgefüllt", "Completed")}</span>
-            <strong>{statValue(dashboardStats.completed)}</strong>
-            <p>{localText(language, "Übermittelte Fälle", "Submitted cases")}</p>
-          </article>
-
-          <article>
-            <span>{localText(language, "Berichte", "Reports")}</span>
-            <strong>{statValue(dashboardStats.reportsGenerated)}</strong>
-            <p>{localText(language, "Erstellt oder bearbeitet", "Generated or edited")}</p>
-          </article>
-
-          <article>
-            <span>{localText(language, "Bearbeitet", "Edited")}</span>
-            <strong>{statValue(dashboardStats.reportsEdited)}</strong>
-            <p>{localText(language, "Manuell geprüft", "Manually reviewed")}</p>
-          </article>
-        </section>
+        {isLoading ? null : (
+          <p className="dd-summary">
+            {completedCases.length} {localText(language, "ausgefüllt", "completed")} ·{" "}
+            {pendingSessions.length} {localText(language, "laufend", "in progress")} ·{" "}
+            {
+              completedCases.filter(
+                (item) => item.report_status === "generated" || item.report_status === "edited",
+              ).length
+            }{" "}
+            {localText(language, "Berichte erstellt", "reports generated")}
+          </p>
+        )}
       </main>
     </AppShell>
   );

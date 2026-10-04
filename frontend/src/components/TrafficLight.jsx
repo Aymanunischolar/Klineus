@@ -1,20 +1,13 @@
 import { useLanguage } from "../i18n/LanguageContext.jsx";
+import { trafficLevel, trafficRank } from "../utils/traffic.js";
 
 const LEVELS = {
-  red: { icon: "!", rank: 0, de: "Rot", en: "Red" },
-  orange: { icon: "▲", rank: 1, de: "Gelb", en: "Amber" },
-  green: { icon: "✓", rank: 2, de: "Grün", en: "Green" },
+  red: { icon: "!", de: "Rot", en: "Red" },
+  orange: { icon: "▲", de: "Gelb", en: "Amber" },
+  green: { icon: "✓", de: "Grün", en: "Green" },
 };
 
-export function trafficLevel(value) {
-  const level = String(value?.level || value || "").toLowerCase();
-  return LEVELS[level] ? level : "";
-}
-
-export function trafficRank(value) {
-  const level = trafficLevel(value);
-  return level ? LEVELS[level].rank : 3;
-}
+export { trafficLevel, trafficRank };
 
 export default function TrafficLight({ level, compact = false }) {
   const { language } = useLanguage();
