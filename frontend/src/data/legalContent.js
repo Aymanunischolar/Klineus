@@ -15,7 +15,7 @@ export const legalContent = {
         {
           heading: "Medizinischer Hinweis",
           paragraphs: [
-            "Klineus dient der Strukturierung und Vorbereitung von Patientenangaben für das ärztliche Gespräch. Es ersetzt keine ärztliche Untersuchung, Diagnose oder Beratung. In einem Notfall wählen Sie bitte den Notruf 112.",
+            "Klineus dient der Strukturierung und Vorbereitung von Patientenangaben für das ärztliche Gespräch. Es ersetzt keine ärztliche Untersuchung, Diagnose oder Beratung.",
           ],
         },
         {
@@ -182,7 +182,7 @@ export const legalContent = {
         {
           heading: "Medical notice",
           paragraphs: [
-            "Klineus helps structure and prepare patient information for the consultation. It does not replace a medical examination, diagnosis or advice. In an emergency, please call 112.",
+            "Klineus helps structure and prepare patient information for the consultation. It does not replace a medical examination, diagnosis or advice.",
           ],
         },
         {
