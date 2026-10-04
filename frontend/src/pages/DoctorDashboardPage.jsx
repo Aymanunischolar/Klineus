@@ -500,7 +500,10 @@ export default function DoctorDashboardPage() {
             </div>
 
             <p className="doctor-result-count">
-              {visibleRows.length} {localText(language, "Ergebnisse", "results")}
+              {visibleRows.length}{" "}
+              {visibleRows.length === 1
+                ? localText(language, "Ergebnis", "result")
+                : localText(language, "Ergebnisse", "results")}
             </p>
           </div>
 

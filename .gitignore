@@ -19,3 +19,5 @@ Thumbs.db
 backend/.env
 *.sqlite3
 backend/data/*.sqlite3
+.vercel
+.env.local

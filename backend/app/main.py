@@ -42,7 +42,7 @@ async def api_logging_middleware(request: Request, call_next):
 
         duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
 
-        if not request.url.path.startswith("/static"):
+        if request.url.path != "/health" and not request.url.path.startswith("/static"):
             try:
                 await run_in_threadpool(
                     log_api_event,

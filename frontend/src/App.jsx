@@ -1,22 +1,23 @@
+import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useLanguage } from "./i18n/LanguageContext.jsx";
-import ReceptionLoginPage from "./pages/ReceptionLoginPage.jsx";
-import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
-import AdminLoginPage from "./pages/AdminLoginPage.jsx";
-import ContactPage from "./pages/ContactPage.jsx";
-import DoctorCasePage from "./pages/DoctorCasePage.jsx";
-import DoctorDashboardPage from "./pages/DoctorDashboardPage.jsx";
-import DoctorLoginPage from "./pages/DoctorLoginPage.jsx";
+const ReceptionLoginPage = lazy(() => import("./pages/ReceptionLoginPage.jsx"));
+const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage.jsx"));
+const AdminLoginPage = lazy(() => import("./pages/AdminLoginPage.jsx"));
+const ContactPage = lazy(() => import("./pages/ContactPage.jsx"));
+const DoctorCasePage = lazy(() => import("./pages/DoctorCasePage.jsx"));
+const DoctorDashboardPage = lazy(() => import("./pages/DoctorDashboardPage.jsx"));
+const DoctorLoginPage = lazy(() => import("./pages/DoctorLoginPage.jsx"));
 import LandingPage from "./pages/LandingPage.jsx";
-import LegalPage from "./pages/LegalPage.jsx";
-import PatientDonePage from "./pages/PatientDonePage.jsx";
-import PatientInvitePage from "./pages/PatientInvitePage.jsx";
-import PatientResumePage from "./pages/PatientResumePage.jsx";
-import PatientStartPage from "./pages/PatientStartPage.jsx";
-import ProductPage from "./pages/ProductPage.jsx";
-import QuestionnairePage from "./pages/QuestionnairePage.jsx";
-import ReceptionDashboardPage from "./pages/ReceptionDashboardPage.jsx";
-import TeamPage from "./pages/TeamPage.jsx";
+const LegalPage = lazy(() => import("./pages/LegalPage.jsx"));
+const PatientDonePage = lazy(() => import("./pages/PatientDonePage.jsx"));
+const PatientInvitePage = lazy(() => import("./pages/PatientInvitePage.jsx"));
+const PatientResumePage = lazy(() => import("./pages/PatientResumePage.jsx"));
+const PatientStartPage = lazy(() => import("./pages/PatientStartPage.jsx"));
+const ProductPage = lazy(() => import("./pages/ProductPage.jsx"));
+const QuestionnairePage = lazy(() => import("./pages/QuestionnairePage.jsx"));
+const ReceptionDashboardPage = lazy(() => import("./pages/ReceptionDashboardPage.jsx"));
+const TeamPage = lazy(() => import("./pages/TeamPage.jsx"));
 
 function NotFoundPage() {
   const { language } = useLanguage();
@@ -43,6 +44,7 @@ function NotFoundPage() {
 
 export default function App() {
   return (
+    <Suspense fallback={null}>
     <Routes>
       {/* Homepage */}
       <Route path="/" element={<LandingPage />} />
@@ -90,5 +92,6 @@ export default function App() {
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </Suspense>
   );
 }

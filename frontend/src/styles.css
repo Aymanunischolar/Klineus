@@ -14659,3 +14659,17 @@ button:disabled.primary-button,
 .reception-dashboard-wide .reception-table {
   min-width: 0;
 }
+
+/* Assessment banner: win against older generic section resets */
+.doctor-case-shell .traffic-light-card {
+  margin: 16px 0 !important;
+  padding: 18px 22px !important;
+  border-radius: 18px !important;
+  border-style: solid !important;
+  border-width: 2px 2px 2px 10px !important;
+}
+
+.doctor-case-shell .traffic-light-card h2 {
+  margin: 4px 0 6px !important;
+  font-size: 1.6rem !important;
+}
