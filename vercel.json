@@ -1,4 +1,7 @@
 {
+  "regions": [
+    "fra1"
+  ],
   "experimentalServices": {
     "frontend": {
       "entrypoint": "frontend",
