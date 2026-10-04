@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -43,7 +44,8 @@ async def api_logging_middleware(request: Request, call_next):
 
         if not request.url.path.startswith("/static"):
             try:
-                log_api_event(
+                await run_in_threadpool(
+                    log_api_event,
                     level="error" if response.status_code >= 400 else "info",
                     event_type="request",
                     source="fastapi",

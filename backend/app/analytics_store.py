@@ -33,7 +33,17 @@ def average(values: list[float | int | None]) -> float | None:
     return sum(clean_values) / len(clean_values)
 
 
+_tables_ready = False
+
+
 def init_analytics_tables() -> None:
+    # Called on every log write; the DDL is a dozen round trips against
+    # Postgres, so run it once per process.
+    global _tables_ready
+
+    if _tables_ready:
+        return
+
     with connect() as connection:
         connection.executescript(
             """
@@ -85,6 +95,8 @@ def init_analytics_tables() -> None:
             ON ai_logs(indication);
             """
         )
+
+    _tables_ready = True
 
 
 # ---------------------------------------------------------------------------
