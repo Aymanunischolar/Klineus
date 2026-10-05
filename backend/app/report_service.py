@@ -350,6 +350,9 @@ def generate_documentation_flags(
     is_hip = resolved_indication == "hip_tep"
     joint_label = "Hüfte" if is_hip else "Knie"
     joint_article = "die Hüfte" if is_hip else "das Knie"
+    # Dative, for "where" phrases: "im Knie" / "in der Hüfte". joint_article stays for
+    # "into" phrases such as "Kortison-Spritze direkt in das Knie".
+    joint_location = "in der Hüfte" if is_hip else "im Knie"
 
     flags: list[DocumentationFlag] = []
 
@@ -360,7 +363,7 @@ def generate_documentation_flags(
             _flag(
                 "orange",
                 "Schmerzangabe unklar",
-                f"Patient berichtet keine aktuellen Schmerzen in {joint_article}. Als offener Punkt im Arztgespräch prüfen.",
+                f"Patient berichtet keine aktuellen Schmerzen {joint_location}. Als offener Punkt im Arztgespräch prüfen.",
             )
         )
 
@@ -422,7 +425,7 @@ def generate_documentation_flags(
             _flag(
                 "red",
                 "Aktive Infektion berichtet",
-                f"Patient berichtet eine aktuell behandelte Entzündung oder Infektion in {joint_article}"
+                f"Patient berichtet eine aktuell behandelte Entzündung oder Infektion {joint_location}"
                 + (" oder an anderer Stelle" if is_hip else "")
                 + ". Erfordert ärztliche Prüfung.",
             )
@@ -433,7 +436,7 @@ def generate_documentation_flags(
             _flag(
                 "orange",
                 "Aktive Infektion unklar",
-                f"Patient ist unsicher, ob aktuell eine Entzündung oder Infektion in {joint_article} behandelt wird.",
+                f"Patient ist unsicher, ob aktuell eine Entzündung oder Infektion {joint_location} behandelt wird.",
             )
         )
 
@@ -442,7 +445,7 @@ def generate_documentation_flags(
             _flag(
                 "orange",
                 "Frühere Gelenkinfektion berichtet",
-                f"Patient berichtet eine frühere Infektion in {joint_article}. Relevanz ärztlich prüfen.",
+                f"Patient berichtet eine frühere Infektion {joint_location}. Relevanz ärztlich prüfen.",
             )
         )
 
@@ -451,7 +454,7 @@ def generate_documentation_flags(
             _flag(
                 "orange",
                 "Frühere Gelenkinfektion unklar",
-                f"Patient ist unsicher, ob früher eine Infektion in {joint_article} vorlag.",
+                f"Patient ist unsicher, ob früher eine Infektion {joint_location} vorlag.",
             )
         )
 
@@ -503,7 +506,7 @@ def generate_documentation_flags(
                 _flag(
                     "orange",
                     "Gelenkverschleiß unklar",
-                    f"Patient berichtet keinen bekannten deutlichen Gelenkverschleiß in {joint_article} oder ist unsicher.",
+                    f"Patient berichtet keinen bekannten deutlichen Gelenkverschleiß {joint_location} oder ist unsicher.",
                 )
             )
 
@@ -512,7 +515,7 @@ def generate_documentation_flags(
                 _flag(
                     "orange",
                     "Keine externen Vorbefunde vorhanden",
-                    f"Patient berichtet keine Arztbriefe, Röntgenbilder oder Befunde zu {joint_article}.",
+                    f"Patient berichtet keine Arztbriefe, Röntgenbilder oder Befunde {joint_location}.",
                 )
             )
 
@@ -681,7 +684,7 @@ def generate_documentation_flags(
                 _flag(
                     "orange",
                     "Keine externen Vorbefunde vorhanden",
-                    f"Patient berichtet keine Arztbriefe, Röntgenbilder oder Befunde zu {joint_article}.",
+                    f"Patient berichtet keine Arztbriefe, Röntgenbilder oder Befunde {joint_location}.",
                 )
             )
 
